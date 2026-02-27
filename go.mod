@@ -162,4 +162,4 @@ require (
 
 replace github.com/go-go-golems/go-go-gepa => ../go-go-gepa
 
-replace github.com/go-go-golems/go-go-os => ../go-go-os/go-inventory-chat
+replace github.com/go-go-golems/go-go-os => ../go-go-os/go-go-os
