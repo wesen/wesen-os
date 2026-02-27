@@ -29,11 +29,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/go-go-golems/wesen-os/pkg/backendhost"
-	gepabackend "github.com/go-go-golems/wesen-os/pkg/gepa"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorytools"
-	"github.com/go-go-golems/wesen-os/pkg/launcherui"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/pinoweb"
+	"github.com/go-go-golems/hypercard-inventory-chat/pkg/backendhost"
+	gepabackend "github.com/go-go-golems/wesen-os/pkg/gepa"
+	"github.com/go-go-golems/wesen-os/pkg/launcherui"
 )
 
 type integrationNoopEngine struct{}

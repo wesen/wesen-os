@@ -25,12 +25,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/go-go-golems/wesen-os/pkg/backendhost"
-	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorytools"
-	gepabackend "github.com/go-go-golems/wesen-os/pkg/gepa"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorydb"
-	"github.com/go-go-golems/wesen-os/pkg/launcherui"
+	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorytools"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/pinoweb"
+	"github.com/go-go-golems/hypercard-inventory-chat/pkg/backendhost"
+	gepabackend "github.com/go-go-golems/wesen-os/pkg/gepa"
+	"github.com/go-go-golems/wesen-os/pkg/launcherui"
 )
 
 //go:embed static

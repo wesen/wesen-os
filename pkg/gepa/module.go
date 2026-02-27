@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	gepacore "github.com/go-go-golems/go-go-gepa/pkg/backendmodule"
-	"github.com/go-go-golems/wesen-os/pkg/backendhost"
+	"github.com/go-go-golems/hypercard-inventory-chat/pkg/backendhost"
 )
 
 const AppID = gepacore.AppID
