@@ -29,8 +29,8 @@ import (
 	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorytools"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/pinoweb"
 	"github.com/go-go-golems/hypercard-inventory-chat/pkg/backendhost"
+	"github.com/go-go-golems/hypercard-inventory-chat/pkg/launcherui"
 	gepabackend "github.com/go-go-golems/wesen-os/pkg/gepa"
-	"github.com/go-go-golems/wesen-os/pkg/launcherui"
 )
 
 //go:embed static
