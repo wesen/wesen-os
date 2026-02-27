@@ -2,28 +2,21 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/go-go-golems/geppetto/pkg/inference/middlewarecfg"
 	gepprofiles "github.com/go-go-golems/geppetto/pkg/profiles"
 	webchat "github.com/go-go-golems/pinocchio/pkg/webchat"
 	webhttp "github.com/go-go-golems/pinocchio/pkg/webchat/http"
-	plzconfirmbackend "github.com/go-go-golems/plz-confirm/pkg/backend"
-	"github.com/gorilla/websocket"
-	"github.com/rs/zerolog/log"
 
+	inventorycomponent "github.com/go-go-golems/go-go-app-inventory/pkg/backendcomponent"
 	"github.com/go-go-golems/wesen-os/pkg/backendhost"
 )
 
-const inventoryBackendAppID = "inventory"
+const inventoryBackendAppID = inventorycomponent.AppID
 
 type inventoryBackendModule struct {
-	server                *webchat.Server
-	requestResolver       webhttp.ConversationRequestResolver
-	profileRegistry       gepprofiles.Registry
-	middlewareDefinitions middlewarecfg.DefinitionRegistry
-	extensionSchemas      []webhttp.ExtensionSchemaDocument
+	component inventorycomponent.Component
 }
 
 func newInventoryBackendModule(
@@ -34,96 +27,47 @@ func newInventoryBackendModule(
 	extensionSchemas []webhttp.ExtensionSchemaDocument,
 ) *inventoryBackendModule {
 	return &inventoryBackendModule{
-		server:                server,
-		requestResolver:       requestResolver,
-		profileRegistry:       profileRegistry,
-		middlewareDefinitions: middlewareDefinitions,
-		extensionSchemas:      append([]webhttp.ExtensionSchemaDocument(nil), extensionSchemas...),
+		component: inventorycomponent.NewInventoryBackendComponent(inventorycomponent.Options{
+			Server:                server,
+			RequestResolver:       requestResolver,
+			ProfileRegistry:       profileRegistry,
+			DefaultRegistrySlug:   gepprofiles.MustRegistrySlug(profileRegistrySlug),
+			MiddlewareDefinitions: middlewareDefinitions,
+			ExtensionSchemas:      append([]webhttp.ExtensionSchemaDocument(nil), extensionSchemas...),
+			WriteActor:            "wesen-os-launcher",
+			WriteSource:           "http-api",
+			ConfirmMountPath:      "/confirm",
+		}),
 	}
 }
 
 func (m *inventoryBackendModule) Manifest() backendhost.AppBackendManifest {
+	manifest := m.component.Manifest()
 	return backendhost.AppBackendManifest{
-		AppID:       inventoryBackendAppID,
-		Name:        "Inventory",
-		Description: "Inventory chat runtime, profiles, timeline, and confirm APIs",
-		Required:    true,
-		Capabilities: []string{
-			"chat",
-			"ws",
-			"timeline",
-			"profiles",
-			"confirm",
-		},
+		AppID:        manifest.AppID,
+		Name:         manifest.Name,
+		Description:  manifest.Description,
+		Required:     manifest.Required,
+		Capabilities: append([]string(nil), manifest.Capabilities...),
 	}
 }
 
 func (m *inventoryBackendModule) MountRoutes(mux *http.ServeMux) error {
-	if mux == nil {
-		return fmt.Errorf("inventory backend module mount mux is nil")
-	}
-	if m.server == nil {
-		return fmt.Errorf("inventory backend module server is nil")
-	}
-	if m.requestResolver == nil {
-		return fmt.Errorf("inventory backend module request resolver is nil")
-	}
-	if m.profileRegistry == nil {
-		return fmt.Errorf("inventory backend module profile registry is nil")
-	}
-
-	chatHandler := webhttp.NewChatHandler(m.server.ChatService(), m.requestResolver)
-	wsHandler := webhttp.NewWSHandler(
-		m.server.StreamHub(),
-		m.requestResolver,
-		websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }},
-	)
-	timelineHandler := webhttp.NewTimelineHandler(
-		m.server.TimelineService(),
-		log.With().Str("component", "inventory-chat").Str("route", "/api/apps/inventory/api/timeline").Logger(),
-	)
-
-	mux.HandleFunc("/chat", chatHandler)
-	mux.HandleFunc("/chat/", chatHandler)
-	mux.HandleFunc("/ws", wsHandler)
-	webhttp.RegisterProfileAPIHandlers(mux, m.profileRegistry, webhttp.ProfileAPIHandlerOptions{
-		DefaultRegistrySlug:             gepprofiles.MustRegistrySlug(profileRegistrySlug),
-		EnableCurrentProfileCookieRoute: true,
-		WriteActor:                      "wesen-os-launcher",
-		WriteSource:                     "http-api",
-		MiddlewareDefinitions:           m.middlewareDefinitions,
-		ExtensionSchemas:                append([]webhttp.ExtensionSchemaDocument(nil), m.extensionSchemas...),
-	})
-	mux.HandleFunc("/api/timeline", timelineHandler)
-	mux.HandleFunc("/api/timeline/", timelineHandler)
-	mux.Handle("/api/", m.server.APIHandler())
-	plzconfirmbackend.NewServer().Mount(mux, "/confirm")
-	mux.Handle("/", m.server.UIHandler())
-
-	return nil
+	return m.component.MountRoutes(mux)
 }
 
-func (m *inventoryBackendModule) Init(context.Context) error {
-	if m == nil || m.server == nil {
-		return fmt.Errorf("inventory backend module is not initialized")
-	}
-	return nil
+func (m *inventoryBackendModule) Init(ctx context.Context) error {
+	return m.component.Init(ctx)
 }
 
-func (m *inventoryBackendModule) Start(context.Context) error {
-	if m == nil || m.server == nil {
-		return fmt.Errorf("inventory backend module is not initialized")
-	}
-	return nil
+func (m *inventoryBackendModule) Start(ctx context.Context) error {
+	return m.component.Start(ctx)
 }
 
-func (m *inventoryBackendModule) Stop(context.Context) error {
-	return nil
+func (m *inventoryBackendModule) Stop(ctx context.Context) error {
+	return m.component.Stop(ctx)
 }
 
-func (m *inventoryBackendModule) Health(context.Context) error {
-	if m == nil || m.server == nil {
-		return fmt.Errorf("inventory backend module server is not initialized")
-	}
-	return nil
+func (m *inventoryBackendModule) Health(ctx context.Context) error {
+	return m.component.Health(ctx)
 }
