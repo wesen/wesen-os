@@ -10,7 +10,7 @@ require (
 	github.com/go-go-golems/glazed v1.0.4
 	github.com/go-go-golems/go-go-app-inventory v0.0.0-00010101000000-000000000000
 	github.com/go-go-golems/go-go-gepa v0.0.0-20260223022920-190ca45ac964
-	github.com/go-go-golems/hypercard-inventory-chat v0.0.0-00010101000000-000000000000
+	github.com/go-go-golems/go-go-os v0.0.0-00010101000000-000000000000
 	github.com/go-go-golems/pinocchio v0.10.1
 	github.com/go-go-golems/plz-confirm v0.0.4
 	github.com/google/uuid v1.6.0
@@ -162,4 +162,4 @@ require (
 
 replace github.com/go-go-golems/go-go-gepa => ../go-go-gepa
 
-replace github.com/go-go-golems/hypercard-inventory-chat => ../go-go-os/go-inventory-chat
+replace github.com/go-go-golems/go-go-os => ../go-go-os/go-inventory-chat

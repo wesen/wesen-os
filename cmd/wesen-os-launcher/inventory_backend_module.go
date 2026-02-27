@@ -10,7 +10,7 @@ import (
 	webhttp "github.com/go-go-golems/pinocchio/pkg/webchat/http"
 
 	inventorycomponent "github.com/go-go-golems/go-go-app-inventory/pkg/backendcomponent"
-	"github.com/go-go-golems/hypercard-inventory-chat/pkg/backendhost"
+	"github.com/go-go-golems/go-go-os/pkg/backendhost"
 )
 
 const inventoryBackendAppID = inventorycomponent.AppID
