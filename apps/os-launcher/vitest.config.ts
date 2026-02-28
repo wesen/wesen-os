@@ -30,6 +30,11 @@ export default defineConfig({
         'go-go-os/apps/apps-browser/src/launcher/public.ts',
       ),
       '@hypercard/apps-browser': path.resolve(workspaceRoot, 'go-go-os/apps/apps-browser/src'),
+      '@hypercard/hypercard-tools/launcher': path.resolve(
+        workspaceRoot,
+        'go-go-os/apps/hypercard-tools/src/launcher/public.ts',
+      ),
+      '@hypercard/hypercard-tools': path.resolve(workspaceRoot, 'go-go-os/apps/hypercard-tools/src'),
       '@hypercard/arc-agi-player/launcher': path.resolve(
         workspaceRoot,
         'go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts',

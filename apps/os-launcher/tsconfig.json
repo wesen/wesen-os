@@ -33,6 +33,11 @@
       "@hypercard/apps-browser": ["../../../go-go-os/apps/apps-browser/src/index.ts"],
       "@hypercard/apps-browser/launcher": ["../../../go-go-os/apps/apps-browser/src/launcher/public.ts"],
       "@hypercard/apps-browser/*": ["../../../go-go-os/apps/apps-browser/src/*"],
+      "@hypercard/hypercard-tools": ["../../../go-go-os/apps/hypercard-tools/src/index.ts"],
+      "@hypercard/hypercard-tools/launcher": [
+        "../../../go-go-os/apps/hypercard-tools/src/launcher/public.ts"
+      ],
+      "@hypercard/hypercard-tools/*": ["../../../go-go-os/apps/hypercard-tools/src/*"],
       "@hypercard/arc-agi-player": ["../../../go-go-app-arc-agi-3/apps/arc-agi-player/src/index.ts"],
       "@hypercard/arc-agi-player/launcher": [
         "../../../go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts"

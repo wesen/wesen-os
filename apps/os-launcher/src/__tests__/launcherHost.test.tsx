@@ -8,6 +8,7 @@ import {
   parseAppKey,
 } from '@hypercard/desktop-os';
 import { type DesktopCommandContext, routeContributionCommand } from '@hypercard/engine/desktop-react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { launcherModules } from '../app/modules';
 import { launcherRegistry } from '../app/registry';
@@ -39,7 +40,7 @@ describe('launcher host wiring', () => {
 
     const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
     const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
-    const appIds = ['inventory', 'todo', 'crm', 'book-tracker-debug', 'arc-agi-player', 'apps-browser'];
+    const appIds = ['inventory', 'todo', 'crm', 'book-tracker-debug', 'arc-agi-player', 'apps-browser', 'hypercard-tools'];
 
     for (const appId of appIds) {
       const handled = routeContributionCommand(`icon.open.${appId}`, handlers, commandContext());
@@ -51,7 +52,7 @@ describe('launcher host wiring', () => {
       const [payload] = hostContext.openWindow.mock.calls[index] as [
         { content: { kind: string; appKey?: string; card?: { stackId?: string } } },
       ];
-      if (appId === 'inventory' || appId === 'apps-browser' || appId === 'arc-agi-player') {
+      if (appId === 'inventory' || appId === 'apps-browser' || appId === 'arc-agi-player' || appId === 'hypercard-tools') {
         expect(payload.content.kind).toBe('app');
         expect(payload.content.appKey).toMatch(new RegExp(`^${appId}:`));
       } else {
@@ -90,6 +91,38 @@ describe('launcher host wiring', () => {
 
     const content = render(formatAppKey('inventory', 'test-instance'), 'window:test');
     expect(content).not.toBeNull();
+  });
+
+  it('renders hypercard-tools editor window for encoded runtime card refs', () => {
+    const render = createRenderAppWindow({
+      registry: launcherRegistry,
+      hostContext: {
+        dispatch: () => undefined,
+        getState: () => ({}),
+        resolveApiBase: (appId: string) => `/api/apps/${appId}`,
+        resolveWsBase: (appId: string) => `/api/apps/${appId}/ws`,
+      },
+    });
+
+    const content = render('hypercard-tools:editor~inventory~helloWorldCard', 'window:tools:test');
+    expect(content).not.toBeNull();
+    expect(renderToStaticMarkup(content as never)).toContain('helloWorldCard');
+  });
+
+  it('renders hypercard-tools unknown-instance fallback for malformed ids', () => {
+    const render = createRenderAppWindow({
+      registry: launcherRegistry,
+      hostContext: {
+        dispatch: () => undefined,
+        getState: () => ({}),
+        resolveApiBase: (appId: string) => `/api/apps/${appId}`,
+        resolveWsBase: (appId: string) => `/api/apps/${appId}/ws`,
+      },
+    });
+
+    const content = render('hypercard-tools:editor~inventory', 'window:tools:bad');
+    expect(content).not.toBeNull();
+    expect(renderToStaticMarkup(content as never)).toContain('Unknown hypercard-tools window instance');
   });
 
   it('fails registry creation when module ids collide', () => {
@@ -153,6 +186,7 @@ describe('launcher host wiring', () => {
         'utf8',
       ),
       readFileSync(new URL('../../../../../go-go-os/apps/apps-browser/src/launcher/module.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../../go-go-os/apps/hypercard-tools/src/launcher/module.tsx', import.meta.url), 'utf8'),
     ];
 
     const placeholderLabels = [
@@ -162,6 +196,7 @@ describe('launcher host wiring', () => {
       'Book Tracker Module',
       'ARC-AGI Module',
       'Apps Browser Module',
+      'HyperCard Tools Module',
     ];
     for (const source of moduleSources) {
       for (const label of placeholderLabels) {
@@ -175,7 +210,12 @@ describe('launcher host wiring', () => {
       const ctx = createHostContext();
       const payload = module.buildLaunchWindow(ctx, 'icon');
       expect(payload.id).toContain(module.manifest.id);
-      if (module.manifest.id === 'inventory' || module.manifest.id === 'apps-browser' || module.manifest.id === 'arc-agi-player') {
+      if (
+        module.manifest.id === 'inventory' ||
+        module.manifest.id === 'apps-browser' ||
+        module.manifest.id === 'arc-agi-player' ||
+        module.manifest.id === 'hypercard-tools'
+      ) {
         expect(payload.content.kind).toBe('app');
         const parsed = parseAppKey(payload.content.appKey ?? '');
         expect(parsed).not.toBeNull();
