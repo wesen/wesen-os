@@ -39,7 +39,7 @@ describe('launcher host wiring', () => {
 
     const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
     const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
-    const appIds = ['inventory', 'todo', 'crm', 'book-tracker-debug'];
+    const appIds = ['inventory', 'todo', 'crm', 'book-tracker-debug', 'apps-browser'];
 
     for (const appId of appIds) {
       const handled = routeContributionCommand(`icon.open.${appId}`, handlers, commandContext());
@@ -51,7 +51,7 @@ describe('launcher host wiring', () => {
       const [payload] = hostContext.openWindow.mock.calls[index] as [
         { content: { kind: string; appKey?: string; card?: { stackId?: string } } },
       ];
-      if (appId === 'inventory') {
+      if (appId === 'inventory' || appId === 'apps-browser') {
         expect(payload.content.kind).toBe('app');
         expect(payload.content.appKey).toMatch(new RegExp(`^${appId}:`));
       } else {
@@ -148,9 +148,10 @@ describe('launcher host wiring', () => {
         new URL('../../../../../go-go-os/apps/book-tracker-debug/src/launcher/module.tsx', import.meta.url),
         'utf8',
       ),
+      readFileSync(new URL('../../../../../go-go-os/apps/apps-browser/src/launcher/module.tsx', import.meta.url), 'utf8'),
     ];
 
-    const placeholderLabels = ['Inventory Module', 'Todo Module', 'CRM Module', 'Book Tracker Module'];
+    const placeholderLabels = ['Inventory Module', 'Todo Module', 'CRM Module', 'Book Tracker Module', 'Apps Browser Module'];
     for (const source of moduleSources) {
       for (const label of placeholderLabels) {
         expect(source).not.toContain(label);
@@ -163,7 +164,7 @@ describe('launcher host wiring', () => {
       const ctx = createHostContext();
       const payload = module.buildLaunchWindow(ctx, 'icon');
       expect(payload.id).toContain(module.manifest.id);
-      if (module.manifest.id === 'inventory') {
+      if (module.manifest.id === 'inventory' || module.manifest.id === 'apps-browser') {
         expect(payload.content.kind).toBe('app');
         const parsed = parseAppKey(payload.content.appKey ?? '');
         expect(parsed).not.toBeNull();
@@ -373,6 +374,7 @@ describe('launcher host wiring', () => {
       'apps/todo',
       'apps/crm',
       'apps/book-tracker-debug',
+      'apps/apps-browser',
       'ChatConversationWindow',
       'ConfirmRequestWindowHost',
     ];

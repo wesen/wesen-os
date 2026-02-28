@@ -27,6 +27,11 @@ export default defineConfig({
       '@hypercard/todo': path.resolve(workspaceRoot, 'go-go-os/apps/todo'),
       '@hypercard/crm': path.resolve(workspaceRoot, 'go-go-os/apps/crm'),
       '@hypercard/book-tracker-debug': path.resolve(workspaceRoot, 'go-go-os/apps/book-tracker-debug'),
+      '@hypercard/apps-browser/launcher': path.resolve(
+        workspaceRoot,
+        'go-go-os/apps/apps-browser/src/launcher/public.ts',
+      ),
+      '@hypercard/apps-browser': path.resolve(workspaceRoot, 'go-go-os/apps/apps-browser/src'),
       '@hypercard/inventory/launcher': path.resolve(
         workspaceRoot,
         'go-go-app-inventory/apps/inventory/src/launcher/public.ts',

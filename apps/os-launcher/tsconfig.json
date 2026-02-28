@@ -22,6 +22,9 @@
       "@hypercard/crm/*": ["../../../go-go-os/apps/crm/*"],
       "@hypercard/book-tracker-debug": ["../../../go-go-os/apps/book-tracker-debug"],
       "@hypercard/book-tracker-debug/*": ["../../../go-go-os/apps/book-tracker-debug/*"],
+      "@hypercard/apps-browser": ["../../../go-go-os/apps/apps-browser/src/index.ts"],
+      "@hypercard/apps-browser/launcher": ["../../../go-go-os/apps/apps-browser/src/launcher/public.ts"],
+      "@hypercard/apps-browser/*": ["../../../go-go-os/apps/apps-browser/src/*"],
       "@hypercard/inventory": ["../../../go-go-app-inventory/apps/inventory/src/index.ts"],
       "@hypercard/inventory/launcher": [
         "../../../go-go-app-inventory/apps/inventory/src/launcher/public.ts"
