@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-go-golems/geppetto/pkg/inference/middlewarecfg"
 	gepprofiles "github.com/go-go-golems/geppetto/pkg/profiles"
-	webchat "github.com/go-go-golems/pinocchio/pkg/webchat"
+	"github.com/go-go-golems/pinocchio/pkg/webchat"
 	webhttp "github.com/go-go-golems/pinocchio/pkg/webchat/http"
 
 	inventorycomponent "github.com/go-go-golems/go-go-app-inventory/pkg/backendcomponent"
