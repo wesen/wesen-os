@@ -23,6 +23,7 @@ export default defineConfig({
       'react-redux': path.resolve(workspaceRoot, 'go-go-os/packages/engine/node_modules/react-redux'),
       '@reduxjs/toolkit': path.resolve(workspaceRoot, 'go-go-os/packages/engine/node_modules/@reduxjs/toolkit'),
       '@hypercard/engine': path.resolve(workspaceRoot, 'go-go-os/packages/engine/src'),
+      '@hypercard/hypercard-runtime': path.resolve(workspaceRoot, 'go-go-os/packages/hypercard-runtime/src'),
       '@hypercard/desktop-os': path.resolve(workspaceRoot, 'go-go-os/packages/desktop-os/src'),
       '@hypercard/confirm-runtime': path.resolve(workspaceRoot, 'go-go-os/packages/confirm-runtime/src'),
       '@hypercard/todo': path.resolve(workspaceRoot, 'go-go-os/apps/todo'),
