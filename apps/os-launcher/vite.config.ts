@@ -71,6 +71,11 @@ export default defineConfig({
         target: inventoryBackendTarget,
         changeOrigin: true,
       },
+      '/api/apps': {
+        target: inventoryBackendTarget,
+        ws: true,
+        changeOrigin: true,
+      },
     },
   },
 });
