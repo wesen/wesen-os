@@ -298,6 +298,53 @@ describe('launcher host wiring', () => {
     );
   });
 
+  it('routes apps-browser context commands to module windows', () => {
+    const hostContext = createHostContext();
+    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+    const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
+
+    const openBrowserHandled = routeContributionCommand('apps-browser.open-browser', handlers, commandContext(), {
+      source: 'context-menu',
+      contextTarget: {
+        kind: 'widget',
+        widgetId: 'apps-browser-folder-icon.gepa',
+        appId: 'gepa',
+      },
+      payload: {
+        appId: 'gepa',
+        appName: 'GEPA',
+      },
+    });
+    expect(openBrowserHandled).toBe(true);
+    expect(hostContext.openWindow).toHaveBeenCalledTimes(1);
+    const [browserPayload] = hostContext.openWindow.mock.calls[0] as [{ content: { appKey: string } }];
+    expect(browserPayload.content.appKey).toBe('apps-browser:browser:gepa');
+
+    const getInfoHandled = routeContributionCommand('apps-browser.get-info', handlers, commandContext(), {
+      source: 'context-menu',
+      contextTarget: {
+        kind: 'widget',
+        widgetId: 'apps-browser-folder-icon.gepa',
+        appId: 'gepa',
+      },
+      payload: {
+        appId: 'gepa',
+        appName: 'GEPA',
+      },
+    });
+    expect(getInfoHandled).toBe(true);
+    expect(hostContext.openWindow).toHaveBeenCalledTimes(2);
+    const [getInfoPayload] = hostContext.openWindow.mock.calls[1] as [{ title: string; content: { appKey: string } }];
+    expect(getInfoPayload.content.appKey).toBe('apps-browser:get-info:gepa');
+    expect(getInfoPayload.title).toContain('Get Info');
+
+    const healthHandled = routeContributionCommand('apps-browser.open-health', handlers, commandContext());
+    expect(healthHandled).toBe(true);
+    expect(hostContext.openWindow).toHaveBeenCalledTimes(3);
+    const [healthPayload] = hostContext.openWindow.mock.calls[2] as [{ content: { appKey: string } }];
+    expect(healthPayload.content.appKey).toBe('apps-browser:health');
+  });
+
   it('routes conversation-level actions through inventory chat command namespace', () => {
     const hostContext = createHostContext();
     const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
