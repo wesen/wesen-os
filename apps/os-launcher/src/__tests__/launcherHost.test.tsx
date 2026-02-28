@@ -52,12 +52,15 @@ describe('launcher host wiring', () => {
       const [payload] = hostContext.openWindow.mock.calls[index] as [
         { content: { kind: string; appKey?: string; card?: { stackId?: string } } },
       ];
-      if (appId === 'inventory' || appId === 'apps-browser' || appId === 'arc-agi-player' || appId === 'hypercard-tools') {
+      if (appId === 'inventory' || appId === 'apps-browser' || appId === 'arc-agi-player') {
         expect(payload.content.kind).toBe('app');
         expect(payload.content.appKey).toMatch(new RegExp(`^${appId}:`));
       } else {
         expect(payload.content.kind).toBe('card');
         expect(payload.content.card?.stackId).toBeTruthy();
+        if (appId === 'hypercard-tools') {
+          expect(payload.content.card?.stackId).toBe('hypercardToolsUiDslDemo');
+        }
       }
     }
   });
@@ -213,8 +216,7 @@ describe('launcher host wiring', () => {
       if (
         module.manifest.id === 'inventory' ||
         module.manifest.id === 'apps-browser' ||
-        module.manifest.id === 'arc-agi-player' ||
-        module.manifest.id === 'hypercard-tools'
+        module.manifest.id === 'arc-agi-player'
       ) {
         expect(payload.content.kind).toBe('app');
         const parsed = parseAppKey(payload.content.appKey ?? '');
@@ -223,6 +225,9 @@ describe('launcher host wiring', () => {
       } else {
         expect(payload.content.kind).toBe('card');
         expect(payload.content.card?.stackId).toBeTruthy();
+        if (module.manifest.id === 'hypercard-tools') {
+          expect(payload.content.card?.stackId).toBe('hypercardToolsUiDslDemo');
+        }
       }
 
       const renderInstanceId = module.manifest.id === 'inventory' ? 'chat-test-instance' : 'test-instance';
