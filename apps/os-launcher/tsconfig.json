@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "outDir": "dist",
+    "paths": {
+      "@hypercard/desktop-os": ["../../../go-go-os/packages/desktop-os/src"],
+      "@hypercard/desktop-os/*": ["../../../go-go-os/packages/desktop-os/src/*"],
+      "@hypercard/engine": ["../../../go-go-os/packages/engine/src"],
+      "@hypercard/engine/*": ["../../../go-go-os/packages/engine/src/*"],
+      "@hypercard/confirm-runtime": ["../../../go-go-os/packages/confirm-runtime/src"],
+      "@hypercard/confirm-runtime/*": ["../../../go-go-os/packages/confirm-runtime/src/*"],
+      "@hypercard/todo": ["../../../go-go-os/apps/todo"],
+      "@hypercard/todo/*": ["../../../go-go-os/apps/todo/*"],
+      "@hypercard/crm": ["../../../go-go-os/apps/crm"],
+      "@hypercard/crm/*": ["../../../go-go-os/apps/crm/*"],
+      "@hypercard/book-tracker-debug": ["../../../go-go-os/apps/book-tracker-debug"],
+      "@hypercard/book-tracker-debug/*": ["../../../go-go-os/apps/book-tracker-debug/*"],
+      "@hypercard/inventory": ["../../../go-go-app-inventory/apps/inventory/src/index.ts"],
+      "@hypercard/inventory/launcher": [
+        "../../../go-go-app-inventory/apps/inventory/src/launcher/public.ts"
+      ],
+      "@hypercard/inventory/reducers": ["../../../go-go-app-inventory/apps/inventory/src/reducers.ts"],
+      "@hypercard/inventory/*": ["../../../go-go-app-inventory/apps/inventory/src/*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/__tests__"]
+}
