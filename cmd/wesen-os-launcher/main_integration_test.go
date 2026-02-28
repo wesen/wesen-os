@@ -32,6 +32,7 @@ import (
 	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorytools"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/pinoweb"
 	"github.com/go-go-golems/go-go-os/pkg/backendhost"
+	arcagibackend "github.com/go-go-golems/wesen-os/pkg/arcagi"
 	gepabackend "github.com/go-go-golems/wesen-os/pkg/gepa"
 	"github.com/go-go-golems/wesen-os/pkg/launcherui"
 )
@@ -78,6 +79,7 @@ func (integrationNoopSink) PublishEvent(events.Event) error { return nil }
 
 const integrationAppBasePath = "/api/apps/inventory"
 const integrationGepaAppBasePath = "/api/apps/gepa"
+const integrationArcAppBasePath = "/api/apps/arc-agi"
 
 func integrationChatPath() string           { return integrationAppBasePath + "/chat" }
 func integrationWSPath() string             { return integrationAppBasePath + "/ws" }
@@ -87,6 +89,10 @@ func integrationCurrentProfilePath() string { return integrationAppBasePath + "/
 func integrationConfirmPath() string        { return integrationAppBasePath + "/confirm" }
 func integrationGEPAScriptsPath() string    { return integrationGepaAppBasePath + "/scripts" }
 func integrationGEPARunsPath() string       { return integrationGepaAppBasePath + "/runs" }
+func integrationARCHealthPath() string      { return integrationArcAppBasePath + "/health" }
+func integrationARCSchemaPath() string {
+	return integrationArcAppBasePath + "/schemas/arc.health.response.v1"
+}
 func integrationDebugConversationsPath() string {
 	return integrationAppBasePath + "/api/debug/conversations"
 }
@@ -103,6 +109,27 @@ func newIntegrationGEPAModule(t *testing.T) *gepabackend.Module {
 		RunTimeout:         30 * time.Second,
 		MaxConcurrentRuns:  4,
 	})
+	require.NoError(t, err)
+	return module
+}
+
+type integrationNoopArcDriver struct{}
+
+func (d integrationNoopArcDriver) Init(context.Context) error  { return nil }
+func (d integrationNoopArcDriver) Start(context.Context) error { return nil }
+func (d integrationNoopArcDriver) Stop(context.Context) error  { return nil }
+func (d integrationNoopArcDriver) Health(context.Context) error {
+	return nil
+}
+func (d integrationNoopArcDriver) BaseURL() string { return "http://127.0.0.1:65535" }
+
+func newIntegrationARCModule(t *testing.T) *arcagibackend.Module {
+	t.Helper()
+	module, err := arcagibackend.NewModuleWithRuntime(arcagibackend.ModuleConfig{
+		EnableReflection: true,
+		Driver:           "raw",
+		RawListenAddr:    "127.0.0.1:18081",
+	}, integrationNoopArcDriver{})
 	require.NoError(t, err)
 	return module
 }
@@ -192,6 +219,7 @@ func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat
 			inventoryExtensionSchemas(),
 		),
 		newIntegrationGEPAModule(t),
+		newIntegrationARCModule(t),
 	)
 	require.NoError(t, err)
 
@@ -265,6 +293,7 @@ func TestWSHandler_EmitsHypercardLifecycleEvents(t *testing.T) {
 			inventoryExtensionSchemas(),
 		),
 		newIntegrationGEPAModule(t),
+		newIntegrationARCModule(t),
 	)
 	require.NoError(t, err)
 
@@ -463,6 +492,35 @@ func TestOSAppsEndpoint_ListsGEPAModuleReflectionMetadata(t *testing.T) {
 	require.True(t, gepaFound, "expected gepa backend module in /api/os/apps payload")
 }
 
+func TestOSAppsEndpoint_ListsARCModuleReflectionMetadata(t *testing.T) {
+	srv := newIntegrationServer(t)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/os/apps")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var payload struct {
+		Apps []map[string]any `json:"apps"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
+
+	arcFound := false
+	for _, app := range payload.Apps {
+		if appID, _ := app["app_id"].(string); appID == "arc-agi" {
+			arcFound = true
+			require.Equal(t, "ARC-AGI", app["name"])
+			require.Equal(t, true, app["healthy"])
+			reflection, ok := app["reflection"].(map[string]any)
+			require.True(t, ok)
+			require.Equal(t, true, reflection["available"])
+			require.Equal(t, "/api/os/apps/arc-agi/reflection", reflection["url"])
+		}
+	}
+	require.True(t, arcFound, "expected arc-agi backend module in /api/os/apps payload")
+}
+
 func TestGEPAModule_ReflectionAndScriptsEndpoints(t *testing.T) {
 	srv := newIntegrationServer(t)
 	defer srv.Close()
@@ -488,6 +546,29 @@ func TestGEPAModule_ReflectionAndScriptsEndpoints(t *testing.T) {
 	require.NoError(t, json.NewDecoder(scriptsResp.Body).Decode(&scriptsPayload))
 	_, ok = scriptsPayload["scripts"].([]any)
 	require.True(t, ok)
+}
+
+func TestARCModule_HealthAndSchemaEndpoints(t *testing.T) {
+	srv := newIntegrationServer(t)
+	defer srv.Close()
+
+	healthResp, err := http.Get(srv.URL + integrationARCHealthPath())
+	require.NoError(t, err)
+	defer healthResp.Body.Close()
+	require.Equal(t, http.StatusOK, healthResp.StatusCode)
+
+	var health map[string]any
+	require.NoError(t, json.NewDecoder(healthResp.Body).Decode(&health))
+	require.Equal(t, "ok", health["status"])
+
+	schemaResp, err := http.Get(srv.URL + integrationARCSchemaPath())
+	require.NoError(t, err)
+	defer schemaResp.Body.Close()
+	require.Equal(t, http.StatusOK, schemaResp.StatusCode)
+
+	var schema map[string]any
+	require.NoError(t, json.NewDecoder(schemaResp.Body).Decode(&schema))
+	require.Equal(t, "object", schema["type"])
 }
 
 func TestGEPAModule_RunTimelineAndEventsEndpoints(t *testing.T) {

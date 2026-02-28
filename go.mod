@@ -3,11 +3,13 @@ module github.com/go-go-golems/wesen-os
 go 1.25.7
 
 replace github.com/go-go-golems/go-go-app-inventory => ../go-go-app-inventory
+replace github.com/go-go-golems/go-go-app-arc-agi => ../go-go-app-arc-agi-3
 
 require (
 	github.com/go-go-golems/clay v0.4.0
 	github.com/go-go-golems/geppetto v0.10.2
 	github.com/go-go-golems/glazed v1.0.4
+	github.com/go-go-golems/go-go-app-arc-agi v0.0.0-00010101000000-000000000000
 	github.com/go-go-golems/go-go-app-inventory v0.0.0-00010101000000-000000000000
 	github.com/go-go-golems/go-go-gepa v0.0.0-20260223022920-190ca45ac964
 	github.com/go-go-golems/go-go-os v0.0.0-00010101000000-000000000000

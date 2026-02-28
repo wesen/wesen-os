@@ -29,6 +29,7 @@ import (
 	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorytools"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/pinoweb"
 	"github.com/go-go-golems/go-go-os/pkg/backendhost"
+	arcagibackend "github.com/go-go-golems/wesen-os/pkg/arcagi"
 	gepabackend "github.com/go-go-golems/wesen-os/pkg/gepa"
 	"github.com/go-go-golems/wesen-os/pkg/launcherui"
 )
@@ -50,6 +51,15 @@ type serverSettings struct {
 	InventoryDB          string `glazed:"inventory-db"`
 	InventorySeedOnStart bool   `glazed:"inventory-seed-on-start"`
 	InventoryResetOnBoot bool   `glazed:"inventory-reset-on-start"`
+	ARCEnabled           bool   `glazed:"arc-enabled"`
+	ARCDriver            string `glazed:"arc-driver"`
+	ARCRuntimeMode       string `glazed:"arc-runtime-mode"`
+	ARCRepoRoot          string `glazed:"arc-repo-root"`
+	ARCStartupTimeout    int    `glazed:"arc-startup-timeout-seconds"`
+	ARCRequestTimeout    int    `glazed:"arc-request-timeout-seconds"`
+	ARCRawListenAddr     string `glazed:"arc-raw-listen-addr"`
+	ARCAPIKey            string `glazed:"arc-api-key"`
+	ARCMaxSessionEvents  int    `glazed:"arc-max-session-events"`
 }
 
 const (
@@ -84,6 +94,15 @@ func NewCommand() (*Command, error) {
 			fields.New("inventory-db", fields.TypeString, fields.WithDefault("./data/inventory.db"), fields.WithHelp("SQLite DB file path for inventory domain data")),
 			fields.New("inventory-seed-on-start", fields.TypeBool, fields.WithDefault(true), fields.WithHelp("Seed inventory domain data during startup")),
 			fields.New("inventory-reset-on-start", fields.TypeBool, fields.WithDefault(false), fields.WithHelp("Reset inventory domain tables before seeding")),
+			fields.New("arc-enabled", fields.TypeBool, fields.WithDefault(true), fields.WithHelp("Enable ARC-AGI backend module registration")),
+			fields.New("arc-driver", fields.TypeString, fields.WithDefault("dagger"), fields.WithHelp("ARC runtime driver (dagger or raw)")),
+			fields.New("arc-runtime-mode", fields.TypeString, fields.WithDefault("offline"), fields.WithHelp("ARC operation mode (offline, normal, online)")),
+			fields.New("arc-repo-root", fields.TypeString, fields.WithDefault("../go-go-app-arc-agi-3/2026-02-27--arc-agi/ARC-AGI"), fields.WithHelp("Filesystem path to ARC-AGI Python project root")),
+			fields.New("arc-startup-timeout-seconds", fields.TypeInteger, fields.WithDefault(45), fields.WithHelp("ARC runtime startup health timeout in seconds")),
+			fields.New("arc-request-timeout-seconds", fields.TypeInteger, fields.WithDefault(30), fields.WithHelp("ARC upstream request timeout in seconds")),
+			fields.New("arc-raw-listen-addr", fields.TypeString, fields.WithDefault("127.0.0.1:18081"), fields.WithHelp("Loopback listen address for raw ARC runtime mode")),
+			fields.New("arc-api-key", fields.TypeString, fields.WithDefault("1234"), fields.WithHelp("X-API-Key header used for ARC requests")),
+			fields.New("arc-max-session-events", fields.TypeInteger, fields.WithDefault(200), fields.WithHelp("Maximum ARC session events retained per session")),
 		),
 		cmds.WithSections(geLayers...),
 	)
@@ -205,7 +224,7 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 		return errors.Wrap(err, "create gepa backend module")
 	}
 
-	moduleRegistry, err := backendhost.NewModuleRegistry(
+	modules := []backendhost.AppBackendModule{
 		newInventoryBackendModule(
 			srv,
 			requestResolver,
@@ -214,7 +233,26 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 			inventoryExtensionSchemas(),
 		),
 		gepaModule,
-	)
+	}
+	if cfg.ARCEnabled {
+		arcModule, err := arcagibackend.NewModule(arcagibackend.ModuleConfig{
+			EnableReflection: true,
+			Driver:           strings.TrimSpace(cfg.ARCDriver),
+			RuntimeMode:      strings.TrimSpace(cfg.ARCRuntimeMode),
+			ArcRepoRoot:      strings.TrimSpace(cfg.ARCRepoRoot),
+			StartupTimeout:   time.Duration(cfg.ARCStartupTimeout) * time.Second,
+			RequestTimeout:   time.Duration(cfg.ARCRequestTimeout) * time.Second,
+			RawListenAddr:    strings.TrimSpace(cfg.ARCRawListenAddr),
+			APIKey:           strings.TrimSpace(cfg.ARCAPIKey),
+			MaxSessionEvents: cfg.ARCMaxSessionEvents,
+		})
+		if err != nil {
+			return errors.Wrap(err, "create arc backend module")
+		}
+		modules = append(modules, arcModule)
+	}
+
+	moduleRegistry, err := backendhost.NewModuleRegistry(modules...)
 	if err != nil {
 		return errors.Wrap(err, "create backend module registry")
 	}
