@@ -21,6 +21,7 @@ export default defineConfig({
       ),
       'react-dom': path.resolve(workspaceRoot, 'go-go-os/packages/engine/node_modules/react-dom'),
       'react-redux': path.resolve(workspaceRoot, 'go-go-os/packages/engine/node_modules/react-redux'),
+      '@reduxjs/toolkit': path.resolve(workspaceRoot, 'go-go-os/packages/engine/node_modules/@reduxjs/toolkit'),
       '@hypercard/engine': path.resolve(workspaceRoot, 'go-go-os/packages/engine/src'),
       '@hypercard/desktop-os': path.resolve(workspaceRoot, 'go-go-os/packages/desktop-os/src'),
       '@hypercard/confirm-runtime': path.resolve(workspaceRoot, 'go-go-os/packages/confirm-runtime/src'),
@@ -32,6 +33,11 @@ export default defineConfig({
         'go-go-os/apps/apps-browser/src/launcher/public.ts',
       ),
       '@hypercard/apps-browser': path.resolve(workspaceRoot, 'go-go-os/apps/apps-browser/src'),
+      '@hypercard/arc-agi-player/launcher': path.resolve(
+        workspaceRoot,
+        'go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts',
+      ),
+      '@hypercard/arc-agi-player': path.resolve(workspaceRoot, 'go-go-app-arc-agi-3/apps/arc-agi-player/src'),
       '@hypercard/inventory/launcher': path.resolve(
         workspaceRoot,
         'go-go-app-inventory/apps/inventory/src/launcher/public.ts',

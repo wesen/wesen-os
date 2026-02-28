@@ -10,6 +10,14 @@
     "baseUrl": ".",
     "outDir": "dist",
     "paths": {
+      "react": ["../../../go-go-os/packages/engine/node_modules/@types/react/index.d.ts"],
+      "react/jsx-runtime": ["../../../go-go-os/packages/engine/node_modules/@types/react/jsx-runtime.d.ts"],
+      "react/jsx-dev-runtime": ["../../../go-go-os/packages/engine/node_modules/@types/react/jsx-dev-runtime.d.ts"],
+      "react-dom": ["../../../go-go-os/packages/engine/node_modules/@types/react-dom/index.d.ts"],
+      "react-redux": ["../../../go-go-os/packages/engine/node_modules/react-redux"],
+      "react-redux/*": ["../../../go-go-os/packages/engine/node_modules/react-redux/*"],
+      "@reduxjs/toolkit": ["../../../go-go-os/packages/engine/node_modules/@reduxjs/toolkit/dist/index.d.ts"],
+      "@reduxjs/toolkit/*": ["../../../go-go-os/packages/engine/node_modules/@reduxjs/toolkit/*"],
       "@hypercard/desktop-os": ["../../../go-go-os/packages/desktop-os/src"],
       "@hypercard/desktop-os/*": ["../../../go-go-os/packages/desktop-os/src/*"],
       "@hypercard/engine": ["../../../go-go-os/packages/engine/src"],
@@ -25,6 +33,11 @@
       "@hypercard/apps-browser": ["../../../go-go-os/apps/apps-browser/src/index.ts"],
       "@hypercard/apps-browser/launcher": ["../../../go-go-os/apps/apps-browser/src/launcher/public.ts"],
       "@hypercard/apps-browser/*": ["../../../go-go-os/apps/apps-browser/src/*"],
+      "@hypercard/arc-agi-player": ["../../../go-go-app-arc-agi-3/apps/arc-agi-player/src/index.ts"],
+      "@hypercard/arc-agi-player/launcher": [
+        "../../../go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts"
+      ],
+      "@hypercard/arc-agi-player/*": ["../../../go-go-app-arc-agi-3/apps/arc-agi-player/src/*"],
       "@hypercard/inventory": ["../../../go-go-app-inventory/apps/inventory/src/index.ts"],
       "@hypercard/inventory/launcher": [
         "../../../go-go-app-inventory/apps/inventory/src/launcher/public.ts"
