@@ -207,7 +207,7 @@ One test run failed initially due HTML entity escaping in server-rendered assert
 
 **Inferred user intent:** Ensure the new wiring is robust and reviewable before further rollout.
 
-**Commit (code):** pending
+**Commit (code):** `840555f` — "feat(os-04): execute doc-browser wiring rollout and runtime smoke"
 
 ### What I did
 

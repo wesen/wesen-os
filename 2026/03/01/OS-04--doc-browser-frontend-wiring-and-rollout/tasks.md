@@ -50,11 +50,11 @@
 - [x] Update OS-04 changelog after each major commit group.
 - [x] Keep implementation diary current with commands, failures, and fixes.
 - [x] Relate touched source files in ticket metadata.
-- [ ] Summarize final behavior, residual risks, and follow-up tickets.
+- [x] Summarize final behavior, residual risks, and follow-up tickets.
 
 ## Final Acceptance Gates
 
 - [x] Frontend wiring changes merged in `go-go-os-frontend/apps/apps-browser`.
 - [x] `pnpm --filter @hypercard/apps-browser test` passes with new coverage.
 - [x] Runtime tmux smoke confirms docs browsing workflow end-to-end.
-- [ ] OS-04 tasks/changelog/diary are complete and reviewer-ready.
+- [x] OS-04 tasks/changelog/diary are complete and reviewer-ready.
