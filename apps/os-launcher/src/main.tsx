@@ -5,6 +5,7 @@ import { App } from './App';
 import { store } from './app/store';
 
 import '@hypercard/engine/theme';
+import '@hypercard/chat-runtime/theme';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
