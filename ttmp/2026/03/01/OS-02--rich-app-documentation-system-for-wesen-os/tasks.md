@@ -151,4 +151,5 @@
 - [x] `wesen-os`
 - [x] Manual smoke confirms docs endpoints for all three apps.
 - [ ] `docmgr doctor --ticket OS-02` passes.
+  - Current doctor warnings are structural (`multiple_index`, `missing_numeric_prefix`) and pre-existing for this date/ticket layout.
 - [x] Ticket diary/changelog/index reflect final implementation state and handoff notes.
