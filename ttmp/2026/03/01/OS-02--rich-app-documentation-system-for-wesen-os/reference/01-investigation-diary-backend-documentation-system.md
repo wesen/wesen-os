@@ -41,7 +41,7 @@ RelatedFiles:
       Note: Verified gepa adapter reflection mapping and temporary docs ownership need
 ExternalSources: []
 Summary: 'Chronological investigation diary for OS-02 backend planning work: ticket discovery, architecture evidence gathering, design-gap analysis, and production of the backend rollout design document.'
-LastUpdated: 2026-03-01T14:15:00-05:00
+LastUpdated: 2026-03-01T14:20:00-05:00
 WhatFor: Continuation log for future contributors implementing the backend docs system and validating decisions made during planning.
 WhenToUse: Read this before continuing OS-02 backend implementation, especially for command history, discovered constraints, and known risk points.
 ---
@@ -932,3 +932,78 @@ git submodule update --init --recursive
   - manifest docs+reflection availability: inventory/gepa/arc-agi all `true`
   - docs TOC counts: inventory `4`, arc-agi `4`, gepa `3`
   - aggregate docs total: `11`, modules: `arc-agi`, `gepa`, `inventory`
+
+## Step 12: Upload OS-02 Ticket Bundle To reMarkable
+
+I packaged and uploaded the latest OS-02 ticket documents to reMarkable so the implementation plan, execution diary, and task/changelog state are available as a single reading artifact for offline review.
+
+I used the safer workflow (dry-run first, then upload) and verified the document exists in the target cloud folder.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 1)
+
+**Assistant interpretation:** Keep ticket docs current and publish the deliverable to reMarkable as part of OS-02 handoff.
+
+**Inferred user intent:** Ensure the final planning/implementation narrative is easy to consume on-device by collaborators.
+
+**Commit (code):** pending (ticket/docs commit grouped after this step)
+
+### What I did
+
+- Ran bundle dry-run with selected OS-02 docs:
+  - `index.md`
+  - `design-doc/03-backend-documentation-system-rollout-plan-inventory-arc-agi-gepa.md`
+  - `tasks.md`
+  - `changelog.md`
+  - `reference/01-investigation-diary-backend-documentation-system.md`
+- Uploaded bundle to:
+  - `/ai/2026/03/01/OS-02`
+- Verified upload:
+  - `remarquee cloud ls /ai/2026/03/01/OS-02 --long --non-interactive`
+
+### Why
+
+- OS-02 explicitly requested ticket storage plus reMarkable delivery.
+- Bundling key docs into one PDF keeps navigation and review context consistent.
+
+### What worked
+
+- Upload succeeded:
+
+```text
+OK: uploaded OS-02 Backend Documentation Rollout (2026-03-01).pdf -> /ai/2026/03/01/OS-02
+```
+
+- Cloud listing confirmed document presence.
+
+### What didn't work
+
+- N/A in this step.
+
+### What I learned
+
+- The ticket bundle workflow is reliable when using `remarquee upload bundle` with explicit file list and remote directory.
+
+### What was tricky to build
+
+- Choosing the right subset for bundle contents required balancing completeness and readability. I included index/plan/tasks/changelog/diary to preserve both architecture and execution trace.
+
+### What warrants a second pair of eyes
+
+- Confirm whether future uploads should include exploratory design docs (`01`, `02`) in addition to execution plan (`03`) for broader historical context.
+
+### What should be done in the future
+
+- For incremental OS-02 follow-up work, publish a new dated bundle revision to the same folder to preserve annotation continuity.
+
+### Code review instructions
+
+- Verify upload command and cloud-list evidence in this step.
+- Open the uploaded document in `/ai/2026/03/01/OS-02` and confirm table-of-contents ordering is acceptable.
+
+### Technical details
+
+- Upload command family used:
+  - `remarquee upload bundle --dry-run ...`
+  - `remarquee upload bundle ... --remote-dir /ai/2026/03/01/OS-02 --toc-depth 2`
