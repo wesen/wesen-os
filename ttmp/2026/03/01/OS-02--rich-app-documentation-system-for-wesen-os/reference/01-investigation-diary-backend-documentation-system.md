@@ -41,7 +41,7 @@ RelatedFiles:
       Note: Verified gepa adapter reflection mapping and temporary docs ownership need
 ExternalSources: []
 Summary: 'Chronological investigation diary for OS-02 backend planning work: ticket discovery, architecture evidence gathering, design-gap analysis, and production of the backend rollout design document.'
-LastUpdated: 2026-03-01T15:12:00-05:00
+LastUpdated: 2026-03-01T14:05:00-05:00
 WhatFor: Continuation log for future contributors implementing the backend docs system and validating decisions made during planning.
 WhenToUse: Read this before continuing OS-02 backend implementation, especially for command history, discovered constraints, and known risk points.
 ---
@@ -625,3 +625,120 @@ git commit -m "launcher: add module docs aggregation and docs hints"
 
 - Phase 8 frontend handshake tasks (`go-go-os-frontend/apps/apps-browser`).
 - Phase 9 docs/runbook updates for backend developer docs and tutorial sections.
+
+## Step 9: Implement OS-02 Phase 8 In go-go-os-frontend/apps-browser
+
+I completed the frontend handshake phase for OS-02 so the apps-browser can understand and render backend docs availability directly from manifest and docs endpoints. The implementation adds docs contracts in domain types, RTK query fetchers for module + aggregate docs endpoints, and docs-specific rendering in the module info window.
+
+I also added a focused frontend test suite for docs rendering and link navigation, then validated with Vitest and Biome so this phase is ready to hand off and build on for Phase 9 documentation updates.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 5)
+
+**Assistant interpretation:** Continue OS-02 execution task-by-task; deliver the frontend handshake tasks as one substantial commit and keep ticket diary/checklist up to date.
+
+**Inferred user intent:** Finish the frontend side of the docs contract so backend docs rollout is usable from the launcher UI and traceable in the ticket.
+
+**Commit (code):** `29b0870` — `apps-browser: add docs hint contract, docs fetchers, and info window docs states`
+
+### What I did
+
+- Updated apps-browser contracts:
+  - `src/domain/types.ts`
+  - added `docs` hint shape on `AppManifestDocument`
+  - added module docs (`/api/apps/{id}/docs`, `/api/apps/{id}/docs/{slug}`) contracts
+  - added aggregated docs (`/api/os/docs`) contracts
+- Updated apps-browser API layer:
+  - `src/api/appsApi.ts`
+  - added `getModuleDocs`, `getModuleDoc`, `getOSDocs` fetchers
+  - added query-string builder for `/api/os/docs` filters
+  - exported new docs hooks
+- Updated UI docs rendering:
+  - `src/components/GetInfoWindow.tsx`
+  - added explicit docs states:
+    - docs unavailable
+    - docs loading/available
+    - docs endpoint error
+  - added docs page links pointing to `/api/apps/{module}/docs/{slug}`
+- Updated stories/mocks to support docs endpoints:
+  - `src/mocks/fixtures/apps.ts`
+  - `src/mocks/msw/createAppsHandlers.ts`
+  - `src/mocks/msw/defaultHandlers.ts`
+- Added frontend tests:
+  - `src/components/GetInfoWindow.test.tsx`
+  - verifies docs unavailable rendering
+  - verifies docs available state + docs link navigation targets
+  - verifies docs endpoint error state
+- Added app-local Vitest config and script:
+  - `apps/apps-browser/vitest.config.ts`
+  - `apps/apps-browser/package.json` (`test` script)
+
+### Why
+
+- Backend rollout already exposes docs hints and docs routes; frontend needed contract and rendering support to make the feature visible and testable end-to-end.
+- The docs states had to be explicit (`available`, `unavailable`, `endpoint error`) per task requirements.
+
+### What worked
+
+- Focused component-level tests with mocked hooks kept validation fast and deterministic.
+- Commands that passed:
+  - `cd /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-frontend && pnpm --filter @hypercard/apps-browser test`
+  - `cd /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-frontend && pnpm exec biome check apps/apps-browser/src/api/appsApi.ts apps/apps-browser/src/components/GetInfoWindow.tsx apps/apps-browser/src/components/GetInfoWindow.test.tsx apps/apps-browser/src/domain/types.ts apps/apps-browser/src/index.ts apps/apps-browser/src/mocks/fixtures/apps.ts apps/apps-browser/src/mocks/msw/createAppsHandlers.ts apps/apps-browser/src/mocks/msw/defaultHandlers.ts`
+
+### What didn't work
+
+- Initial typecheck run surfaced one new signature mismatch introduced by the new aggregate docs fetcher:
+
+```bash
+cd /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-frontend/apps/apps-browser && pnpm exec tsc -p tsconfig.json --noEmit
+```
+
+Output excerpt:
+
+```text
+src/api/appsApi.ts(84,41): error TS2345: Argument of type 'void | OSDocsQuery' is not assignable to parameter of type 'OSDocsQuery | undefined'.
+```
+
+- I fixed this by changing `getOSDocs` arg type from `OSDocsQuery | void` to `OSDocsQuery | undefined`.
+- Same command also reported pre-existing cross-package TS project-reference build errors (`TS6305`) and pre-existing implicit-any warnings in launcher files not changed in this step.
+
+### What I learned
+
+- `GetInfoWindow` is the right minimal first UI surface for docs states because it already summarizes manifest/health/reflection metadata in one place.
+- Adding `/api/os/docs` fetcher now, even before full UI consumption, keeps frontend contracts aligned with backend and enables later explorer/search UI without API churn.
+
+### What was tricky to build
+
+- The main tricky edge was balancing “docs metadata from manifest” with “docs pages from endpoint” so the UI could represent endpoint failures without incorrectly falling back to “unavailable.”
+- I resolved this by treating manifest `docs.available=true` as capability signal and query errors as a distinct runtime state (`Docs endpoint failed`), instead of conflating them.
+
+### What warrants a second pair of eyes
+
+- Whether docs links in `GetInfoWindow` should open raw JSON endpoint pages (current behavior) or route through a dedicated docs reader window in a future frontend phase.
+- Whether `getOSDocs` should remain in apps-browser API now or move to a broader launcher docs service if reused by multiple frontend apps.
+
+### What should be done in the future
+
+- Implement Phase 9 docs/runbook updates and include frontend verification snippets.
+- Add a dedicated docs browsing/search UI that consumes `useGetOSDocsQuery` with facets and filters.
+
+### Code review instructions
+
+- Start with:
+  - `go-go-os-frontend/apps/apps-browser/src/components/GetInfoWindow.tsx`
+  - `go-go-os-frontend/apps/apps-browser/src/api/appsApi.ts`
+  - `go-go-os-frontend/apps/apps-browser/src/domain/types.ts`
+- Validate behavior and tests:
+  - `cd /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-frontend && pnpm --filter @hypercard/apps-browser test`
+
+### Technical details
+
+- Files added:
+  - `go-go-os-frontend/apps/apps-browser/src/components/GetInfoWindow.test.tsx`
+  - `go-go-os-frontend/apps/apps-browser/vitest.config.ts`
+- Main files updated:
+  - `go-go-os-frontend/apps/apps-browser/src/api/appsApi.ts`
+  - `go-go-os-frontend/apps/apps-browser/src/components/GetInfoWindow.tsx`
+  - `go-go-os-frontend/apps/apps-browser/src/domain/types.ts`
+  - `go-go-os-frontend/apps/apps-browser/src/mocks/msw/createAppsHandlers.ts`

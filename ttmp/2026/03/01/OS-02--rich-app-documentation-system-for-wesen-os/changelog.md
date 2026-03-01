@@ -144,3 +144,20 @@ Implemented OS-02 phases 6-7 in `wesen-os`: added composition-level `/api/os/doc
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/cmd/wesen-os-launcher/main_integration_test.go — Docs hints + docs endpoints + aggregate docs integration assertions
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/pkg/arcagi/module.go — ARC adapter `DocStore()` passthrough
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/pkg/gepa/module.go — GEPA adapter `DocStore()` passthrough
+
+
+## 2026-03-01
+
+Implemented OS-02 phase 8 in `go-go-os-frontend/apps/apps-browser`: added manifest docs hint/domain types, docs endpoint fetchers (`/api/apps/{id}/docs`, `/api/apps/{id}/docs/{slug}`, `/api/os/docs`), docs availability/error rendering in `GetInfoWindow`, and frontend tests for docs hint rendering and docs page link navigation.
+
+### Related Commits
+
+- `go-go-os-frontend`: `29b0870` — `apps-browser: add docs hint contract, docs fetchers, and info window docs states`
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-frontend/apps/apps-browser/src/domain/types.ts — Added docs hint and docs endpoint response/query contracts
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-frontend/apps/apps-browser/src/api/appsApi.ts — Added docs endpoint RTK query fetchers and exports
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-frontend/apps/apps-browser/src/components/GetInfoWindow.tsx — Added docs available/unavailable/error rendering and page link list
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-frontend/apps/apps-browser/src/components/GetInfoWindow.test.tsx — Added docs state and docs-link navigation tests
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-frontend/apps/apps-browser/vitest.config.ts — Added local Vitest config for apps-browser tests

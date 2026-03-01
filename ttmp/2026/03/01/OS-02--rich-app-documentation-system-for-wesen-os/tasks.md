@@ -118,13 +118,13 @@
 
 ## Phase 8: Frontend Handshake Tasks (Backend-Ready Contract Support)
 
-- [ ] Update `go-go-os-frontend/apps/apps-browser/src/domain/types.ts` for manifest `docs` hint.
-- [ ] Update `go-go-os-frontend/apps/apps-browser/src/api/appsApi.ts` for docs endpoint fetchers.
-- [ ] Add frontend rendering states:
-- [ ] docs available
-- [ ] docs unavailable
-- [ ] docs endpoint error
-- [ ] Add frontend tests for docs hint rendering and docs page navigation.
+- [x] Update `go-go-os-frontend/apps/apps-browser/src/domain/types.ts` for manifest `docs` hint.
+- [x] Update `go-go-os-frontend/apps/apps-browser/src/api/appsApi.ts` for docs endpoint fetchers.
+- [x] Add frontend rendering states:
+- [x] docs available
+- [x] docs unavailable
+- [x] docs endpoint error
+- [x] Add frontend tests for docs hint rendering and docs page navigation.
 
 ## Phase 9: Documentation And Operational Runbooks
 
