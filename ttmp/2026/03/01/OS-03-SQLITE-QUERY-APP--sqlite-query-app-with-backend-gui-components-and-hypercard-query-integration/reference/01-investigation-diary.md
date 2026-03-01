@@ -1482,3 +1482,94 @@ To prevent the same mismatch from being missed again, I updated the OS-03 backlo
 - New checklist additions:
   - Phase 7 `wesen-os` composition tests.
   - Phase 9 `wesen-os` backend composition and discoverability tasks.
+
+## Step 17: Finalize sqlite backend composition in `wesen-os` with workspace-mode validation
+
+I implemented the remaining `wesen-os` integration work that had been captured in Phase 9 and the expanded Phase 7 coverage. This step moved sqlite from being only frontend-launchable to being a fully composed backend module in launcher runtime, with discoverability and health/query routes validated in tests and smoke automation.
+
+I also aligned the active build/test path with workspace mode as requested, so launcher scripts and runbook commands no longer depend on `GOWORK=off` in current workflows.
+
+### Prompt Context
+
+**User prompt (verbatim):** "no GOWORK=off please"
+
+**Assistant interpretation:** Finish the pending sqlite composition work while ensuring commands/scripts use `go work` mode rather than forcing `GOWORK=off`.
+
+**Inferred user intent:** Keep development flow workspace-native and remove friction from per-module overrides.
+
+**Commit (code):** d430fbc — "Compose sqlite backend in wesen-os launcher and use workspace build"
+
+### What I did
+
+- Added sqlite backend adapter package and module reflection wiring:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/pkg/sqlite/module.go`
+- Registered sqlite module in launcher runtime composition:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/cmd/wesen-os-launcher/main.go`
+- Threaded sqlite runtime/policy settings through launcher flags.
+- Set default launcher required apps to `inventory,sqlite`.
+- Added `wesen-os` integration tests:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/cmd/wesen-os-launcher/main_integration_test.go`
+  - coverage for `/api/os/apps` sqlite reflection/discoverability and `/api/apps/sqlite/{health,query}`.
+- Extended launcher smoke script to assert sqlite discoverability and health/query routes:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/scripts/smoke-wesen-os-launcher.sh`
+- Removed active `GOWORK=off` usage from launcher build path:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/scripts/build-wesen-os-launcher.sh`
+- Updated current docs/runbooks for workspace-mode commands and composed sqlite verification:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/README.md`
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/pkg/doc/topics/01-wesen-os-guide.md`
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/ttmp/2026/03/01/OS-03-SQLITE-QUERY-APP--sqlite-query-app-with-backend-gui-components-and-hypercard-query-integration/reference/02-developer-runbook.md`
+- Checked off completed Phase 7 + Phase 9 tasks in ticket backlog.
+
+### Why
+
+- Backend composition was the missing layer preventing sqlite from appearing as a first-class app in launcher runtime APIs.
+- Workspace-mode commands are now the expected path in this development environment, so scripts/docs must match that behavior.
+
+### What worked
+
+- `cd /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os && go test ./...` passed.
+- `cd /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os && pnpm run launcher:smoke` passed with sqlite checks.
+- `cd /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os && pnpm test` passed (with existing non-fatal React test warnings).
+
+### What didn't work
+
+- Historical diary/changelog entries from older ticket steps still reference `GOWORK=off`; those were retained as historical records rather than rewritten.
+
+### What I learned
+
+- For split-repo launcher composition, app-level completeness is not enough; discoverability checks in `/api/os/apps` and composed smoke tests are critical completion gates.
+
+### What was tricky to build
+
+- The main risk was declaring Phase 9 done without explicit integration assertions. I addressed this by adding dedicated integration tests plus smoke checks for both discoverability and a live query roundtrip.
+
+### What warrants a second pair of eyes
+
+- Confirm the default required-app policy (`inventory,sqlite`) matches intended production rollout expectations.
+- Confirm reflection doc fields (especially API list and runbook link path) align with any upcoming schema contracts for app inventory.
+
+### What should be done in the future
+
+- Add remaining Phase 7 frontend/launcher/hypercard tests that are still unchecked in `tasks.md`.
+
+### Code review instructions
+
+- Start with launcher composition changes:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/cmd/wesen-os-launcher/main.go`
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/pkg/sqlite/module.go`
+- Review integration/smoke coverage:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/cmd/wesen-os-launcher/main_integration_test.go`
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/scripts/smoke-wesen-os-launcher.sh`
+- Validate workspace-mode build/test updates:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/scripts/build-wesen-os-launcher.sh`
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/README.md`
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/pkg/doc/topics/01-wesen-os-guide.md`
+
+### Technical details
+
+- Runtime defaults observed in this environment:
+  - `go env GOWORK` => `/home/manuel/workspaces/2026-03-01/sqlite-app/go.work`
+- Commands used for final validation:
+  - `go test ./...`
+  - `pnpm run launcher:smoke`
+  - `pnpm test`

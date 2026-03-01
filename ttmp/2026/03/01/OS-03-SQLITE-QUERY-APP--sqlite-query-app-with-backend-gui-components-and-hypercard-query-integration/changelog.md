@@ -2,6 +2,27 @@
 
 ## 2026-03-01
 
+- Completed `wesen-os` sqlite backend composition: added sqlite backend adapter module package, launcher module registration, runtime flag/config threading, and default required-app semantics (`inventory,sqlite`).
+- Added `wesen-os` integration coverage for sqlite discoverability and routing (`/api/os/apps`, `/api/apps/sqlite/health`, `/api/apps/sqlite/query`, and sqlite reflection endpoint).
+- Updated launcher smoke automation to assert sqlite backend discoverability and query route readiness in composed launcher runtime.
+- Switched launcher build/test documentation and scripts to workspace mode (`go work`) and removed active `GOWORK=off` use from current run/test paths.
+- Updated OS-03 developer runbook with explicit `wesen-os` composed startup/verification commands.
+- Checked off completed Phase 7 and Phase 9 tasks in ticket backlog.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/pkg/sqlite/module.go — New sqlite backendhost module adapter around `go-go-app-sqlite` component/runtime.
+- /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/cmd/wesen-os-launcher/main.go — sqlite module registration, launcher config flags, and required-app default semantics.
+- /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/cmd/wesen-os-launcher/main_integration_test.go — sqlite composition/discoverability/routing integration tests.
+- /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/scripts/smoke-wesen-os-launcher.sh — sqlite endpoint and discoverability smoke checks.
+- /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/scripts/build-wesen-os-launcher.sh — workspace-mode `go build` path.
+- /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/README.md — backend test command updated to workspace mode.
+- /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/pkg/doc/topics/01-wesen-os-guide.md — workspace-mode guidance updates for test/build references.
+- /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/ttmp/2026/03/01/OS-03-SQLITE-QUERY-APP--sqlite-query-app-with-backend-gui-components-and-hypercard-query-integration/reference/02-developer-runbook.md — added composed launcher sqlite verification section.
+- /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/ttmp/2026/03/01/OS-03-SQLITE-QUERY-APP--sqlite-query-app-with-backend-gui-components-and-hypercard-query-integration/tasks.md — marked completed Phase 7/9 checklist items.
+
+## 2026-03-01
+
 - Audited OS-03 scope against current `wesen-os` runtime behavior and identified a composition gap: sqlite frontend launcher registration exists, but sqlite backend module composition/discoverability in `wesen-os` was not explicitly tracked in the backlog.
 - Added missing implementation tasks for `wesen-os` backend composition, route/manifest discoverability, required-app semantics, and composition-level validation.
 - Expanded Phase 7 testing tasks to include `wesen-os` integration checks for sqlite presence in `/api/os/apps` and namespaced sqlite endpoint routing.

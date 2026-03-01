@@ -94,10 +94,33 @@ go run ./cmd/go-go-app-sqlite \
   --rate-limit-window 10s
 ```
 
+## Run via `wesen-os` launcher composition
+
+Run from `wesen-os` repository root when validating composed backend routing:
+
+```bash
+go run ./cmd/wesen-os-launcher \
+  --addr :8091 \
+  --required-apps inventory,sqlite \
+  --sqlite-db ./data/sqlite-app.db \
+  --sqlite-db-auto-create=true \
+  --sqlite-db-read-only=false
+```
+
+Verify discoverability and sqlite routes from the composed runtime:
+
+```bash
+curl -sS http://127.0.0.1:8091/api/os/apps | jq '.apps[] | select(.app_id=="sqlite")'
+curl -sS http://127.0.0.1:8091/api/apps/sqlite/health | jq
+curl -sS -X POST http://127.0.0.1:8091/api/apps/sqlite/query \
+  -H 'content-type: application/json' \
+  -d '{"sql":"SELECT 1 AS one"}' | jq
+```
+
 ## Validation commands
 
 ```bash
-GOWORK=off go test ./...
+go test ./...
 ```
 
 Targeted intent-domain TS compile (works without full frontend workspace install):
