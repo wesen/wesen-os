@@ -4,7 +4,6 @@ import (
 	"embed"
 	"io/fs"
 	"net/http"
-	"net/url"
 	"path"
 	"strings"
 )
@@ -66,12 +65,4 @@ func fileExists(distFS fs.FS, name string) bool {
 		return false
 	}
 	return !info.IsDir()
-}
-
-func cloneURL(in *url.URL) *url.URL {
-	if in == nil {
-		return &url.URL{Path: "/"}
-	}
-	copyURL := *in
-	return &copyURL
 }
