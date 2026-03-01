@@ -1017,7 +1017,7 @@ test('buildLaunchWindow returns valid payload', () => {
 
 The inventory app is the most complete implementation. Here's how it maps to each phase:
 
-**Backend (Phase 1):** `go-go-app-inventory/pkg/backendcomponent/component.go` implements a custom `Component` contract. The adapter `wesen-os/cmd/wesen-os-launcher/inventory_backend_module.go` wraps it into `AppBackendModule`. App ID is `inventory`. The webchat server provides chat/WebSocket endpoints. Hypercard SEM events are registered in `go-go-app-inventory/pkg/pinoweb/hypercard_events.go`.
+**Backend (Phase 1):** `go-go-app-inventory/pkg/backendcomponent/component.go` implements a custom `Component` contract. `go-go-app-inventory/pkg/backendmodule/module.go` wraps it into `AppBackendModule` in the inventory repository itself. App ID is `inventory`. The webchat server provides chat/WebSocket endpoints. Hypercard SEM events are registered in `go-go-app-inventory/pkg/pinoweb/hypercard_events.go`.
 
 **Frontend (Phase 2):** `go-go-app-inventory/apps/inventory/src/launcher/module.tsx` defines the launcher module. The massive `renderInventoryApp.tsx` (1000+ lines) implements all window types, contributions, chat integration, card adapters, context menus, and debug tools.
 

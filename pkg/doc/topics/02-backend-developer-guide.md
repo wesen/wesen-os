@@ -386,9 +386,9 @@ The existing loop in `RunIntoWriter` handles everything else: registry creation,
 
 ### Adapter Pattern
 
-If your module uses a different internal contract, create a thin adapter in `wesen-os/pkg/<app>/module.go`. This is how the three existing apps integrate:
+If your module uses a different internal contract, create a thin adapter package. This is how the three existing apps integrate:
 
-- **Inventory**: `wesen-os/cmd/wesen-os-launcher/inventory_backend_module.go` wraps `backendcomponent.Component` into `AppBackendModule`.
+- **Inventory**: `go-go-app-inventory/pkg/backendmodule/module.go` wraps `backendcomponent.Component` into `AppBackendModule` from within the inventory repository.
 - **ARC-AGI**: `wesen-os/pkg/arcagi/module.go` wraps the ARC module contract.
 - **GEPA**: `wesen-os/pkg/gepa/module.go` wraps the GEPA module contract.
 
@@ -577,7 +577,7 @@ func TestReflection(t *testing.T) {
 
 **App ID:** `inventory`. **Capabilities:** `chat`, `ws`, `timeline`, `profiles`, `confirm`.
 
-The inventory backend is the most full-featured module. It implements `backendcomponent.Component` (a different contract from `AppBackendModule`), which is wrapped by an adapter in `wesen-os/cmd/wesen-os-launcher/inventory_backend_module.go`. The adapter delegates manifest, routes, lifecycle, and reflection to the underlying component.
+The inventory backend is the most full-featured module. It implements `backendcomponent.Component` (a different contract from `AppBackendModule`), and is adapted in `go-go-app-inventory/pkg/backendmodule/module.go`. The adapter delegates manifest, routes, lifecycle, and reflection to the underlying component.
 
 Key patterns: webchat server integration for chat/WebSocket, tool registration for LLM-callable inventory operations, profile registry for multiple assistant personalities, SEM event mappings for hypercard timeline events (`hypercard_events.go`), runtime card composition from timeline context.
 
