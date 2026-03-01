@@ -41,7 +41,7 @@ RelatedFiles:
       Note: Verified gepa adapter reflection mapping and temporary docs ownership need
 ExternalSources: []
 Summary: 'Chronological investigation diary for OS-02 backend planning work: ticket discovery, architecture evidence gathering, design-gap analysis, and production of the backend rollout design document.'
-LastUpdated: 2026-03-01T14:05:00-05:00
+LastUpdated: 2026-03-01T14:15:00-05:00
 WhatFor: Continuation log for future contributors implementing the backend docs system and validating decisions made during planning.
 WhenToUse: Read this before continuing OS-02 backend implementation, especially for command history, discovered constraints, and known risk points.
 ---
@@ -742,3 +742,193 @@ src/api/appsApi.ts(84,41): error TS2345: Argument of type 'void | OSDocsQuery' i
   - `go-go-os-frontend/apps/apps-browser/src/components/GetInfoWindow.tsx`
   - `go-go-os-frontend/apps/apps-browser/src/domain/types.ts`
   - `go-go-os-frontend/apps/apps-browser/src/mocks/msw/createAppsHandlers.ts`
+
+## Step 10: Implement OS-02 Phase 9 Documentation And Runbook Updates
+
+I completed the documentation/runbook phase by updating the canonical backend guide and full-app tutorial to include the new OS-02 docs system contracts, endpoint patterns, smoke commands, and troubleshooting guidance. This aligns operational docs with the implementation that now exists across backendhost, inventory, ARC, GEPA, and apps-browser.
+
+The updates were intentionally practical: copy/paste curl verification for required endpoints and explicit failure-mode guidance for docs embed/frontmatter/index/setup drift issues that surfaced during rollout.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 5)
+
+**Assistant interpretation:** Continue task-by-task execution and complete the remaining Phase 9 ticket checklist with concrete developer docs and runbook content.
+
+**Inferred user intent:** Make OS-02 implementation operationally usable for new contributors without reverse-engineering endpoint contracts.
+
+**Commit (code):** pending (ticket/docs commit grouped after acceptance-gate checks)
+
+### What I did
+
+- Updated backend guide:
+  - `wesen-os/pkg/doc/topics/02-backend-developer-guide.md`
+  - added **Module Documentation System (OS-02)** section:
+    - `DocumentableAppBackendModule` contract
+    - manifest `docs` hint shape
+    - authoring/embedding pattern with frontmatter requirements
+    - endpoint contracts for module docs and `/api/os/docs`
+    - required curl smoke commands for:
+      - `/api/os/apps`
+      - `/api/apps/{id}/docs`
+      - `/api/apps/{id}/docs/{slug}`
+      - `/api/os/docs`
+  - updated troubleshooting table with OS-02 failure cases:
+    - missing embedded docs files
+    - malformed frontmatter
+    - empty docs index
+    - cross-repo dependency/setup drift
+- Updated full-app tutorial:
+  - `wesen-os/pkg/doc/tutorials/01-building-a-full-app.md`
+  - added **Phase 1.7 Add Structured Module Docs (OS-02 Pattern)** with:
+    - docs directory layout
+    - example docs frontmatter page
+    - embed + `docmw.ParseFS` + `docmw.MountRoutes` integration snippets
+    - verification curl commands including `/api/os/docs`
+  - updated complete checklist with docs-specific backend + verification tasks
+  - updated troubleshooting table with the same OS-02 failure classes
+
+### Why
+
+- Implementation-only delivery would leave onboarding gaps; OS-02 explicitly requires runbook-level guidance for interns and future contributors.
+- The docs feature spans multiple repos and optional interfaces, so concise contract documentation is needed to prevent partial/inconsistent rollouts.
+
+### What worked
+
+- Existing guide structure already had reflection, composition, and troubleshooting sections, so OS-02 docs content fit naturally without rewriting document architecture.
+- The tutorial format made it straightforward to add a dedicated integration subsection and checklist entries.
+
+### What didn't work
+
+- N/A in this step (documentation-only edits).
+
+### What I learned
+
+- Treating docs as a first-class backend contract (not just markdown assets) avoids drift between runtime behavior and onboarding docs.
+- Including both module-local and aggregated endpoint checks in one runbook substantially reduces debugging loops during integration.
+
+### What was tricky to build
+
+- The tricky part was adding docs guidance without duplicating reflection guidance or confusing the boundaries between both systems.
+- I resolved this by framing docs as complementary to reflection: reflection for structured API metadata, docs for authored guides/runbooks, and showing both contracts side-by-side.
+
+### What warrants a second pair of eyes
+
+- Ensure the new docs examples stay synchronized if endpoint payloads evolve (especially `/api/os/docs` filter/facet schema).
+- Validate whether `docmw` usage snippet in tutorial should include strict vocabulary mode for teams that enforce docs taxonomy.
+
+### What should be done in the future
+
+- Add a short frontend runbook section once `/api/os/docs` is consumed by a dedicated docs browser UI.
+- Add CI smoke checks that assert docs hint + docs endpoint presence for required modules.
+
+### Code review instructions
+
+- Review these docs first:
+  - `wesen-os/pkg/doc/topics/02-backend-developer-guide.md`
+  - `wesen-os/pkg/doc/tutorials/01-building-a-full-app.md`
+- Confirm required endpoint snippets and troubleshooting rows match current implementation in:
+  - `go-go-os-backend/pkg/backendhost/manifest_endpoint.go`
+  - `go-go-os-backend/pkg/docmw/docmw.go`
+  - `wesen-os/cmd/wesen-os-launcher/docs_endpoint.go`
+
+### Technical details
+
+- This step modified documentation only; no runtime code changes.
+
+## Step 11: Run OS-02 Acceptance Checks (Manual Smoke + docmgr doctor)
+
+I ran the remaining acceptance checks after Phases 8-9. A stale launcher process initially returned old manifest/docs behavior, so I launched a fresh process on a dedicated port and re-ran endpoint smoke tests for all three apps.
+
+Manual smoke then succeeded for inventory, arc-agi, and gepa docs endpoints plus the aggregate `/api/os/docs` endpoint. `docmgr doctor` completed with two non-blocking warnings that predate these code changes.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 5)
+
+**Assistant interpretation:** Continue through acceptance gates and record objective command evidence in the diary.
+
+**Inferred user intent:** Close OS-02 with validated runtime behavior, clear residual warnings, and explicit handoff status.
+
+**Commit (code):** pending (ticket/docs commit grouped after this step)
+
+### What I did
+
+- Ran initial smoke checks on existing `:8091` process and observed stale behavior (missing docs hints and non-JSON docs responses), indicating old runtime state.
+- Started a fresh launcher instance on `127.0.0.1:18091` with ARC enabled and ran endpoint checks:
+  - `/api/os/apps`
+  - `/api/apps/inventory/docs`
+  - `/api/apps/arc-agi/docs`
+  - `/api/apps/gepa/docs`
+  - `/api/apps/inventory/docs/overview`
+  - `/api/os/docs`
+  - `/api/os/docs?module=gepa`
+- Ran ticket hygiene check:
+  - `docmgr --root . doctor --ticket OS-02 --stale-after 30`
+- Updated ticket task checkboxes for completed manual smoke and handoff-doc state.
+
+### Why
+
+- Final acceptance requires direct runtime verification beyond unit/integration tests.
+- The stale process check prevented false confidence from querying an outdated launcher instance.
+
+### What worked
+
+- Fresh-process smoke output confirmed docs hints and docs endpoints for all three modules:
+  - `inventory	true	true`
+  - `gepa	true	true`
+  - `arc-agi	true	true`
+- Docs counts matched corpus rollout:
+  - inventory: `4`
+  - arc-agi: `4`
+  - gepa: `3`
+- Aggregate docs endpoint returned all three modules with expected totals.
+
+### What didn't work
+
+- Initial attempt to smoke against existing `:8091` process returned stale/non-doc-aware behavior.
+- First fresh-start attempt with ARC enabled failed because ARC submodules were not initialized:
+
+```text
+start module "arc-agi": dagger runtime exited before tunnel url was discovered ... no such file or directory
+```
+
+- Resolved by running:
+
+```bash
+cd /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-arc-agi-3
+git submodule update --init --recursive
+```
+
+### What I learned
+
+- Manual smoke should always use a fresh launcher process on a dedicated port to avoid stale binary/process confusion.
+- ARC runtime availability depends on local submodule state, which can silently break smoke validation if not initialized.
+
+### What was tricky to build
+
+- The tricky part was distinguishing “feature broken” from “wrong process/runtime being tested.” The symptoms (docs hints missing, docs endpoint parse errors) looked like regressions but were caused by querying an older running process.
+- I resolved this by switching to an isolated launcher process + explicit readiness loop before assertions.
+
+### What warrants a second pair of eyes
+
+- Whether OS-02 should include a scripted smoke target that always starts/stops a clean launcher instance for deterministic validation.
+- Whether ARC submodule/bootstrap checks should be added to startup docs as a mandatory preflight for ARC-enabled smoke runs.
+
+### What should be done in the future
+
+- Decide whether to treat current `docmgr doctor` warnings as acceptable baseline or normalize ticket/day index naming conventions so the doctor gate can be marked fully complete.
+
+### Code review instructions
+
+- Re-run smoke commands from Step 11 against a fresh launcher process and compare module/docs counts.
+- Re-run:
+  - `docmgr --root . doctor --ticket OS-02 --stale-after 30`
+  - confirm warnings match the two known structural findings.
+
+### Technical details
+
+- Manual smoke output summary:
+  - manifest docs+reflection availability: inventory/gepa/arc-agi all `true`
+  - docs TOC counts: inventory `4`, arc-agi `4`, gepa `3`
+  - aggregate docs total: `11`, modules: `arc-agi`, `gepa`, `inventory`

@@ -128,18 +128,18 @@
 
 ## Phase 9: Documentation And Operational Runbooks
 
-- [ ] Update backend developer guide with docs contract details and examples.
-- [ ] Update full-app tutorial with docs endpoint integration pattern.
-- [ ] Add curl smoke snippets for:
-- [ ] `/api/os/apps`
-- [ ] `/api/apps/{id}/docs`
-- [ ] `/api/apps/{id}/docs/{slug}`
-- [ ] `/api/os/docs`
-- [ ] Add troubleshooting section for common failures:
-- [ ] missing embedded docs files
-- [ ] malformed frontmatter
-- [ ] empty docs index
-- [ ] cross-repo dependency/setup drift
+- [x] Update backend developer guide with docs contract details and examples.
+- [x] Update full-app tutorial with docs endpoint integration pattern.
+- [x] Add curl smoke snippets for:
+- [x] `/api/os/apps`
+- [x] `/api/apps/{id}/docs`
+- [x] `/api/apps/{id}/docs/{slug}`
+- [x] `/api/os/docs`
+- [x] Add troubleshooting section for common failures:
+- [x] missing embedded docs files
+- [x] malformed frontmatter
+- [x] empty docs index
+- [x] cross-repo dependency/setup drift
 
 ## Final Acceptance Gates
 
@@ -149,6 +149,6 @@
 - [x] `go-go-app-arc-agi-3`
 - [x] `go-go-gepa`
 - [x] `wesen-os`
-- [ ] Manual smoke confirms docs endpoints for all three apps.
+- [x] Manual smoke confirms docs endpoints for all three apps.
 - [ ] `docmgr doctor --ticket OS-02` passes.
-- [ ] Ticket diary/changelog/index reflect final implementation state and handoff notes.
+- [x] Ticket diary/changelog/index reflect final implementation state and handoff notes.

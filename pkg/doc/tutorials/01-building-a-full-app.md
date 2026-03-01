@@ -409,6 +409,91 @@ curl -sS http://127.0.0.1:8091/api/apps/task-runner/tasks | jq .
 curl -sS http://127.0.0.1:8091/api/os/apps/task-runner/reflection | jq .
 ```
 
+### 1.7 Add Structured Module Docs (OS-02 Pattern)
+
+Create docs pages in your backend module package:
+
+```
+pkg/backendmodule/
+  docs/
+    overview.md
+    api-reference.md
+    troubleshooting.md
+```
+
+Example doc page:
+
+```markdown
+---
+Title: Task Runner Overview
+DocType: overview
+Slug: overview
+Topics:
+  - task-runner
+  - backend
+Summary: Architecture and lifecycle for the task-runner module.
+Order: 10
+---
+
+# Task Runner Overview
+```
+
+Embed, parse, and expose docs from the module:
+
+```go
+// pkg/backendmodule/docs_store.go
+package backendmodule
+
+import (
+    "embed"
+
+    "github.com/go-go-golems/go-go-os-backend/pkg/docmw"
+)
+
+//go:embed docs/*.md
+var docsFS embed.FS
+
+func loadDocsStore() (*docmw.DocStore, error) {
+    return docmw.ParseFS("task-runner", docsFS, docmw.ParseOptions{})
+}
+```
+
+```go
+// pkg/backendmodule/module.go (excerpt)
+var _ backendhost.DocumentableAppBackendModule = (*Module)(nil)
+
+func (m *Module) MountRoutes(mux *http.ServeMux) error {
+    // existing task routes...
+    if m.docsStore != nil {
+        if err := docmw.MountRoutes(mux, m.docsStore); err != nil {
+            return err
+        }
+    }
+    return nil
+}
+
+func (m *Module) DocStore() *docmw.DocStore {
+    return m.docsStore
+}
+```
+
+Verify docs discovery and docs routes:
+
+```bash
+# docs hint appears in manifest
+curl -sS http://127.0.0.1:8091/api/os/apps \
+  | jq '.apps[] | select(.app_id=="task-runner") | {app_id, docs}'
+
+# module docs toc
+curl -sS http://127.0.0.1:8091/api/apps/task-runner/docs | jq .
+
+# module docs page
+curl -sS http://127.0.0.1:8091/api/apps/task-runner/docs/overview | jq .
+
+# cross-module docs aggregation
+curl -sS "http://127.0.0.1:8091/api/os/docs?module=task-runner" | jq .
+```
+
 At this point you have a working backend module. The frontend shows no icon yet — that comes in Phase 2.
 
 ## Phase 2: Frontend Launcher Module
@@ -984,6 +1069,9 @@ test('buildLaunchWindow returns valid payload', () => {
 - [ ] Routes registered without namespace prefix.
 - [ ] Lifecycle methods implemented with meaningful health checks.
 - [ ] Reflection document created.
+- [ ] Structured docs pages added with valid frontmatter (`Title`, `DocType`).
+- [ ] `DocumentableAppBackendModule` implemented (`DocStore()` exposed).
+- [ ] `/docs` and `/docs/{slug}` routes mounted via `docmw.MountRoutes`.
 - [ ] Backend tests pass (manifest, routes, health, namespace mount).
 
 ### Frontend
@@ -1002,6 +1090,9 @@ test('buildLaunchWindow returns valid payload', () => {
 ### Verification
 - [ ] `GET /api/os/apps` includes `task-runner` with `healthy: true`.
 - [ ] `GET /api/os/apps/task-runner/reflection` returns metadata.
+- [ ] `GET /api/apps/task-runner/docs` returns docs TOC.
+- [ ] `GET /api/apps/task-runner/docs/overview` returns docs content.
+- [ ] `GET /api/os/docs?module=task-runner` returns aggregated docs results.
 - [ ] Desktop icon visible at position defined by `desktop.order`.
 - [ ] Clicking icon opens window that loads data from backend.
 - [ ] Integration tests pass.
@@ -1052,6 +1143,10 @@ The ARC app demonstrates a different architectural approach with bridge middlewa
 | Binary serves old UI without new app | Build pipeline stages skipped | Run `npm run launcher:binary:build` (full chain) |
 | Module not in `/api/os/apps` | Module not added to `modules` slice | Add before `NewModuleRegistry` call in `main.go` |
 | `go build` fails with module not found | Missing `replace` directive | Add to `wesen-os/go.mod` |
+| `/api/apps/<id>/docs` is 404 | Docs routes not mounted or module not documentable | Implement `DocStore()`, call `docmw.MountRoutes`, and verify module registration |
+| Module startup fails when docs added | Malformed frontmatter in embedded markdown | Fix required fields (`Title`, `DocType`) and validate docs files locally |
+| Docs endpoint is empty unexpectedly | Embedded docs files not included in build | Verify `//go:embed docs/*.md` and file path/layout |
+| Docs behavior differs across local repos | Cross-repo dependency/setup drift (`go.work` + `replace` mismatch) | Align sibling checkouts and ensure `go.work`/`go.mod` replacement map is current |
 
 ## See Also
 

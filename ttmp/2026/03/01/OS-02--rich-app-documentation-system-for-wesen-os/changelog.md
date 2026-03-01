@@ -161,3 +161,23 @@ Implemented OS-02 phase 8 in `go-go-os-frontend/apps/apps-browser`: added manife
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-frontend/apps/apps-browser/src/components/GetInfoWindow.tsx — Added docs available/unavailable/error rendering and page link list
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-frontend/apps/apps-browser/src/components/GetInfoWindow.test.tsx — Added docs state and docs-link navigation tests
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-frontend/apps/apps-browser/vitest.config.ts — Added local Vitest config for apps-browser tests
+
+
+## 2026-03-01
+
+Implemented OS-02 phase 9 documentation/runbook updates in `wesen-os`: expanded backend developer guide with the module docs contract and endpoint examples, updated full-app tutorial with the OS-02 docs integration pattern, added copy/paste curl smoke commands for all required endpoints, and added troubleshooting guidance for embed/frontmatter/empty-index/dependency-drift failures.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/pkg/doc/topics/02-backend-developer-guide.md — Added docs contract, endpoint reference, smoke commands, and troubleshooting rows
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/pkg/doc/tutorials/01-building-a-full-app.md — Added Phase 1 docs integration section, docs verification checklist, and troubleshooting updates
+
+
+## 2026-03-01
+
+Ran OS-02 acceptance checks: manual endpoint smoke succeeded for inventory + arc-agi + gepa docs endpoints and aggregate docs endpoint against a fresh launcher run on `127.0.0.1:18091`; `docmgr doctor` still reports two non-blocking ticket-structure warnings (`multiple_index`, `missing_numeric_prefix`).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/ttmp/2026/03/01/OS-02--rich-app-documentation-system-for-wesen-os/tasks.md — Checked off manual smoke and final diary/changelog handoff gate
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/ttmp/2026/03/01/OS-02--rich-app-documentation-system-for-wesen-os/reference/01-investigation-diary-backend-documentation-system.md — Added acceptance check command/output evidence
