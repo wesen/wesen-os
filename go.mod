@@ -69,7 +69,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-go-golems/go-go-goja v0.4.0 // indirect
-	github.com/go-go-golems/go-go-os-backend v0.0.0-00010101000000-000000000000
+	github.com/go-go-golems/go-go-os-backend v0.0.1
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/errors v0.22.0 // indirect
