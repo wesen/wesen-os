@@ -12,7 +12,9 @@
     "launcher:frontend:build": "npm run build -w apps/os-launcher",
     "launcher:ui:sync": "bash ./scripts/launcher-ui-sync.sh",
     "launcher:binary:build": "npm run launcher:frontend:build && npm run launcher:ui:sync && bash ./scripts/build-wesen-os-launcher.sh",
-    "launcher:smoke": "bash ./scripts/smoke-wesen-os-launcher.sh"
+    "launcher:smoke": "bash ./scripts/smoke-wesen-os-launcher.sh",
+    "workspace:setup": "bash ./scripts/setup-workspace.sh",
+    "workspace:test": "bash ./scripts/test-workspace.sh"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.15",

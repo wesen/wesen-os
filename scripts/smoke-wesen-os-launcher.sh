@@ -84,6 +84,7 @@ HOME="${HOME_DIR}" XDG_CONFIG_HOME="${XDG_CONFIG_DIR}" "${BIN_PATH}" wesen-os-la
   --addr "127.0.0.1:${PORT}" \
   --profile default \
   --profile-registries "${PROFILE_REGISTRY_FILE}" \
+  --arc-enabled=false \
   --inventory-db "${WORK_DIR}/inventory.db" \
   --timeline-dsn "file:${WORK_DIR}/timeline.db?_foreign_keys=on" \
   --turns-dsn "file:${WORK_DIR}/turns.db?_foreign_keys=on" \

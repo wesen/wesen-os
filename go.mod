@@ -8,7 +8,7 @@ replace github.com/go-go-golems/go-go-app-arc-agi => ../go-go-app-arc-agi-3
 
 require (
 	github.com/go-go-golems/clay v0.4.0
-	github.com/go-go-golems/geppetto v0.10.2
+	github.com/go-go-golems/geppetto v0.10.3
 	github.com/go-go-golems/glazed v1.0.4
 	github.com/go-go-golems/go-go-app-arc-agi v0.0.0-00010101000000-000000000000
 	github.com/go-go-golems/go-go-app-inventory v0.0.0-00010101000000-000000000000
@@ -153,7 +153,7 @@ require (
 	golang.org/x/term v0.40.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	google.golang.org/api v0.266.0 // indirect
+	google.golang.org/api v0.268.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260128011058-8636f8732409 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20 // indirect
