@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	arcbackend "github.com/go-go-golems/go-go-app-arc-agi/pkg/backendmodule"
-	"github.com/go-go-golems/go-go-os/pkg/backendhost"
+	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
 )
 
 const AppID = arcbackend.AppID

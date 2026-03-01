@@ -31,7 +31,7 @@ import (
 
 	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorytools"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/pinoweb"
-	"github.com/go-go-golems/go-go-os/pkg/backendhost"
+	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
 	arcagibackend "github.com/go-go-golems/wesen-os/pkg/arcagi"
 	gepabackend "github.com/go-go-golems/wesen-os/pkg/gepa"
 	"github.com/go-go-golems/wesen-os/pkg/launcherui"

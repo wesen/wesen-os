@@ -3,6 +3,7 @@ module github.com/go-go-golems/wesen-os
 go 1.25.7
 
 replace github.com/go-go-golems/go-go-app-inventory => ../go-go-app-inventory
+
 replace github.com/go-go-golems/go-go-app-arc-agi => ../go-go-app-arc-agi-3
 
 require (
@@ -12,7 +13,6 @@ require (
 	github.com/go-go-golems/go-go-app-arc-agi v0.0.0-00010101000000-000000000000
 	github.com/go-go-golems/go-go-app-inventory v0.0.0-00010101000000-000000000000
 	github.com/go-go-golems/go-go-gepa v0.0.0-20260223022920-190ca45ac964
-	github.com/go-go-golems/go-go-os v0.0.0-00010101000000-000000000000
 	github.com/go-go-golems/pinocchio v0.10.1
 	github.com/go-go-golems/plz-confirm v0.0.4
 	github.com/google/uuid v1.6.0
@@ -69,6 +69,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-go-golems/go-go-goja v0.4.0 // indirect
+	github.com/go-go-golems/go-go-os-backend v0.0.0-00010101000000-000000000000
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/errors v0.22.0 // indirect
@@ -164,4 +165,4 @@ require (
 
 replace github.com/go-go-golems/go-go-gepa => ../go-go-gepa
 
-replace github.com/go-go-golems/go-go-os => ../go-go-os/go-go-os
+replace github.com/go-go-golems/go-go-os-backend => ../go-go-os-backend

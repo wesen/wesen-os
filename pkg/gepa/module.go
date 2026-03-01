@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	gepacore "github.com/go-go-golems/go-go-gepa/pkg/backendmodule"
-	"github.com/go-go-golems/go-go-os/pkg/backendhost"
+	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
 )
 
 const AppID = gepacore.AppID
