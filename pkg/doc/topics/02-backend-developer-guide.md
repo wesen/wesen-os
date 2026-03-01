@@ -16,9 +16,64 @@ ShowPerDefault: true
 SectionType: GeneralTopic
 ---
 
-This guide covers everything a Go developer needs to build, test, and integrate a backend app module into the wesen-os launcher. It starts with getting started basics and builds to the full contract reference, with concrete examples drawn from the inventory, GEPA, and ARC-AGI modules.
+This guide covers everything a Go developer needs to build, test, and integrate a backend app module into the wesen-os launcher. It starts with the conceptual foundations — what modules are and why the system is designed around them — then moves through the contract reference with concrete examples drawn from the inventory, GEPA, and ARC-AGI modules.
 
-For frontend module development, see `frontend-developer-guide`. For building a complete app with both backend and frontend, see `building-a-full-app`. For workspace setup and operations, see `wesen-os-guide`.
+For frontend module development, see `frontend-developer-guide`. For building a complete app with both backend and frontend, see `building-a-full-app`. For workspace setup and operations, see `wesen-os-guide`. For the HyperCard card system that frontend modules use to create interactive UI, see `hypercard-environment-guide`.
+
+## What Modules Are and Why They Exist
+
+A backend module is a self-contained unit of application functionality that plugs into the wesen-os composition runtime. Think of it as a small, focused web service that doesn't need to worry about running its own HTTP server, managing its own process lifecycle, or exposing its own health checks to the outside world. The composition runtime handles all of that — the module focuses entirely on its domain logic.
+
+This design comes from a practical observation: most backend services share the same operational boilerplate. They need to start up in an orderly fashion, respond to health checks, expose HTTP endpoints under a well-known path, and shut down gracefully. Rather than reimplementing these concerns in every service, wesen-os extracts them into a contract. The `AppBackendModule` interface is that contract — six methods that cover identity, routing, and lifecycle.
+
+The module abstraction provides three key benefits:
+
+- **Isolation without overhead.** Each module owns its own HTTP routes, state, and resources. Modules cannot accidentally interfere with each other's routes because the namespace prefix is enforced by the runtime, not by convention. Yet all modules run in a single process, sharing a single port and a single binary — no container orchestration, no service mesh, no inter-process communication overhead.
+
+- **Discoverability.** Every module is automatically discoverable through the manifest endpoint (`GET /api/os/apps`). Modules that implement reflection expose machine-readable API documentation. The frontend shell uses these endpoints to know what backend capabilities exist, and debug tools use them to show the system's current state. When you add a module, the entire system immediately knows about it.
+
+- **Testability at every level.** The `AppBackendModule` interface is deliberately simple: no framework dependencies, no dependency injection container, no runtime magic. You can test a module's routes by creating an `http.ServeMux`, calling `MountRoutes`, and making `httptest` requests. You can test the namespaced mounting by calling `MountNamespacedRoutes`. You can test the lifecycle by calling `Init`, `Start`, `Health`, and `Stop` in sequence. Every layer is independently testable.
+
+### How a Module Fits into the Bigger Picture
+
+The following diagram shows how a backend module relates to the rest of the system. The module itself is the rightmost box — everything to its left is infrastructure provided by the composition runtime.
+
+```
+  Browser / Frontend
+       |
+       |  GET /api/apps/my-app/items
+       v
+  +-- HTTP Server (net/http) ---------------------------------+
+  |                                                            |
+  |  Main Mux                                                  |
+  |    |                                                       |
+  |    +-- /api/os/apps ---------> Module Registry             |
+  |    |                            (manifest, health, reflect)|
+  |    |                                                       |
+  |    +-- /api/apps/my-app/ ----> StripPrefix                 |
+  |    |                            |                          |
+  |    |                            v                          |
+  |    |                      Child Mux                        |
+  |    |                        |                              |
+  |    |                        +-- GET /items --> handleList   |
+  |    |                        +-- POST /items -> handleCreate|
+  |    |                        +-- GET /health -> handleHealth|
+  |    |                                                       |
+  |    +-- (fallback) ----------> SPA Handler                  |
+  +------------------------------------------------------------+
+```
+
+Your module code lives in the "Child Mux" section. The runtime creates the HTTP server, the main mux, the namespace prefix, and the SPA fallback. Your module just registers handlers on the child mux and implements the lifecycle methods.
+
+### How Backend Modules Connect to the Frontend
+
+Backend modules do not directly know about the frontend. There is no import, no shared type system, no RPC framework connecting the two. Instead, the connection is mediated through two mechanisms:
+
+**HTTP APIs.** The frontend calls the backend's routes through `resolveApiBase(appId)`, which produces URLs like `/api/apps/inventory/items`. The contract between frontend and backend is the HTTP API — request methods, URL paths, JSON request/response shapes. The reflection endpoint makes this contract discoverable.
+
+**Timeline events and HyperCard cards.** For modules that support chat and interactive cards, the backend emits Structured Event Mapping (SEM) events through a WebSocket connection. These events flow through the timeline pipeline into the frontend's Redux store. Some events carry HyperCard card definitions that are injected into the QuickJS sandbox for rendering. This pipeline is covered in detail in the `hypercard-environment-guide`.
+
+The app ID is the bridge between these worlds. When the frontend calls `resolveApiBase('inventory')`, it gets `/api/apps/inventory`. When the backend registers routes on a mux with app ID `inventory`, those routes end up at `/api/apps/inventory/...`. The string must match exactly.
 
 ## Getting Started
 
@@ -171,17 +226,35 @@ type AppBackendManifest struct {
 
 ### Lifecycle: Init, Start, Stop, Health
 
-The lifecycle manager calls these methods in a specific order with defined rollback behavior.
+The lifecycle manager orchestrates an orderly startup and shutdown sequence across all registered modules. Understanding this sequence matters because it determines when your module can safely use resources, when it must be ready to serve, and what happens when something goes wrong.
 
-**Init(ctx)** — Allocate resources: open database connections, load configuration files, validate prerequisites, parse embedded assets. Return an error to abort startup. Called once before `Start`. If `Init` fails, `Stop` is called on all previously started modules in reverse order.
+The sequence proceeds in registration order for startup and reverse order for shutdown:
 
-**Start(ctx)** — Begin serving: start background workers, connect to external services, begin processing queues. Called after `Init` succeeds. The module is added to the started list for rollback. If `Start` fails, the same reverse-order `Stop` rollback happens.
+```
+  Startup:                              Shutdown (or rollback):
 
-**Stop(ctx)** — Graceful shutdown: close database connections, stop background workers, flush buffers, release resources. Called in reverse registration order during normal shutdown or startup rollback. Should be idempotent — calling `Stop` on a module that was never started should not panic.
+  Module A: Init -> Start               Module C: Stop
+  Module B: Init -> Start               Module B: Stop
+  Module C: Init -> Start               Module A: Stop
+       |                                     ^
+       v                                     |
+  Health check (required modules only)  (reverse order)
+       |
+       v
+  Mount routes, begin serving
+```
 
-**Health(ctx)** — Return nil if the module is ready to serve requests. Return an error with a diagnostic message if something is wrong. Called after all modules are started, but only checked for required modules.
+If any `Init` or `Start` call fails, the lifecycle manager rolls back by calling `Stop` on all previously started modules in reverse order. This ensures that resources are released even when startup fails partway through.
 
-**Make health checks meaningful.** A health check that always returns nil hides deployment errors that surface only after user traffic arrives. Good health checks verify:
+**Init(ctx)** — Allocate resources: open database connections, load configuration files, validate prerequisites, parse embedded assets. Return an error to abort startup. Called once before `Start`. This is where you establish the preconditions your module needs — if the database doesn't exist or the config is invalid, fail here with a clear error message rather than letting the module start in a broken state.
+
+**Start(ctx)** — Begin serving: start background workers, connect to external services, begin processing queues. Called after `Init` succeeds. The module is added to the started list for rollback. After `Start` returns successfully, the module is expected to be able to handle requests. If `Start` fails, the same reverse-order `Stop` rollback happens.
+
+**Stop(ctx)** — Graceful shutdown: close database connections, stop background workers, flush buffers, release resources. Called in reverse registration order during normal shutdown or startup rollback. Should be idempotent — calling `Stop` on a module that was never started should not panic. This is important because during rollback, `Stop` may be called on a module whose `Init` succeeded but whose `Start` was never called.
+
+**Health(ctx)** — Return nil if the module is ready to serve requests. Return an error with a diagnostic message if something is wrong. Called after all modules are started, but only checked for required modules. Health is also reported in the manifest endpoint (`GET /api/os/apps`), so a failing health check is visible to both the startup sequence and anyone inspecting the running system.
+
+**Make health checks meaningful.** A health check that always returns nil hides deployment errors that surface only after user traffic arrives. Good health checks verify the actual readiness of the module's dependencies:
 
 ```go
 func (m *Module) Health(ctx context.Context) error {
@@ -366,7 +439,9 @@ type serverSettings struct {
 
 ## Namespaced Route Model
 
-All app routes are mounted under `/api/apps/<app-id>/` using `MountNamespacedRoutes` from `go-go-os-backend/pkg/backendhost/routes.go`.
+All app routes are mounted under `/api/apps/<app-id>/` using `MountNamespacedRoutes` from `go-go-os-backend/pkg/backendhost/routes.go`. This namespace isolation is one of the central design decisions in wesen-os — it ensures that modules cannot accidentally shadow each other's routes, and it gives the frontend a predictable URL pattern for resolving API endpoints.
+
+The namespace also enables the manifest and reflection endpoints to work. Because the runtime knows every module's app ID and prefix, it can construct the manifest endpoint that lists all modules and the reflection URLs that point to each module's API documentation. Without namespacing, the runtime would have no way to distinguish one module's routes from another's.
 
 ### How MountNamespacedRoutes Works
 
@@ -545,4 +620,5 @@ The ARC module demonstrates config normalization (setting defaults for driver, r
 
 - `wesen-os-guide` — Workspace setup, build pipeline, configuration reference
 - `frontend-developer-guide` — Building the frontend side of your app
+- `hypercard-environment-guide` — The HyperCard runtime, UI DSL, and sandboxed card system
 - `building-a-full-app` — Complete backend+frontend integration walkthrough

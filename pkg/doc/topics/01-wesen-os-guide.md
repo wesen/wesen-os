@@ -18,11 +18,55 @@ SectionType: GeneralTopic
 
 This is the operations guide for the wesen-os launcher: the composition runtime that assembles backend app modules (inventory, GEPA, ARC-AGI) and a frontend shell into a single Go binary with embedded SPA assets. It covers everything from first-day workspace setup through binary packaging and troubleshooting.
 
-For building new backend modules, see `backend-developer-guide`. For building new frontend app modules, see `frontend-developer-guide`. For building a complete app with both sides, see `building-a-full-app`.
+For building new backend modules, see `backend-developer-guide`. For building new frontend app modules, see `frontend-developer-guide`. For building a complete app with both sides, see `building-a-full-app`. For the HyperCard runtime and card system, see `hypercard-environment-guide`.
+
+## Design Philosophy
+
+Most application platforms make you choose: either you get a monolith that is easy to deploy but hard to extend, or you get a microservices architecture that is flexible but complex to operate. wesen-os takes a different path. It is a composition runtime — a single binary that assembles independently-developed modules into a cohesive system at build time, while preserving the development-time independence of separate repositories.
+
+The key insight is that many applications share the same operational needs: lifecycle management, health checking, route namespacing, API discovery, and frontend embedding. Rather than reimplementing these concerns in every application, wesen-os provides them as infrastructure. Each application module focuses on its domain logic — inventory management, optimization, puzzle solving — and the composition runtime handles everything else.
+
+This design has several consequences worth understanding:
+
+- **Modules are the unit of extension.** Adding a new capability to the system means writing a new module, not modifying existing code. The module contract (`AppBackendModule` on the backend, `LaunchableAppModule` on the frontend) defines the boundary between your code and the platform. Everything inside the module is yours; everything outside is managed by the runtime.
+
+- **The app ID is the primary key of the system.** A single lowercase string — like `inventory` or `gepa` — ties together a backend module, a frontend module, URL paths, API resolution, window routing, and capability policies. This string must be identical everywhere it appears. It is the one thing you choose once and never change.
+
+- **The system is inspectable at runtime.** Every registered module appears in the manifest endpoint (`GET /api/os/apps`). Modules that implement reflection expose machine-readable API documentation. The frontend shell provides debug tools for inspecting windows, Redux state, timeline events, and HyperCard sessions. This observability is not an afterthought — it is a core design principle.
+
+- **A single binary simplifies deployment.** The Go binary embeds the frontend SPA, so deploying wesen-os means copying one file. There is no web server to configure, no asset directory to synchronize, no reverse proxy to set up. The tradeoff is a more complex build pipeline, which this guide covers in detail.
 
 ## Architecture Overview
 
 The wesen-os launcher is a single Go binary that hosts multiple backend app modules behind namespaced HTTP routes and serves an embedded React SPA as the frontend shell. Six repositories compose into this runtime, each owning a distinct boundary.
+
+The following diagram shows how a user request flows through the system. When a user opens the launcher in a browser and clicks an app icon, two parallel paths activate: the frontend renders the app's window using React, and the window's components make API calls to the backend through namespaced routes.
+
+```
+  Browser
+    |
+    |  GET /  (initial page load)
+    v
++------------------------------------------------------------------+
+|  wesen-os-launcher binary                                         |
+|                                                                   |
+|  +-- SPA Handler (fallback) -----> embedded React app (index.html)|
+|  |                                                                |
+|  +-- /api/os/apps ---------------> Module Registry                |
+|  |                                  (manifest + health + reflect) |
+|  |                                                                |
+|  +-- /api/apps/inventory/... ----> Inventory Module               |
+|  |                                  (chat, ws, timeline, tools)   |
+|  |                                                                |
+|  +-- /api/apps/gepa/... --------> GEPA Module                    |
+|  |                                  (scripts, runs, schemas)      |
+|  |                                                                |
+|  +-- /api/apps/arc-agi/... -----> ARC-AGI Module                  |
+|                                    (games, sessions, actions)     |
++------------------------------------------------------------------+
+```
+
+Every HTTP request hits one of these routing layers. API requests are dispatched to the appropriate module based on the URL prefix. All other requests fall through to the SPA handler, which serves the embedded frontend. The frontend, in turn, makes API calls back to the same binary — creating a self-contained system where a single process serves both the UI and the data.
 
 ### Repository Topology
 
@@ -56,6 +100,47 @@ The composition entrypoint is `wesen-os/cmd/wesen-os-launcher/main.go`. When the
 13. **Register legacy 404 handlers** — explicit 404s for pre-namespace paths.
 14. **Serve SPA** — embedded frontend as fallback handler for all other routes.
 15. **Optionally mount under root prefix** — `--root` flag wraps everything under a URL prefix.
+
+### How Modules Connect: Backend to Frontend to HyperCard
+
+Understanding the full path from a user clicking an icon to data appearing in a window is essential for debugging and for designing new modules. The following diagram traces this path:
+
+```
+  User clicks "Inventory" icon
+        |
+        v
+  LaunchableAppModule.buildLaunchWindow()
+        |  returns OpenWindowPayload
+        v
+  Windowing system opens window
+        |
+        v
+  LaunchableAppModule.renderWindow()
+        |  returns React component
+        v
+  React component calls fetch(resolveApiBase('inventory') + '/items')
+        |  resolves to /api/apps/inventory/items
+        v
+  Backend routes request to InventoryModule.handleListItems()
+        |  queries SQLite, returns JSON
+        v
+  React component receives JSON, updates UI
+        |
+        v
+  (Optional) Component opens HyperCard card window
+        |  card renders in QuickJS sandbox
+        |  card handler calls dispatchDomainAction('inventory', 'updateQty', {...})
+        |  intent routes to Redux store
+        |  Redux action type: 'inventory/updateQty'
+        |  inventory reducer updates state
+        |  React re-renders with new data
+        v
+  User sees updated inventory
+```
+
+This path crosses three boundaries: the frontend module contract (TypeScript), the HTTP API (JSON over HTTP), and the backend module contract (Go). The app ID string `inventory` is the thread that connects all three — it determines the URL prefix, the API base resolution, the window routing, and the domain intent namespace.
+
+For modules that use the HyperCard card system, there is an additional layer: card code runs in a QuickJS sandbox and communicates through structured intents rather than direct API calls. The `hypercard-environment-guide` covers this layer in detail.
 
 ### Three Critical Invariants
 
@@ -396,6 +481,68 @@ These existed before the namespaced route model. The explicit 404s make it obvio
 
 WebSocket URLs follow the namespace convention. The frontend resolves them via `resolveWsBase(appId)` → `/api/apps/<appId>/ws`. Each connection is scoped to one conversation and managed by the webchat server's per-conversation reader lifecycle, governed by `--idle-timeout-seconds`, `--evict-idle-seconds`, and `--evict-interval-seconds`.
 
+## Inspecting the Running System
+
+One of wesen-os's design principles is runtime observability. A running launcher exposes multiple inspection points that help you understand what modules are loaded, whether they are healthy, what APIs they expose, and what is happening inside the frontend shell.
+
+### The Module Manifest Endpoint
+
+The manifest endpoint at `GET /api/os/apps` is the single source of truth about what modules are registered and their current state. Every module that was added to the composition list and successfully passed through the lifecycle appears here.
+
+```bash
+curl -sS http://127.0.0.1:8091/api/os/apps | jq .
+```
+
+This returns a JSON document listing every module with its app ID, name, capabilities, health status, and whether reflection is available. When something goes wrong — a module doesn't appear, health is false, or reflection is missing — this endpoint is the first place to check.
+
+The manifest endpoint is also what the frontend shell uses during initialization. When the launcher SPA loads, it fetches this endpoint to discover what apps are available and what capabilities they support. The frontend's app registry uses this information to match backend capabilities with frontend modules.
+
+### Reflection: Machine-Readable API Documentation
+
+Modules that implement `ReflectiveAppBackendModule` expose detailed API documentation at `GET /api/os/apps/<app-id>/reflection`. This is not just for humans reading documentation — it is structured data that tools and other modules can consume programmatically.
+
+```bash
+curl -sS http://127.0.0.1:8091/api/os/apps/gepa/reflection | jq .
+```
+
+The reflection document includes:
+
+- **API inventory.** Every HTTP endpoint the module exposes, with method, path, and description.
+- **Capability annotations.** Each capability tagged with a stability level (`stable`, `beta`, `experimental`).
+- **Schema references.** JSON Schema identifiers for request and response bodies.
+- **Version information.** The module's declared API version.
+
+Reflection is particularly valuable during development: when building a frontend component that calls a backend API, you can inspect the reflection endpoint to discover available routes, understand request/response shapes, and verify that the module is exposing the APIs you expect.
+
+### Frontend Debug Tools
+
+The launcher shell includes several debug windows accessible through the inventory module's contributions (or through programmatic launch). These tools provide visibility into the frontend runtime:
+
+- **Apps Browser** — Lists all registered frontend modules with their manifests, state keys, and contribution counts. Shows which modules are active and how they are configured.
+- **Redux State Inspector** — Shows the current Redux store state tree, including engine core state (windowing, notifications), shared domain state, and per-module private state.
+- **Timeline Debugger** — Displays the timeline event stream as events flow from the backend through WebSocket to the frontend. Useful for diagnosing SEM event mapping issues and artifact projection.
+- **Runtime Card Debug** — Shows all registered runtime cards (both static and dynamically injected), their source code, and injection status per session.
+- **Redux Perf** — Shows Redux action dispatch timing, helping diagnose performance issues in domain intent handling.
+
+These tools are not separate applications — they are windows within the launcher shell, built using the same module and contribution system that regular apps use.
+
+### Health Checking from the Command Line
+
+For quick health verification without opening a browser:
+
+```bash
+# Check all modules
+curl -sS http://127.0.0.1:8091/api/os/apps | jq '.apps[] | {app_id, healthy}'
+
+# Check a specific module's routes
+curl -sS http://127.0.0.1:8091/api/apps/inventory/health
+
+# Check reflection availability
+curl -sS http://127.0.0.1:8091/api/os/apps | jq '.apps[] | select(.reflection.available) | .app_id'
+```
+
+These commands are useful in scripts, CI pipelines, and smoke tests. The `npm run launcher:smoke` script uses similar checks to verify the binary before deployment.
+
 ## Troubleshooting
 
 ### Backend Startup Failures
@@ -492,4 +639,5 @@ WebSocket URLs follow the namespace convention. The frontend resolves them via `
 
 - `backend-developer-guide` — Building backend app modules
 - `frontend-developer-guide` — Building frontend app modules
+- `hypercard-environment-guide` — The HyperCard runtime, UI DSL, and sandboxed card system
 - `building-a-full-app` — End-to-end guide for a complete app

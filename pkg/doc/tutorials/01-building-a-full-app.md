@@ -18,7 +18,43 @@ SectionType: Tutorial
 
 This tutorial walks through building a complete wesen-os app from scratch — backend Go module, frontend TypeScript launcher module, optional HyperCard VM cards, and full packaging integration. It follows the same patterns used by the inventory and ARC-AGI apps, using a concrete example app called "task-runner" throughout.
 
-For backend-only development, see `backend-developer-guide`. For frontend-only development, see `frontend-developer-guide`. For launcher operations, see `wesen-os-guide`.
+The tutorial is organized into seven phases that mirror the actual development workflow. Phases 1-3 produce a working app with backend and frontend. Phases 4-5 add optional HyperCard card support for interactive UI. Phases 6-7 cover packaging and testing. You can stop after Phase 3 and have a complete, deployable application.
+
+For backend-only development, see `backend-developer-guide`. For frontend-only development, see `frontend-developer-guide`. For launcher operations, see `wesen-os-guide`. For the HyperCard runtime and card system, see `hypercard-environment-guide`.
+
+## How the Pieces Fit Together
+
+Before diving into code, it helps to see the complete picture. A wesen-os app has two halves — a backend module (Go) and a frontend module (TypeScript) — connected by HTTP APIs and identified by a shared app ID string.
+
+```
+  +------------------+          HTTP           +------------------+
+  |  Frontend Module |  <------------------->  |  Backend Module  |
+  |  (TypeScript)    |    /api/apps/<id>/...   |  (Go)            |
+  |                  |                          |                  |
+  |  manifest.id     |  === must match ===     |  Manifest().AppID|
+  |  = "task-runner" |                          |  = "task-runner" |
+  |                  |                          |                  |
+  |  renderWindow()  |                          |  MountRoutes()   |
+  |  buildLaunchWin  |                          |  Init/Start/Stop |
+  |  contributions   |                          |  Health/Reflect  |
+  +------------------+                          +------------------+
+         |                                              |
+         |  registered in                               |  registered in
+         v                                              v
+  modules.tsx                                    main.go
+  store.ts                                       go.mod (replace)
+  vite.config.ts                                 go.work (use)
+```
+
+The composition root — `wesen-os/` — ties both halves together. On the Go side, it imports the backend module, adds it to the module registry, and wires configuration flags. On the TypeScript side, it imports the frontend module through Vite aliases, registers it in the launcher module list, and optionally adds shared reducers to the store.
+
+The seven phases of this tutorial map to this structure:
+
+- **Phase 1** creates the right half (backend module)
+- **Phase 2** creates the left half (frontend module)
+- **Phase 3** connects them through the composition root
+- **Phase 4-5** optionally add HyperCard cards (which run in a sandbox between the two halves)
+- **Phase 6-7** package everything into a single binary and test it
 
 ## What You'll Build
 

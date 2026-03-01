@@ -14,9 +14,64 @@ ShowPerDefault: true
 SectionType: GeneralTopic
 ---
 
-This guide covers everything a TypeScript/React developer needs to build, test, and integrate a frontend app module into the wesen-os launcher shell. It starts with getting started basics and builds to the full contract reference, with concrete examples drawn from the inventory, ARC-AGI, todo, and CRM modules.
+This guide covers everything a TypeScript/React developer needs to build, test, and integrate a frontend app module into the wesen-os launcher shell. It begins with the conceptual foundations — what frontend modules are, how they relate to backend modules, and why the launcher shell is designed around the module contract — then moves through the full contract reference with concrete examples drawn from the inventory, ARC-AGI, todo, and CRM modules.
 
-For backend module development, see `backend-developer-guide`. For building a complete app with both backend and frontend, see `building-a-full-app`. For workspace setup and operations, see `wesen-os-guide`.
+For backend module development, see `backend-developer-guide`. For building a complete app with both backend and frontend, see `building-a-full-app`. For workspace setup and operations, see `wesen-os-guide`. For the HyperCard runtime and card system, see `hypercard-environment-guide`.
+
+## What Frontend Modules Are and How They Fit
+
+A frontend module is a TypeScript object that teaches the launcher shell how to present and interact with one application. It answers four questions: What does the app look like on the desktop? What happens when the user opens it? What goes inside its windows? And what additional behaviors does it contribute to the shell?
+
+This design mirrors the backend module system, but for the UI layer. Where a backend module registers HTTP routes on a namespaced mux, a frontend module registers windows, icons, command handlers, and state slices in the launcher shell. Both are identified by the same app ID, and both are discovered at registration time.
+
+The relationship between frontend and backend modules is mediated by HTTP. A frontend module does not import its backend counterpart — it calls APIs through `resolveApiBase(appId)`, which produces URLs like `/api/apps/inventory/items`. This separation means frontend and backend can evolve independently, and the same backend can be consumed by different frontend implementations (a desktop shell, a mobile client, a CLI tool).
+
+The following diagram shows how a frontend module connects to the rest of the system when the user clicks an app icon:
+
+```
+  User clicks icon                LaunchableAppModule
+       |                                |
+       v                                |
+  Shell dispatches               buildLaunchWindow()
+  'icon.open.<id>' command  --------->  |
+       |                                | returns OpenWindowPayload
+       v                                v
+  Windowing system              renderWindow()
+  creates window  <-----------  |
+       |                        | returns React component tree
+       v                        v
+  Window renders           React component calls
+  in desktop shell         fetch(resolveApiBase('my-app') + '/items')
+       |                        |
+       |                        v
+       |                   Backend module responds with JSON
+       |                        |
+       v                        v
+  User sees data in window,  Component updates UI
+  interacts with it
+       |
+       | (Optional: opens HyperCard card window)
+       v
+  Card renders in QuickJS sandbox
+  Card handler dispatches domain intent
+  Intent routes to Redux store
+  Reducer updates domain state
+  Card re-renders with new state
+```
+
+This flow crosses several boundaries — the shell's command dispatch, the windowing system, React rendering, HTTP to the backend, and optionally the HyperCard sandbox — but the module contract keeps each boundary clean and testable.
+
+### The Three Layers of Frontend State
+
+Understanding where data lives is essential for designing frontend modules. There are three distinct layers:
+
+- **Engine core state** is managed by the launcher shell itself: which windows are open, their positions and sizes, the notification queue, the navigation stack for HyperCard sessions. Modules read this state but rarely write to it directly.
+
+- **Shared domain state** holds business data that multiple modules or the chat runtime may need: inventory items, sales totals, contact lists, task queues. This state lives in the launcher's Redux store under keys registered in `store.ts`. Any module can read it; the owning module is responsible for populating it.
+
+- **Module-private state** holds data specific to one module's concerns: how many times the app has been launched, which chat profile is selected, UI preferences. This state lives under the module's `app_<name>` key and only that module's components should read it.
+
+This layering prevents modules from stepping on each other while still allowing them to share data when needed. The `createLauncherStore` function enforces key uniqueness across all three layers, catching collisions at store creation time rather than at runtime.
 
 ## Getting Started
 
@@ -808,4 +863,5 @@ Simpler modules using the HyperCard engine DSL. These use `createDSLApp` from `@
 
 - `wesen-os-guide` — Workspace setup and build pipeline
 - `backend-developer-guide` — Building the backend side of your app
+- `hypercard-environment-guide` — The HyperCard runtime, UI DSL, and sandboxed card system
 - `building-a-full-app` — Complete backend+frontend integration walkthrough
