@@ -109,3 +109,38 @@ Implemented OS-02 phase 4 in `go-go-app-arc-agi-3`: added ARC docs corpus, embed
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-arc-agi-3/pkg/backendmodule/module.go — Docs mounting and `DocStore()` exposure
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-arc-agi-3/pkg/backendmodule/reflection.go — Docs endpoint links in reflection payload
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-arc-agi-3/pkg/backendmodule/module_test.go — Docs route and reflection/docs consistency coverage
+
+
+## 2026-03-01
+
+Implemented OS-02 phase 5 in `go-go-gepa`: added GEPA docs corpus, embedded docs loader, docs route mounting, `DocStore()` exposure, and docs/reflection test coverage in GEPA backendmodule.
+
+### Related Commits
+
+- `go-go-gepa`: `ce3eec9` — `gepa: add module docs corpus, routes, and docstore`
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-gepa/pkg/backendmodule/docs/overview.md — GEPA module overview
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-gepa/pkg/backendmodule/docs/scripts-and-runs.md — Script/run lifecycle guide
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-gepa/pkg/backendmodule/docs/api-reference.md — GEPA route reference
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-gepa/pkg/backendmodule/docs_store.go — Embedded docs store loader
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-gepa/pkg/backendmodule/module.go — Docs route mounting and `DocStore()` exposure
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-gepa/pkg/backendmodule/module_test.go — Docs route and reflection docs coverage
+
+
+## 2026-03-01
+
+Implemented OS-02 phases 6-7 in `wesen-os`: added composition-level `/api/os/docs` aggregation endpoint with filters/facets, wired docs endpoint registration into launcher startup/tests, and forwarded `DocStore()` through ARC/GEPA adapters so manifest docs hints surface for all three apps.
+
+### Related Commits
+
+- `wesen-os`: `aa38c92` — `launcher: add module docs aggregation and docs hints`
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/cmd/wesen-os-launcher/docs_endpoint.go — Aggregated docs endpoint with filtering + facets
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/cmd/wesen-os-launcher/main.go — Registers `/api/os/docs`
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/cmd/wesen-os-launcher/main_integration_test.go — Docs hints + docs endpoints + aggregate docs integration assertions
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/pkg/arcagi/module.go — ARC adapter `DocStore()` passthrough
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/pkg/gepa/module.go — GEPA adapter `DocStore()` passthrough

@@ -41,7 +41,7 @@ RelatedFiles:
       Note: Verified gepa adapter reflection mapping and temporary docs ownership need
 ExternalSources: []
 Summary: 'Chronological investigation diary for OS-02 backend planning work: ticket discovery, architecture evidence gathering, design-gap analysis, and production of the backend rollout design document.'
-LastUpdated: 2026-03-01T14:48:00-05:00
+LastUpdated: 2026-03-01T15:12:00-05:00
 WhatFor: Continuation log for future contributors implementing the backend docs system and validating decisions made during planning.
 WhenToUse: Read this before continuing OS-02 backend implementation, especially for command history, discovered constraints, and known risk points.
 ---
@@ -528,3 +528,100 @@ go test ./pkg/backendmodule -count=1
 go test ./... -count=1
 git commit -m "arc-agi: add module docs corpus, routes, and docstore"
 ```
+
+## Step 7: Implement OS-02 Phase 5 In go-go-gepa
+
+I completed GEPA module docs rollout in the `go-go-gepa` repository, matching the same module-owned docs contract used for inventory and ARC.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Work on it task by task, committing after each "big enough" group of changes to avoid too many commits, keep a frequent diary. Check tasks off as you go."
+
+**Assistant interpretation:** Continue sequence with GEPA as the next phase and keep commits phase-sized.
+
+**Commit (code):** `ce3eec9` — `gepa: add module docs corpus, routes, and docstore`
+
+### What I did
+
+- Added GEPA docs corpus in `pkg/backendmodule/docs/`:
+  - `overview.md`
+  - `scripts-and-runs.md`
+  - `api-reference.md`
+- Added embedded docs loader:
+  - `pkg/backendmodule/docs_store.go`
+- Updated GEPA module:
+  - loads docs store at module construction
+  - exposes docs parse errors during `Init`
+  - mounts docs routes (`/docs`, `/docs/{slug}`)
+  - exposes `DocStore()` method for backendhost documentable interface
+  - adds `docs` capability in manifest
+- Updated reflection payload:
+  - adds docs overview URL + repo README link
+  - adds docs API entries (`docs-list`, `docs-get`)
+- Extended backendmodule tests:
+  - docs store presence/count
+  - docs endpoint behavior
+
+### Validation
+
+- `go test ./pkg/backendmodule -count=1`
+- `go test ./... -count=1`
+- pre-commit hooks in `go-go-gepa` also ran full test/lint successfully before commit.
+
+### Technical details
+
+```bash
+cd /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-gepa
+gofmt -w pkg/backendmodule/module.go pkg/backendmodule/docs_store.go pkg/backendmodule/module_test.go
+go test ./pkg/backendmodule -count=1
+go test ./... -count=1
+git commit -m "gepa: add module docs corpus, routes, and docstore"
+```
+
+## Step 8: Implement OS-02 Phases 6-7 In wesen-os Composition
+
+I added composition-level docs aggregation and wired docs hints end-to-end through module adapters so discovery works consistently across inventory, ARC, and GEPA.
+
+### Commit (code): `aa38c92` — `launcher: add module docs aggregation and docs hints`
+
+### What I did
+
+- Added new launcher endpoint:
+  - `GET /api/os/docs`
+  - aggregates docs from all `DocumentableAppBackendModule` instances
+  - supports filters:
+    - `query`
+    - `module`
+    - `doc_type`
+    - `topics`
+  - returns facets for topics, doc types, and modules
+- Registered endpoint in launcher startup:
+  - `registerOSDocsEndpoint(appMux, moduleRegistry)`
+- Updated ARC and GEPA adapters:
+  - forward `DocStore()` from app modules
+  - keep adapters thin, only mapping/forwarding behavior
+- Extended integration tests:
+  - `/api/os/apps` docs hint assertions for inventory, arc-agi, and gepa
+  - `/api/apps/{id}/docs` endpoint checks for all three apps
+  - `/api/os/docs` aggregate and filter behavior checks
+  - existing reflection/chat/timeline/profile/confirm test suite remains green
+
+### Validation
+
+- `go test ./pkg/arcagi ./pkg/gepa ./cmd/wesen-os-launcher -count=1`
+- `go test ./... -count=1`
+
+### Technical details
+
+```bash
+cd /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os
+gofmt -w pkg/arcagi/module.go pkg/gepa/module.go cmd/wesen-os-launcher/docs_endpoint.go cmd/wesen-os-launcher/main.go cmd/wesen-os-launcher/main_integration_test.go
+go test ./pkg/arcagi ./pkg/gepa ./cmd/wesen-os-launcher -count=1
+go test ./... -count=1
+git commit -m "launcher: add module docs aggregation and docs hints"
+```
+
+### Next remaining work
+
+- Phase 8 frontend handshake tasks (`go-go-os-frontend/apps/apps-browser`).
+- Phase 9 docs/runbook updates for backend developer docs and tutorial sections.

@@ -75,46 +75,46 @@
 
 ## Phase 5: GEPA Docs Rollout (`go-go-gepa`)
 
-- [ ] Add GEPA docs source directory (`pkg/backendmodule/docs/`).
-- [ ] Author initial GEPA docs pages:
-- [ ] `overview.md`
-- [ ] `scripts-and-runs.md`
-- [ ] `api-reference.md`
-- [ ] Load docs store in GEPA module startup/init.
-- [ ] Mount GEPA docs routes (`/docs`, `/docs/{slug}`).
-- [ ] Expose `DocStore()` from GEPA module.
-- [ ] Keep `wesen-os/pkg/gepa/module.go` adapter thin (mapping only).
-- [ ] Add GEPA tests for docs routes and store exposure.
+- [x] Add GEPA docs source directory (`pkg/backendmodule/docs/`).
+- [x] Author initial GEPA docs pages:
+- [x] `overview.md`
+- [x] `scripts-and-runs.md`
+- [x] `api-reference.md`
+- [x] Load docs store in GEPA module startup/init.
+- [x] Mount GEPA docs routes (`/docs`, `/docs/{slug}`).
+- [x] Expose `DocStore()` from GEPA module.
+- [x] Keep `wesen-os/pkg/gepa/module.go` adapter thin (mapping only).
+- [x] Add GEPA tests for docs routes and store exposure.
 
 ## Phase 6: Composition Aggregation Endpoint (`wesen-os`)
 
-- [ ] Add composition docs endpoint implementation:
-- [ ] Create `cmd/wesen-os-launcher/docs_endpoint.go`.
-- [ ] Register `GET /api/os/docs` in launcher mux wiring.
-- [ ] Aggregate docs across documentable modules.
-- [ ] Add query filters:
-- [ ] `query`
-- [ ] `topics`
-- [ ] `doc_type`
-- [ ] `module`
-- [ ] Return facets:
-- [ ] topics
-- [ ] doc_types
-- [ ] modules
+- [x] Add composition docs endpoint implementation:
+- [x] Create `cmd/wesen-os-launcher/docs_endpoint.go`.
+- [x] Register `GET /api/os/docs` in launcher mux wiring.
+- [x] Aggregate docs across documentable modules.
+- [x] Add query filters:
+- [x] `query`
+- [x] `topics`
+- [x] `doc_type`
+- [x] `module`
+- [x] Return facets:
+- [x] topics
+- [x] doc_types
+- [x] modules
 - [ ] Optionally include launcher help docs corpus (if available in-memory at startup).
-- [ ] Add tests in `cmd/wesen-os-launcher/docs_endpoint_test.go`.
+- [x] Add `/api/os/docs` behavior tests (implemented in launcher integration tests).
 
 ## Phase 7: Integration And Regression Testing (`wesen-os`)
 
-- [ ] Extend `main_integration_test.go`:
-- [ ] `/api/os/apps` contains docs hints for inventory/arc-agi/gepa
-- [ ] `/api/apps/inventory/docs` returns TOC
-- [ ] `/api/apps/arc-agi/docs` returns TOC
-- [ ] `/api/apps/gepa/docs` returns TOC
-- [ ] `/api/os/docs` returns aggregated results
-- [ ] `/api/os/docs` filters by module/topic/doc_type/query
-- [ ] Ensure existing reflection endpoints still pass
-- [ ] Ensure inventory chat/ws/timeline/profile/confirm routes still pass
+- [x] Extend `main_integration_test.go`:
+- [x] `/api/os/apps` contains docs hints for inventory/arc-agi/gepa
+- [x] `/api/apps/inventory/docs` returns TOC
+- [x] `/api/apps/arc-agi/docs` returns TOC
+- [x] `/api/apps/gepa/docs` returns TOC
+- [x] `/api/os/docs` returns aggregated results
+- [x] `/api/os/docs` filters by module/topic/doc_type/query
+- [x] Ensure existing reflection endpoints still pass
+- [x] Ensure inventory chat/ws/timeline/profile/confirm routes still pass
 
 ## Phase 8: Frontend Handshake Tasks (Backend-Ready Contract Support)
 
@@ -143,12 +143,12 @@
 
 ## Final Acceptance Gates
 
-- [ ] `go test ./...` passes in:
-- [ ] `go-go-os-backend`
-- [ ] `go-go-app-inventory`
-- [ ] `go-go-app-arc-agi-3`
-- [ ] `go-go-gepa`
-- [ ] `wesen-os`
+- [x] `go test ./...` passes in:
+- [x] `go-go-os-backend`
+- [x] `go-go-app-inventory`
+- [x] `go-go-app-arc-agi-3`
+- [x] `go-go-gepa`
+- [x] `wesen-os`
 - [ ] Manual smoke confirms docs endpoints for all three apps.
 - [ ] `docmgr doctor --ticket OS-02` passes.
 - [ ] Ticket diary/changelog/index reflect final implementation state and handoff notes.
