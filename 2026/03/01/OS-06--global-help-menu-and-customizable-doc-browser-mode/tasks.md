@@ -60,7 +60,7 @@
 
 ## Acceptance Criteria
 
-- [ ] A top-level Help menu exists with both required entries.
-- [ ] One shared doc browser component is used in both flows.
-- [ ] General help browsing works without requiring a fake `wesen-os` app in `/api/os/apps`.
-- [ ] Existing apps documentation browsing remains functional.
+- [x] A top-level Help menu exists with both required entries.
+- [x] One shared doc browser component is used in both flows.
+- [x] General help browsing works without requiring a fake `wesen-os` app in `/api/os/apps`.
+- [x] Existing apps documentation browsing remains functional.
