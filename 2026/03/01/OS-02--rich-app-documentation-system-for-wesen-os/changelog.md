@@ -203,3 +203,15 @@ Added a dedicated Glazed help topic for OS-02 backend documentation system usage
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/pkg/doc/topics/05-backend-documentation-system.md — New top-level docs system guide with contracts, authoring flow, validation commands, and troubleshooting
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/pkg/doc/topics/01-wesen-os-guide.md — Added cross-reference to `backend-documentation-system`
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/pkg/doc/topics/02-backend-developer-guide.md — Added cross-reference to `backend-documentation-system`
+
+## 2026-03-01
+
+Closed remaining OS-02 backend gaps by adding launcher help runtime docs endpoints (/api/os/help, /api/os/help/{slug}), merging launcher help corpus into /api/os/docs aggregation, and validating ticket health with docmgr doctor.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/2026/03/01/OS-02--rich-app-documentation-system-for-wesen-os/tasks.md — Checked off launcher help inclusion and doctor gate
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/cmd/wesen-os-launcher/docs_endpoint.go — Launcher help corpus conversion
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/cmd/wesen-os-launcher/main.go — Startup registration wiring for launcher help docs store
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/cmd/wesen-os-launcher/main_integration_test.go — Integration tests for launcher help endpoint and /api/os/docs module filter coverage
+

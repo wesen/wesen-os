@@ -213,3 +213,83 @@ Test commands:
 go test ./cmd/wesen-os-launcher -count=1
 go test ./... -count=1
 ```
+
+## Step 3: Close OS-02 Checklist And Validate Doctor Gate
+
+After landing the backend implementation, I updated the original OS-02 ticket
+to close the two remaining checklist items and ran ticket doctor against the
+correct docs root (`docmgr --root .`). The doctor report is now clean for
+OS-02, so closure can be recorded without exception notes.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Continue through completion, including ticket bookkeeping and validation evidence.
+
+**Inferred user intent:** Ensure the work is not only coded but also fully reflected in ticket state and acceptance gates.
+
+### What I did
+
+- Marked OS-02 task items complete:
+  - launcher help corpus inclusion in aggregate docs,
+  - `docmgr doctor` acceptance gate.
+- Appended OS-02 changelog entry describing launcher help endpoint + aggregate
+  inclusion implementation.
+- Ran `docmgr --root . doctor --ticket OS-02 --stale-after 30`.
+
+### Why
+
+- OS-02 had explicit open tasks; closing them with concrete evidence avoids
+  ambiguous ticket state.
+
+### What worked
+
+- Doctor output returned `All checks passed` for OS-02.
+- Task and changelog updates now align with implemented code behavior.
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- Earlier warnings were tied to command context/root differences; running doctor
+  with `--root .` against OS ticket layout is required for accurate status.
+
+### What was tricky to build
+
+- Avoiding accidental inclusion of unrelated dirty-worktree files while updating
+  ticket docs required explicit path-scoped staging and commits.
+
+### What warrants a second pair of eyes
+
+- Quick review that OS-02 closure wording matches final intended scope and
+  does not over-claim frontend work.
+
+### What should be done in the future
+
+- Mirror this closure pattern in future OS follow-up tickets: code commit first,
+  then explicit source-ticket acceptance gate updates.
+
+### Code review instructions
+
+- Review OS-02 `tasks.md` checkbox deltas.
+- Review OS-02 changelog entry for closure evidence.
+- Confirm doctor command output in this diary step.
+
+### Technical details
+
+```bash
+docmgr --root . doctor --ticket OS-02 --stale-after 30
+```
+
+Output:
+
+```text
+## Doctor Report (1 findings)
+
+### OS-02
+
+- ✅ All checks passed
+```

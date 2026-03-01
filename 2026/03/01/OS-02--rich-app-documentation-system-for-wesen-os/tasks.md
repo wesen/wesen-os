@@ -101,7 +101,7 @@
 - [x] topics
 - [x] doc_types
 - [x] modules
-- [ ] Optionally include launcher help docs corpus (if available in-memory at startup).
+- [x] Optionally include launcher help docs corpus (if available in-memory at startup).
 - [x] Add `/api/os/docs` behavior tests (implemented in launcher integration tests).
 
 ## Phase 7: Integration And Regression Testing (`wesen-os`)
@@ -150,6 +150,5 @@
 - [x] `go-go-gepa`
 - [x] `wesen-os`
 - [x] Manual smoke confirms docs endpoints for all three apps.
-- [ ] `docmgr doctor --ticket OS-02` passes.
-  - Current doctor warnings are structural (`multiple_index`, `missing_numeric_prefix`) and pre-existing for this date/ticket layout.
+- [x] `docmgr doctor --ticket OS-02` passes.
 - [x] Ticket diary/changelog/index reflect final implementation state and handoff notes.

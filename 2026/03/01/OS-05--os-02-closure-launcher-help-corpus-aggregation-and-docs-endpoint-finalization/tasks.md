@@ -27,12 +27,12 @@
 
 ## Phase 4: OS-02 Closure Bookkeeping
 
-- [ ] Update OS-02 tasks/changelog to reflect launcher help aggregation completion.
-- [ ] Re-run `docmgr --root . doctor --ticket OS-02 --stale-after 30` and capture remaining warnings (if any).
-- [ ] Document closure evidence and residual follow-ups (if none, explicitly state none).
+- [x] Update OS-02 tasks/changelog to reflect launcher help aggregation completion.
+- [x] Re-run `docmgr --root . doctor --ticket OS-02 --stale-after 30` and capture remaining warnings (if any).
+- [x] Document closure evidence and residual follow-ups (if none, explicitly state none).
 
 ## Phase 5: Commit Hygiene
 
 - [x] Commit ticket scaffolding + implementation plan/docs.
-- [ ] Commit backend endpoint implementation + tests.
-- [ ] Commit OS-02 closure/task/changelog/docmgr updates.
+- [x] Commit backend endpoint implementation + tests.
+- [x] Commit OS-02 closure/task/changelog/docmgr updates.
