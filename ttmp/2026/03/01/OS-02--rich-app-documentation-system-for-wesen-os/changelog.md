@@ -52,3 +52,21 @@ Expanded OS-02 task plan into a detailed multi-phase implementation checklist (c
 
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/ttmp/2026/03/01/OS-02--rich-app-documentation-system-for-wesen-os/tasks.md — Detailed phase-by-phase execution checklist with file-level deliverables
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/ttmp/2026/03/01/OS-02--rich-app-documentation-system-for-wesen-os/index.md — Updated inventory ownership path and timestamp
+
+
+## 2026-03-01
+
+Implemented OS-02 phases 1-2 in `go-go-os-backend`: added new `pkg/docmw` docs parser/store/routes package, added optional documentable module contract in backendhost, and surfaced docs hints in `/api/os/apps` manifest output with tests.
+
+### Related Commits
+
+- `go-go-os-backend`: `f36685c` — `backendhost: add module docs store, routes, and manifest hints`
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-backend/pkg/docmw/docmw.go — Parser, in-memory store, and module-local docs handlers
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-backend/pkg/docmw/vocabulary.go — Vocabulary loading and strict validation helpers
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-backend/pkg/docmw/docmw_test.go — Parser/store/routes unit coverage
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-backend/pkg/backendhost/module.go — `DocumentableAppBackendModule` optional host interface
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-backend/pkg/backendhost/manifest_endpoint.go — Manifest `docs` hint output
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-backend/pkg/backendhost/backendhost_test.go — Manifest docs hint test coverage

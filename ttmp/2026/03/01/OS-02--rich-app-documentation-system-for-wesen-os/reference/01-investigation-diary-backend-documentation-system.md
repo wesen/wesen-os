@@ -41,7 +41,7 @@ RelatedFiles:
       Note: Verified gepa adapter reflection mapping and temporary docs ownership need
 ExternalSources: []
 Summary: 'Chronological investigation diary for OS-02 backend planning work: ticket discovery, architecture evidence gathering, design-gap analysis, and production of the backend rollout design document.'
-LastUpdated: 2026-03-01T13:50:00-05:00
+LastUpdated: 2026-03-01T14:20:00-05:00
 WhatFor: Continuation log for future contributors implementing the backend docs system and validating decisions made during planning.
 WhenToUse: Read this before continuing OS-02 backend implementation, especially for command history, discovered constraints, and known risk points.
 ---
@@ -323,4 +323,80 @@ ls -la /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-gepa
 cat /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go.work
 rg -n "go-go-gepa|adapter fallback|upstream gap" \
   /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/ttmp/2026/03/01/OS-02--rich-app-documentation-system-for-wesen-os/design-doc/03-backend-documentation-system-rollout-plan-inventory-arc-agi-gepa.md -S
+```
+
+## Step 4: Implement OS-02 Phases 1-2 In go-go-os-backend
+
+I started execution work from the detailed checklist and completed the first two implementation phases in `go-go-os-backend`: the new docs middleware package and the backendhost manifest contract extension.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Work on it task by task, committing after each "big enough" group of changes to avoid too many commits, keep a frequent diary. Check tasks off as you go."
+
+**Assistant interpretation:** Implement the ticket in phased groups, commit per substantial chunk, and keep ticket tasks/diary synchronized.
+
+**Inferred user intent:** Execute real code now with traceable progress and minimal commit noise.
+
+**Commit (code):** `f36685c` — `backendhost: add module docs store, routes, and manifest hints`
+
+### What I did
+
+- Added new package `go-go-os-backend/pkg/docmw`:
+  - `docmw.go`
+    - frontmatter markdown parser (`ParseFS`)
+    - in-memory `DocStore` with deterministic sorting and slug index
+    - module-local docs handlers via `MountRoutes`:
+      - `GET /docs`
+      - `GET /docs/{slug}`
+  - `vocabulary.go`
+    - YAML vocabulary loader (`LoadVocabularyFS`)
+    - strict validation (`ValidateDoc`)
+  - `vocabulary.yaml`
+    - initial baseline topics + doc types
+  - `docmw_test.go`
+    - parser success/failure
+    - duplicate slug rejection
+    - docs route behavior
+    - strict vocabulary failure path
+- Extended backendhost contracts:
+  - `module.go`:
+    - added optional `DocumentableAppBackendModule` with `DocStore() *docmw.DocStore`
+  - `manifest_endpoint.go`:
+    - added `docs` manifest hint model with `available/url/count/version`
+    - populates docs hint for modules implementing `DocumentableAppBackendModule`
+    - keeps reflection behavior unchanged
+  - `backendhost_test.go`:
+    - fake module exposes doc store
+    - asserts docs hint appears for documentable module and remains absent otherwise
+
+### Why
+
+- These phases unlock the core backend contract that all module rollouts depend on.
+- Implementing parser/routes and host hint together avoids partial contract drift.
+
+### What worked
+
+- Focused tests passed on first run after implementation:
+  - `go test ./pkg/docmw ./pkg/backendhost -count=1`
+  - `go test ./... -count=1`
+- Existing reflection route behavior stayed intact while adding docs hint support.
+
+### What should be done next
+
+- Start Phase 3 in `go-go-app-inventory`:
+  - add docs corpus
+  - load docs store in module init path
+  - mount `/docs` routes
+  - expose `DocStore()` from inventory module
+
+### Technical details
+
+- Commands used:
+
+```bash
+cd /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-backend
+gofmt -w pkg/docmw/docmw.go pkg/docmw/vocabulary.go pkg/docmw/docmw_test.go pkg/backendhost/module.go pkg/backendhost/manifest_endpoint.go pkg/backendhost/backendhost_test.go
+go test ./pkg/docmw ./pkg/backendhost -count=1
+go test ./... -count=1
+git commit -m "backendhost: add module docs store, routes, and manifest hints"
 ```
