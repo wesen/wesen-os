@@ -17,6 +17,8 @@ Your workspace should contain these directories side-by-side:
 <workspace>/
   go-go-os-frontend/
   go-go-app-inventory/
+  go-go-app-arc-agi-3/
+  go-go-os-backend/
   wesen-os/
 ```
 
@@ -27,6 +29,14 @@ npm install
 npm run build
 npm run test
 ```
+
+## Startup Playbook
+
+Use [`docs/startup-playbook.md`](docs/startup-playbook.md) for:
+- split-repo workspace prerequisites
+- tmux-based backend/frontend startup
+- in-place restarts with `Ctrl-C` in existing panes
+- health checks and common troubleshooting
 
 ## Launcher Assembly Commands
 
@@ -41,10 +51,13 @@ npm run launcher:smoke            # runtime smoke checks
 
 ```bash
 npm run launcher:binary:build
-./build/wesen-os-launcher wesen-os-launcher --addr 127.0.0.1:8091
+./build/wesen-os-launcher wesen-os-launcher --arc-enabled=false --addr 127.0.0.1:8091
 ```
 
 Then open `http://127.0.0.1:8091/`.
+
+For local split-repo development (frontend + backend in tmux), follow:
+- [`docs/startup-playbook.md`](docs/startup-playbook.md)
 
 ## Backend Tests
 
