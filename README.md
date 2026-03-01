@@ -62,7 +62,7 @@ For local split-repo development (frontend + backend in tmux), follow:
 ## Backend Tests
 
 ```bash
-GOWORK=off go test ./...
+go test ./...
 ```
 
 ## Ownership Boundary

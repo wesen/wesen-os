@@ -34,6 +34,7 @@ import (
 	arcagibackend "github.com/go-go-golems/wesen-os/pkg/arcagi"
 	gepabackend "github.com/go-go-golems/wesen-os/pkg/gepa"
 	"github.com/go-go-golems/wesen-os/pkg/launcherui"
+	sqlitebackend "github.com/go-go-golems/wesen-os/pkg/sqlite"
 )
 
 //go:embed static
@@ -53,6 +54,20 @@ type serverSettings struct {
 	InventoryDB          string `glazed:"inventory-db"`
 	InventorySeedOnStart bool   `glazed:"inventory-seed-on-start"`
 	InventoryResetOnBoot bool   `glazed:"inventory-reset-on-start"`
+	SQLiteDB             string `glazed:"sqlite-db"`
+	SQLiteReadOnly       bool   `glazed:"sqlite-db-read-only"`
+	SQLiteAutoCreate     bool   `glazed:"sqlite-db-auto-create"`
+	SQLiteRowLimit       int    `glazed:"sqlite-default-row-limit"`
+	SQLiteTimeoutSeconds int    `glazed:"sqlite-statement-timeout-seconds"`
+	SQLiteBusyTimeoutMS  int    `glazed:"sqlite-busy-timeout-ms"`
+	SQLiteMultiStatement bool   `glazed:"sqlite-enable-multi-statement"`
+	SQLiteAllowlist      string `glazed:"sqlite-statement-allowlist"`
+	SQLiteDenylist       string `glazed:"sqlite-statement-denylist"`
+	SQLiteRedactColumns  string `glazed:"sqlite-redact-columns"`
+	SQLiteRateLimit      int    `glazed:"sqlite-rate-limit-requests"`
+	SQLiteRateWindowSec  int    `glazed:"sqlite-rate-limit-window-seconds"`
+	SQLiteMaxPayload     int    `glazed:"sqlite-max-payload-bytes"`
+	SQLiteAuditEvents    bool   `glazed:"sqlite-audit-log-events"`
 	ARCEnabled           bool   `glazed:"arc-enabled"`
 	ARCDriver            string `glazed:"arc-driver"`
 	ARCRuntimeMode       string `glazed:"arc-runtime-mode"`
@@ -73,6 +88,8 @@ func NewCommand() (*Command, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "create geppetto sections")
 	}
+	sqliteDefaults := sqlitebackend.DefaultModuleConfig()
+	sqliteRuntimeDefaults := sqliteDefaults.RuntimeConfig
 
 	desc := cmds.NewCommandDescription(
 		"wesen-os-launcher",
@@ -80,7 +97,7 @@ func NewCommand() (*Command, error) {
 		cmds.WithFlags(
 			fields.New("addr", fields.TypeString, fields.WithDefault(":8091"), fields.WithHelp("HTTP listen address")),
 			fields.New("root", fields.TypeString, fields.WithDefault("/"), fields.WithHelp("Serve handlers under a URL root (for example /api/apps/inventory)")),
-			fields.New("required-apps", fields.TypeString, fields.WithDefault("inventory"), fields.WithHelp("Comma-separated backend app IDs required at startup")),
+			fields.New("required-apps", fields.TypeString, fields.WithDefault("inventory,sqlite"), fields.WithHelp("Comma-separated backend app IDs required at startup")),
 			fields.New("legacy-aliases", fields.TypeString, fields.WithDefault(""), fields.WithHelp("Comma-separated legacy route aliases (startup fails if forbidden aliases are configured)")),
 			fields.New("gepa-scripts-root", fields.TypeString, fields.WithDefault(""), fields.WithHelp("Comma-separated directories to scan for GEPA scripts (.js/.mjs/.cjs)")),
 			fields.New("gepa-run-timeout-seconds", fields.TypeInteger, fields.WithDefault(30), fields.WithHelp("Timeout in seconds for one GEPA run")),
@@ -96,6 +113,20 @@ func NewCommand() (*Command, error) {
 			fields.New("inventory-db", fields.TypeString, fields.WithDefault("./data/inventory.db"), fields.WithHelp("SQLite DB file path for inventory domain data")),
 			fields.New("inventory-seed-on-start", fields.TypeBool, fields.WithDefault(true), fields.WithHelp("Seed inventory domain data during startup")),
 			fields.New("inventory-reset-on-start", fields.TypeBool, fields.WithDefault(false), fields.WithHelp("Reset inventory domain tables before seeding")),
+			fields.New("sqlite-db", fields.TypeString, fields.WithDefault(sqliteRuntimeDefaults.DBPath), fields.WithHelp("SQLite DB file path for sqlite app backend module")),
+			fields.New("sqlite-db-read-only", fields.TypeBool, fields.WithDefault(sqliteRuntimeDefaults.ReadOnly), fields.WithHelp("Open sqlite app DB in read-only mode")),
+			fields.New("sqlite-db-auto-create", fields.TypeBool, fields.WithDefault(sqliteRuntimeDefaults.AutoCreate), fields.WithHelp("Create sqlite app DB file if missing")),
+			fields.New("sqlite-default-row-limit", fields.TypeInteger, fields.WithDefault(sqliteRuntimeDefaults.DefaultRowLimit), fields.WithHelp("Default max row count returned per sqlite query")),
+			fields.New("sqlite-statement-timeout-seconds", fields.TypeInteger, fields.WithDefault(int(sqliteRuntimeDefaults.StatementTimeout/time.Second)), fields.WithHelp("Default sqlite statement timeout in seconds")),
+			fields.New("sqlite-busy-timeout-ms", fields.TypeInteger, fields.WithDefault(sqliteRuntimeDefaults.OpenBusyTimeoutMS), fields.WithHelp("SQLite busy timeout in milliseconds for sqlite app module")),
+			fields.New("sqlite-enable-multi-statement", fields.TypeBool, fields.WithDefault(sqliteRuntimeDefaults.EnableMultiStatement), fields.WithHelp("Allow multi-statement sqlite payloads when request opts in")),
+			fields.New("sqlite-statement-allowlist", fields.TypeString, fields.WithDefault(strings.Join(sqliteRuntimeDefaults.StatementAllowlist, ",")), fields.WithHelp("Comma-separated sqlite statement types to allow (empty allows all)")),
+			fields.New("sqlite-statement-denylist", fields.TypeString, fields.WithDefault(strings.Join(sqliteRuntimeDefaults.StatementDenylist, ",")), fields.WithHelp("Comma-separated sqlite statement types to deny")),
+			fields.New("sqlite-redact-columns", fields.TypeString, fields.WithDefault(strings.Join(sqliteRuntimeDefaults.RedactedColumns, ",")), fields.WithHelp("Comma-separated sqlite response column names to redact")),
+			fields.New("sqlite-rate-limit-requests", fields.TypeInteger, fields.WithDefault(sqliteRuntimeDefaults.RateLimitRequests), fields.WithHelp("Maximum sqlite query requests per rate-limit window")),
+			fields.New("sqlite-rate-limit-window-seconds", fields.TypeInteger, fields.WithDefault(int(sqliteRuntimeDefaults.RateLimitWindow/time.Second)), fields.WithHelp("SQLite query rate-limit window in seconds")),
+			fields.New("sqlite-max-payload-bytes", fields.TypeInteger, fields.WithDefault(sqliteDefaults.MaxPayloadBytes), fields.WithHelp("Maximum sqlite query response payload bytes before truncation")),
+			fields.New("sqlite-audit-log-events", fields.TypeBool, fields.WithDefault(sqliteDefaults.EnableAuditLogEvents), fields.WithHelp("Emit sqlite query audit metadata events in logs")),
 			fields.New("arc-enabled", fields.TypeBool, fields.WithDefault(true), fields.WithHelp("Enable ARC-AGI backend module registration")),
 			fields.New("arc-driver", fields.TypeString, fields.WithDefault("dagger"), fields.WithHelp("ARC runtime driver (dagger or raw)")),
 			fields.New("arc-runtime-mode", fields.TypeString, fields.WithDefault("offline"), fields.WithHelp("ARC operation mode (offline, normal, online)")),
@@ -225,6 +256,25 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 	if err != nil {
 		return errors.Wrap(err, "create gepa backend module")
 	}
+	sqliteConfig := sqlitebackend.DefaultModuleConfig()
+	sqliteConfig.RuntimeConfig.DBPath = strings.TrimSpace(cfg.SQLiteDB)
+	sqliteConfig.RuntimeConfig.ReadOnly = cfg.SQLiteReadOnly
+	sqliteConfig.RuntimeConfig.AutoCreate = cfg.SQLiteAutoCreate
+	sqliteConfig.RuntimeConfig.DefaultRowLimit = cfg.SQLiteRowLimit
+	sqliteConfig.RuntimeConfig.StatementTimeout = time.Duration(cfg.SQLiteTimeoutSeconds) * time.Second
+	sqliteConfig.RuntimeConfig.OpenBusyTimeoutMS = cfg.SQLiteBusyTimeoutMS
+	sqliteConfig.RuntimeConfig.EnableMultiStatement = cfg.SQLiteMultiStatement
+	sqliteConfig.RuntimeConfig.StatementAllowlist = parseCSV(cfg.SQLiteAllowlist)
+	sqliteConfig.RuntimeConfig.StatementDenylist = parseCSV(cfg.SQLiteDenylist)
+	sqliteConfig.RuntimeConfig.RedactedColumns = parseCSV(cfg.SQLiteRedactColumns)
+	sqliteConfig.RuntimeConfig.RateLimitRequests = cfg.SQLiteRateLimit
+	sqliteConfig.RuntimeConfig.RateLimitWindow = time.Duration(cfg.SQLiteRateWindowSec) * time.Second
+	sqliteConfig.MaxPayloadBytes = cfg.SQLiteMaxPayload
+	sqliteConfig.EnableAuditLogEvents = cfg.SQLiteAuditEvents
+	sqliteModule, err := sqlitebackend.NewModule(sqliteConfig)
+	if err != nil {
+		return errors.Wrap(err, "create sqlite backend module")
+	}
 
 	modules := []backendhost.AppBackendModule{
 		newInventoryBackendModule(
@@ -234,6 +284,7 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 			composer.MiddlewareDefinitions(),
 			inventoryExtensionSchemas(),
 		),
+		sqliteModule,
 		gepaModule,
 	}
 	if cfg.ARCEnabled {

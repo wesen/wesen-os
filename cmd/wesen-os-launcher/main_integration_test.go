@@ -32,9 +32,11 @@ import (
 	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorytools"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/pinoweb"
 	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
+	"github.com/go-go-golems/go-go-app-sqlite/pkg/sqliteapp"
 	arcagibackend "github.com/go-go-golems/wesen-os/pkg/arcagi"
 	gepabackend "github.com/go-go-golems/wesen-os/pkg/gepa"
 	"github.com/go-go-golems/wesen-os/pkg/launcherui"
+	sqlitebackend "github.com/go-go-golems/wesen-os/pkg/sqlite"
 )
 
 type integrationNoopEngine struct{}
@@ -80,6 +82,7 @@ func (integrationNoopSink) PublishEvent(events.Event) error { return nil }
 const integrationAppBasePath = "/api/apps/inventory"
 const integrationGepaAppBasePath = "/api/apps/gepa"
 const integrationArcAppBasePath = "/api/apps/arc-agi"
+const integrationSQLiteAppBasePath = "/api/apps/sqlite"
 
 func integrationChatPath() string           { return integrationAppBasePath + "/chat" }
 func integrationWSPath() string             { return integrationAppBasePath + "/ws" }
@@ -90,6 +93,8 @@ func integrationConfirmPath() string        { return integrationAppBasePath + "/
 func integrationGEPAScriptsPath() string    { return integrationGepaAppBasePath + "/scripts" }
 func integrationGEPARunsPath() string       { return integrationGepaAppBasePath + "/runs" }
 func integrationARCHealthPath() string      { return integrationArcAppBasePath + "/health" }
+func integrationSQLiteHealthPath() string   { return integrationSQLiteAppBasePath + "/health" }
+func integrationSQLiteQueryPath() string    { return integrationSQLiteAppBasePath + "/query" }
 func integrationARCSchemaPath() string {
 	return integrationArcAppBasePath + "/schemas/arc.health.response.v1"
 }
@@ -130,6 +135,28 @@ func newIntegrationARCModule(t *testing.T) *arcagibackend.Module {
 		Driver:           "raw",
 		RawListenAddr:    "127.0.0.1:18081",
 	}, integrationNoopArcDriver{})
+	require.NoError(t, err)
+	return module
+}
+
+func newIntegrationSQLiteModule(t *testing.T) *sqlitebackend.Module {
+	t.Helper()
+	cfg := sqlitebackend.DefaultModuleConfig()
+	cfg.RuntimeConfig = sqliteapp.Config{
+		DBPath:               filepath.Join(t.TempDir(), "integration-sqlite-app.db"),
+		ReadOnly:             false,
+		AutoCreate:           true,
+		DefaultRowLimit:      200,
+		StatementTimeout:     5 * time.Second,
+		OpenBusyTimeoutMS:    5000,
+		EnableMultiStatement: false,
+		StatementAllowlist:   nil,
+		StatementDenylist:    []string{"ATTACH", "DETACH"},
+		RedactedColumns:      nil,
+		RateLimitRequests:    60,
+		RateLimitWindow:      10 * time.Second,
+	}
+	module, err := sqlitebackend.NewModule(cfg)
 	require.NoError(t, err)
 	return module
 }
@@ -218,6 +245,7 @@ func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat
 			nil,
 			inventoryExtensionSchemas(),
 		),
+		newIntegrationSQLiteModule(t),
 		newIntegrationGEPAModule(t),
 		newIntegrationARCModule(t),
 	)
@@ -292,6 +320,7 @@ func TestWSHandler_EmitsHypercardLifecycleEvents(t *testing.T) {
 			nil,
 			inventoryExtensionSchemas(),
 		),
+		newIntegrationSQLiteModule(t),
 		newIntegrationGEPAModule(t),
 		newIntegrationARCModule(t),
 	)
@@ -519,6 +548,68 @@ func TestOSAppsEndpoint_ListsARCModuleReflectionMetadata(t *testing.T) {
 		}
 	}
 	require.True(t, arcFound, "expected arc-agi backend module in /api/os/apps payload")
+}
+
+func TestOSAppsEndpoint_ListsSQLiteModuleReflectionMetadata(t *testing.T) {
+	srv := newIntegrationServer(t)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/os/apps")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var payload struct {
+		Apps []map[string]any `json:"apps"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
+
+	sqliteFound := false
+	for _, app := range payload.Apps {
+		if appID, _ := app["app_id"].(string); appID == "sqlite" {
+			sqliteFound = true
+			require.Equal(t, "SQLite", app["name"])
+			require.Equal(t, true, app["healthy"])
+			reflection, ok := app["reflection"].(map[string]any)
+			require.True(t, ok)
+			require.Equal(t, true, reflection["available"])
+			require.Equal(t, "/api/os/apps/sqlite/reflection", reflection["url"])
+		}
+	}
+	require.True(t, sqliteFound, "expected sqlite backend module in /api/os/apps payload")
+}
+
+func TestSQLiteModule_HealthQueryAndReflectionEndpoints(t *testing.T) {
+	srv := newIntegrationServer(t)
+	defer srv.Close()
+
+	healthResp, err := http.Get(srv.URL + integrationSQLiteHealthPath())
+	require.NoError(t, err)
+	defer healthResp.Body.Close()
+	require.Equal(t, http.StatusOK, healthResp.StatusCode)
+
+	queryResp, err := http.Post(srv.URL+integrationSQLiteQueryPath(), "application/json", strings.NewReader(`{"sql":"SELECT 1 AS one"}`))
+	require.NoError(t, err)
+	defer queryResp.Body.Close()
+	require.Equal(t, http.StatusOK, queryResp.StatusCode)
+
+	var queryPayload map[string]any
+	require.NoError(t, json.NewDecoder(queryResp.Body).Decode(&queryPayload))
+	rows, ok := queryPayload["rows"].([]any)
+	require.True(t, ok)
+	require.Len(t, rows, 1)
+
+	reflectionResp, err := http.Get(srv.URL + "/api/os/apps/sqlite/reflection")
+	require.NoError(t, err)
+	defer reflectionResp.Body.Close()
+	require.Equal(t, http.StatusOK, reflectionResp.StatusCode)
+
+	var reflection map[string]any
+	require.NoError(t, json.NewDecoder(reflectionResp.Body).Decode(&reflection))
+	require.Equal(t, "sqlite", reflection["app_id"])
+	apis, ok := reflection["apis"].([]any)
+	require.True(t, ok)
+	require.NotEmpty(t, apis)
 }
 
 func TestGEPAModule_ReflectionAndScriptsEndpoints(t *testing.T) {
