@@ -169,3 +169,162 @@ Existing patterns identified from codebase study:
 - Aesthetic: 11px system font, muted grays, white bg, bold borders for
   structural dividers (toolbar, column separators), subtle 1px borders
   for sections within panels
+
+## Step 2: Screen 2 — Doc Reader
+
+**Commit:** 51ee872 — "apps-browser: add Doc Reader screen (Screen 2) with markdown rendering"
+
+### What I did
+
+1. Installed `react-markdown` + `remark-gfm` via pnpm for markdown rendering.
+2. Created `DocReaderScreen.tsx` with:
+   - Breadcrumb navigation (module > doc_type > title)
+   - Metadata bar with doc_type, module, and topic badges
+   - Rendered markdown content via `<Markdown>` with remarkGfm plugin
+   - See-also section linking to related docs across modules
+   - Prev/next navigation within the module's doc list
+3. Added `useGetModuleDocQuery` to `appsApi.ts` for fetching full doc content.
+4. Wired reader into DocBrowserWindow router.
+5. Added stories: PreSelectedDoc, ReaderApiReference, ReaderWithSeeAlso,
+   ReaderTroubleshooting, ReaderArcAgiSessionLifecycle, ReaderDocNotFound.
+
+### What worked
+
+- react-markdown with remarkGfm handles tables, code blocks, links, and
+  lists cleanly with minimal CSS.
+- The DocBrowserContext history stack enables natural back navigation.
+- The see-also cross-reference parsing (moduleId/slug split) works for
+  the existing fixture data patterns.
+
+### What was tricky
+
+- The `parseSeeAlso` function needs to handle both `module/slug` and bare
+  `slug` formats. Splitting on `/` and using parts[0] as moduleId works
+  but may break for slugs containing slashes.
+
+## Step 3: Screen 3 — Search & Filter + Code Block Enhancements
+
+**Commit:** 1b42614 — "apps-browser: add Search & Filter screen + code block enhancements"
+
+### What I did
+
+1. Created `DocSearchScreen.tsx` with:
+   - Debounced text search input
+   - Faceted sidebar filtering (modules, doc types, topics) with checkboxes
+   - Result cards showing title, module, doc_type, topic badges, summary
+   - "Clear All" button to reset filters
+   - Two-column layout: filter sidebar + scrollable results list
+2. Added rehype-highlight + highlight.js for syntax highlighting in code blocks
+   (github theme CSS).
+3. Created custom `CodeBlock` component wrapping `<pre>` with a positioned
+   copy button that appears on hover and shows checkmark feedback.
+4. Added `extractText()` utility to recursively extract text from React
+   children for clipboard copy.
+
+### What worked
+
+- rehype-highlight integrates cleanly with react-markdown via the
+  `rehypePlugins` prop — no custom code component needed for highlighting.
+- The copy button opacity transition (0 → 1 on hover) feels native.
+- The `useGetOSDocsQuery` hook with dynamic filter parameters handles
+  the faceted search naturally via RTK Query cache keying.
+
+### What was tricky
+
+- The `extractText()` function needs to handle React element trees
+  recursively since highlight.js wraps tokens in `<span>` elements.
+  Using `typeof node === 'object' && 'props' in node` pattern works.
+
+## Step 4 & 5: Module Docs + Topic Browser + Story Reorganization
+
+**Commit:** e89382b — "apps-browser: add Module Docs + Topic Browser screens, reorganize stories"
+
+### What I did
+
+1. Created `ModuleDocsScreen.tsx` (Screen 4):
+   - Module header with name, doc count, health/reflection/version status
+   - Docs grouped by doc_type (guides, tutorials, references, troubleshooting)
+   - Entry cards with order number, title, summary, topic badges
+   - DOC_TYPE_ORDER constant for consistent group ordering
+2. Created `TopicBrowserScreen.tsx` (Screen 5):
+   - Two-pane layout: topic list sidebar with counts, detail panel
+   - Topic list fetched from aggregate `/api/os/docs` facets
+   - Detail panel shows docs grouped by module for selected topic
+   - Placeholder message when no topic is selected
+3. Extended DocBrowserWindow props: added `initialScreen`, `initialQuery`,
+   `initialTopic` for direct navigation to any screen from stories.
+4. Removed PlaceholderScreen — all 5 screens are now fully implemented.
+5. Added Topics toolbar button.
+6. Reorganized stories into per-screen files:
+   - `DocBrowserWindow.stories.tsx` → `Apps/AppsBrowser/DocBrowser/Home`
+   - `DocReaderScreen.stories.tsx` → `Apps/AppsBrowser/DocBrowser/Reader`
+   - `DocSearchScreen.stories.tsx` → `Apps/AppsBrowser/DocBrowser/Search`
+   - `ModuleDocsScreen.stories.tsx` → `Apps/AppsBrowser/DocBrowser/ModuleDocs`
+   - `TopicBrowserScreen.stories.tsx` → `Apps/AppsBrowser/DocBrowser/TopicBrowser`
+7. Added code-rich `integration-guide` mock doc with TypeScript, Go, JSON,
+   YAML, and bash code examples for testing syntax highlighting.
+8. Added `CodeBlocksAndSyntaxHighlighting` story variant.
+
+### What worked
+
+- Both screens composed naturally from existing patterns (RTK Query hooks,
+  data-part CSS, DocBrowserContext navigation).
+- The TopicBrowserScreen's two-query approach (unfiltered for topic list,
+  filtered for detail) leverages RTK Query cache keying elegantly.
+- Story reorganization under `Apps/AppsBrowser/DocBrowser/` hierarchy
+  makes the Storybook sidebar much more navigable.
+
+## Step 6: Desktop Integration
+
+**Commit:** 467c34f — "apps-browser: integrate doc browser with desktop commands and context menus"
+
+### What I did
+
+1. **module.tsx** — Desktop command registration:
+   - Added `APP_KEY_DOCS_PREFIX`, `COMMAND_OPEN_DOCS`, `COMMAND_OPEN_DOC_PAGE`,
+     `COMMAND_SEARCH_DOCS` constants
+   - Created `buildDocBrowserWindowPayload()` with appKey encoding:
+     `home`, `search:query`, `moduleId`, `moduleId:slug`
+   - Extended window content adapter to render DocBrowserWindow by parsing
+     appKey suffix into initial props
+   - Extended command handler for all three doc commands
+2. **AppsFolderWindow.tsx** — Added "View Documentation" context menu entry
+   using `apps-browser.open-docs` command.
+3. **ModuleBrowserWindow.tsx** — Added "View Documentation" context menu entry
+   using `apps-browser.open-docs` command.
+4. **GetInfoWindow.tsx** — Added `onOpenDoc` callback:
+   - Threaded through DocumentationSection → DocumentationDataSection
+   - Doc title links use `<button>` with `onOpenDoc` when available,
+     falling back to raw `<a>` links for backwards compatibility
+   - Added `get-info-doc-link` CSS for the button styling
+5. **module.tsx adapter** — Wired `onOpenDoc` in GetInfoWindowByAppId
+   render to call `buildDocBrowserWindowPayload({ moduleId, slug })`.
+
+### What worked
+
+- The existing command/adapter pattern in module.tsx made it straightforward
+  to add a new window type with minimal boilerplate.
+- The appKey suffix encoding (colon-separated parts) is consistent with
+  the existing browser window pattern.
+- GetInfoWindow's backwards-compatible approach (button when callback
+  provided, `<a>` fallback) ensures the component still works in contexts
+  where the desktop system isn't available.
+
+### What was tricky
+
+- The appKey encoding needs careful parsing: `search:query` prefix must
+  be checked before the generic `moduleId:slug` pattern to avoid
+  misinterpreting search queries as module IDs.
+
+## Summary of All Commits
+
+| Commit  | Description                                                |
+|---------|------------------------------------------------------------|
+| 29b0870 | docs hint contract, docs fetchers, info window docs states |
+| c0f546b | Screen 1 — Doc Center Home                                |
+| 51ee872 | Screen 2 — Doc Reader with markdown rendering              |
+| 1b42614 | Screen 3 — Search & Filter + code block enhancements       |
+| e89382b | Screens 4 & 5 — Module Docs + Topic Browser + stories      |
+| 467c34f | Desktop integration (commands, context menus, GetInfo)      |
+
+All screens verified via `npx storybook build --config-dir ./.storybook`.
