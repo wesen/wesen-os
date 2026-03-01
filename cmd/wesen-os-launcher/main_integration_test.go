@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	inventorybackendmodule "github.com/go-go-golems/go-go-app-inventory/pkg/backendmodule"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorytools"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/pinoweb"
 	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
@@ -211,13 +212,16 @@ func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat
 	)
 
 	moduleRegistry, err := backendhost.NewModuleRegistry(
-		newInventoryBackendModule(
-			webchatSrv,
-			resolver,
-			profileRegistry,
-			nil,
-			inventoryExtensionSchemas(),
-		),
+		inventorybackendmodule.NewModule(inventorybackendmodule.Options{
+			Server:              webchatSrv,
+			RequestResolver:     resolver,
+			ProfileRegistry:     profileRegistry,
+			DefaultRegistrySlug: gepprofiles.MustRegistrySlug(profileRegistrySlug),
+			ExtensionSchemas:    inventoryExtensionSchemas(),
+			WriteActor:          "wesen-os-launcher",
+			WriteSource:         "http-api",
+			ConfirmMountPath:    "/confirm",
+		}),
 		newIntegrationGEPAModule(t),
 		newIntegrationARCModule(t),
 	)
@@ -225,7 +229,7 @@ func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat
 
 	lifecycle := backendhost.NewLifecycleManager(moduleRegistry)
 	require.NoError(t, lifecycle.Startup(context.Background(), backendhost.StartupOptions{
-		RequiredAppIDs: []string{inventoryBackendAppID},
+		RequiredAppIDs: []string{inventorybackendmodule.AppID},
 	}))
 	t.Cleanup(func() { _ = lifecycle.Stop(context.Background()) })
 
@@ -285,13 +289,16 @@ func TestWSHandler_EmitsHypercardLifecycleEvents(t *testing.T) {
 	)
 
 	moduleRegistry, err := backendhost.NewModuleRegistry(
-		newInventoryBackendModule(
-			webchatSrv,
-			resolver,
-			profileRegistry,
-			nil,
-			inventoryExtensionSchemas(),
-		),
+		inventorybackendmodule.NewModule(inventorybackendmodule.Options{
+			Server:              webchatSrv,
+			RequestResolver:     resolver,
+			ProfileRegistry:     profileRegistry,
+			DefaultRegistrySlug: gepprofiles.MustRegistrySlug(profileRegistrySlug),
+			ExtensionSchemas:    inventoryExtensionSchemas(),
+			WriteActor:          "wesen-os-launcher",
+			WriteSource:         "http-api",
+			ConfirmMountPath:    "/confirm",
+		}),
 		newIntegrationGEPAModule(t),
 		newIntegrationARCModule(t),
 	)
@@ -299,7 +306,7 @@ func TestWSHandler_EmitsHypercardLifecycleEvents(t *testing.T) {
 
 	lifecycle := backendhost.NewLifecycleManager(moduleRegistry)
 	require.NoError(t, lifecycle.Startup(context.Background(), backendhost.StartupOptions{
-		RequiredAppIDs: []string{inventoryBackendAppID},
+		RequiredAppIDs: []string{inventorybackendmodule.AppID},
 	}))
 	defer func() { _ = lifecycle.Stop(context.Background()) }()
 
@@ -449,7 +456,7 @@ func TestOSAppsEndpoint_ListsInventoryModuleCapabilities(t *testing.T) {
 
 	inventoryFound := false
 	for _, app := range payload.Apps {
-		if appID, _ := app["app_id"].(string); appID == inventoryBackendAppID {
+		if appID, _ := app["app_id"].(string); appID == inventorybackendmodule.AppID {
 			inventoryFound = true
 			require.Equal(t, "Inventory", app["name"])
 			require.Equal(t, true, app["required"])
@@ -458,9 +465,30 @@ func TestOSAppsEndpoint_ListsInventoryModuleCapabilities(t *testing.T) {
 			require.True(t, ok)
 			require.Contains(t, caps, any("chat"))
 			require.Contains(t, caps, any("profiles"))
+			reflection, ok := app["reflection"].(map[string]any)
+			require.True(t, ok)
+			require.Equal(t, true, reflection["available"])
+			require.Equal(t, "/api/os/apps/inventory/reflection", reflection["url"])
 		}
 	}
 	require.True(t, inventoryFound, "expected inventory backend module in /api/os/apps payload")
+}
+
+func TestInventoryModule_ReflectionEndpoint(t *testing.T) {
+	srv := newIntegrationServer(t)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/os/apps/inventory/reflection")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var payload map[string]any
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
+	require.Equal(t, "inventory", payload["app_id"])
+	apis, ok := payload["apis"].([]any)
+	require.True(t, ok)
+	require.NotEmpty(t, apis)
 }
 
 func TestOSAppsEndpoint_ListsGEPAModuleReflectionMetadata(t *testing.T) {
