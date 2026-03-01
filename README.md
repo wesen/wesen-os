@@ -15,7 +15,7 @@ Your workspace should contain these directories side-by-side:
 
 ```text
 <workspace>/
-  go-go-os/
+  go-go-os-frontend/
   go-go-app-inventory/
   wesen-os/
 ```
@@ -60,5 +60,5 @@ Use this repo when you are:
 - wiring inventory + GEPA backend module mounting into the final runtime
 
 Use other repos when you are:
-- changing shared platform frontend packages -> `go-go-os`
+- changing shared platform frontend packages -> `go-go-os-frontend`
 - changing inventory domain/frontend behavior -> `go-go-app-inventory`

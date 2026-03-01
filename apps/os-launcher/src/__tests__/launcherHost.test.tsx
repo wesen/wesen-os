@@ -178,18 +178,18 @@ describe('launcher host wiring', () => {
         new URL('../../../../../go-go-app-inventory/apps/inventory/src/launcher/module.tsx', import.meta.url),
         'utf8',
       ),
-      readFileSync(new URL('../../../../../go-go-os/apps/todo/src/launcher/module.tsx', import.meta.url), 'utf8'),
-      readFileSync(new URL('../../../../../go-go-os/apps/crm/src/launcher/module.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../../go-go-os-frontend/apps/todo/src/launcher/module.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../../go-go-os-frontend/apps/crm/src/launcher/module.tsx', import.meta.url), 'utf8'),
       readFileSync(
-        new URL('../../../../../go-go-os/apps/book-tracker-debug/src/launcher/module.tsx', import.meta.url),
+        new URL('../../../../../go-go-os-frontend/apps/book-tracker-debug/src/launcher/module.tsx', import.meta.url),
         'utf8',
       ),
       readFileSync(
         new URL('../../../../../go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/module.tsx', import.meta.url),
         'utf8',
       ),
-      readFileSync(new URL('../../../../../go-go-os/apps/apps-browser/src/launcher/module.tsx', import.meta.url), 'utf8'),
-      readFileSync(new URL('../../../../../go-go-os/apps/hypercard-tools/src/launcher/module.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../../go-go-os-frontend/apps/apps-browser/src/launcher/module.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../../go-go-os-frontend/apps/hypercard-tools/src/launcher/module.tsx', import.meta.url), 'utf8'),
     ];
 
     const placeholderLabels = [
@@ -490,9 +490,9 @@ describe('launcher host wiring', () => {
   it('removes legacy standalone desktop shell boot wiring from app roots', () => {
     const appRootSources = [
       readFileSync(new URL('../../../../../go-go-app-inventory/apps/inventory/src/App.tsx', import.meta.url), 'utf8'),
-      readFileSync(new URL('../../../../../go-go-os/apps/todo/src/App.tsx', import.meta.url), 'utf8'),
-      readFileSync(new URL('../../../../../go-go-os/apps/crm/src/App.tsx', import.meta.url), 'utf8'),
-      readFileSync(new URL('../../../../../go-go-os/apps/book-tracker-debug/src/App.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../../go-go-os-frontend/apps/todo/src/App.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../../go-go-os-frontend/apps/crm/src/App.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../../go-go-os-frontend/apps/book-tracker-debug/src/App.tsx', import.meta.url), 'utf8'),
     ];
 
     for (const source of appRootSources) {
