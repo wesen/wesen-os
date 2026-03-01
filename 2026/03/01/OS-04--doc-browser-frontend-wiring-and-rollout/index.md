@@ -71,6 +71,7 @@ OS-03 delivered the screen design and component implementation for the doc brows
 - Implementation plan: `design-doc/01-doc-browser-frontend-wiring-implementation-plan.md`
 - Task checklist: `tasks.md`
 - Diary: `reference/01-implementation-diary-doc-browser-frontend-wiring.md`
+- Advanced interaction research: `reference/02-documentation-link-interaction-research-ctrl-click-context-multi-window.md`
 - Source design ticket: `ttmp/2026/03/01/OS-03--doc-browser-ui-design`
 
 ## Status

@@ -52,9 +52,26 @@
 - [x] Relate touched source files in ticket metadata.
 - [x] Summarize final behavior, residual risks, and follow-up tickets.
 
+## Phase 6: Advanced Doc Interaction Follow-Up
+
+- [x] Research Control/Command-click behavior and store findings in ticket reference doc.
+- [ ] Allow opening module docs from the Documentation section in `ModuleBrowserWindow` detail panel.
+- [ ] Replace raw `<a href>` doc links in module detail panel with launcher command action that opens docs reader/module docs window.
+- [ ] Allow multiple documentation windows in parallel:
+- [ ] Remove single-window dedupe behavior for docs windows or gate it behind explicit `newWindow` command payload.
+- [ ] Preserve existing same-window navigation behavior as default click; open separate window only for explicit new-window actions.
+- [ ] Add right-click context action on doc links/cards:
+- [ ] "Open in New Documentation Window"
+- [ ] "Open in Current Documentation Window"
+- [ ] Research and implement Control/Command-click behavior for new-window opening:
+- [ ] Define platform-specific behavior (`Ctrl+Click`, `Cmd+Click`, middle-click) and fallback semantics.
+- [ ] Add regression tests for multi-window docs behavior and modifier-key link actions.
+- [ ] Extend runtime smoke checklist for parallel doc windows and context-menu actions.
+
 ## Final Acceptance Gates
 
 - [x] Frontend wiring changes merged in `go-go-os-frontend/apps/apps-browser`.
 - [x] `pnpm --filter @hypercard/apps-browser test` passes with new coverage.
 - [x] Runtime tmux smoke confirms docs browsing workflow end-to-end.
 - [x] OS-04 tasks/changelog/diary are complete and reviewer-ready.
+- [ ] Phase 6 advanced interaction tasks are implemented and validated.

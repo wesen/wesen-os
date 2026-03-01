@@ -36,6 +36,14 @@
   - Added `/api/os/docs` proxy entry in `apps/os-launcher/vite.config.ts`.
 - Recorded existing UI warning discovered during smoke:
   - Nested button markup warning in module docs card topic badges (`button` inside `button`), pre-existing in doc-browser screen implementation.
+- Added new Phase 6 follow-up task group for advanced docs interaction work:
+  - Open docs from Module Browser bottom documentation section.
+  - Support parallel docs windows (multi-window behavior).
+  - Add right-click context actions for docs links (open current/new window).
+  - Implement and validate Ctrl/Cmd-click new-window behavior.
+- Added dedicated research reference document:
+  - `reference/02-documentation-link-interaction-research-ctrl-click-context-multi-window.md`
+  - Includes technical design options, platform behavior notes, constraints, and task decomposition.
 
 ### Related Files
 
@@ -54,3 +62,4 @@
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-frontend/apps/apps-browser/src/components/doc-browser/DocBrowserWindow.tsx
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-frontend/apps/apps-browser/src/components/doc-browser/DocBrowserWindow.test.ts
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/apps/os-launcher/vite.config.ts
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/2026/03/01/OS-04--doc-browser-frontend-wiring-and-rollout/reference/02-documentation-link-interaction-research-ctrl-click-context-multi-window.md

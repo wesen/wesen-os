@@ -46,7 +46,7 @@ Make app documentation browsing a first-class launcher workflow, not just a stor
 - Phase 2 (deep-link and parsing hardening): implemented.
 - Phase 3 (regression tests): implemented and passing (`pnpm --filter @hypercard/apps-browser test`).
 - Phase 4 (runtime smoke): implemented, including host proxy fix for `/api/os/docs` in Vite dev mode.
-- Remaining: final handoff bookkeeping and follow-up for nested-button markup warning in module docs cards.
+- Phase 6 follow-up (planned): advanced interaction upgrades for multi-window docs, context-menu open-in-new, and Ctrl/Cmd-click behavior (see reference doc 02).
 
 ## Baseline Snapshot (Current State)
 

@@ -357,3 +357,79 @@ After that fix, docs center home rendered all module cards and facets correctly,
 - Observed runtime docs aggregate after proxy fix:
   - total docs: 11
   - modules: inventory, arc-agi, gepa
+
+## Step 5: Add Phase 6 Tasks And Control-Click Research Doc
+
+I added a new follow-up phase in OS-04 tasks for advanced documentation interactions, exactly matching the requested feature set: opening docs from module-detail documentation section, parallel docs windows, right-click open-in-new-window actions, and control-click behavior.
+
+I also created and filled a dedicated research document with concrete implementation options, platform-specific click behavior notes, and a task decomposition that can be executed in incremental commits.
+
+### Prompt Context
+
+**User prompt (verbatim):** "addd more tasks for: 
+
+- allow opening module docs from the \"documentation\" section at the bottom browser. 
+- allow opening multiple doc windows so I can look at multiple modules (or even pages from the same module) in parallel
+- allow right clicking documentation links and opening in new window from context (instead of just following)
+- research how to do control click and store in research document in ticket."
+
+**Assistant interpretation:** Extend OS-04 with explicit implementation tasks for advanced docs interactions and produce a dedicated research reference doc focused on control-click and new-window behavior.
+
+**Inferred user intent:** Prepare the next implementation phase with enough technical clarity that execution can start immediately without re-discovery.
+
+**Commit (code):** pending
+
+### What I did
+
+- Updated `tasks.md`:
+  - Added `Phase 6: Advanced Doc Interaction Follow-Up` with detailed unchecked implementation tasks.
+  - Added checked item documenting completed research deliverable.
+- Created and authored:
+  - `reference/02-documentation-link-interaction-research-ctrl-click-context-multi-window.md`
+- Updated ticket overview/changelog:
+  - Added research doc in `index.md` key links.
+  - Added changelog entry for new phase/tasks and research document.
+
+### Why
+
+- The requested features change interaction semantics (windowing, click modifiers, context menus), so implementation should be driven by an explicit design contract rather than ad-hoc component edits.
+
+### What worked
+
+- Existing launcher and engine abstractions already expose the primitives needed (`openWindow` payload control, widget-level context action registration, desktop command routing).
+
+### What didn't work
+
+- No direct blocker; this step was documentation/planning work.
+
+### What I learned
+
+- Multi-window docs support is not only a dedupe setting change; it also requires unique window IDs for explicit new-window actions to avoid state collisions.
+
+### What was tricky to build
+
+- Control-click behavior differs across platforms. macOS frequently converts Ctrl+Click into context-menu behavior, so implementation must handle both click modifiers and `onContextMenu` path for correctness.
+
+### What warrants a second pair of eyes
+
+- Final policy for default click vs modifier click vs right-click action precedence, to keep behavior consistent across all docs surfaces.
+
+### What should be done in the future
+
+- Implement Phase 6 in two increments:
+  - plumbing (`newWindow` command payload, unique ids, bottom-section docs wiring),
+  - interaction polish (context menu + modifier-click across surfaces).
+
+### Code review instructions
+
+- Review new planning artifacts:
+  - `2026/03/01/OS-04--doc-browser-frontend-wiring-and-rollout/tasks.md`
+  - `2026/03/01/OS-04--doc-browser-frontend-wiring-and-rollout/reference/02-documentation-link-interaction-research-ctrl-click-context-multi-window.md`
+  - `2026/03/01/OS-04--doc-browser-frontend-wiring-and-rollout/changelog.md`
+
+### Technical details
+
+- Research references implementation touchpoints:
+  - `go-go-os-frontend/apps/apps-browser/src/components/BrowserDetailPanel.tsx`
+  - `go-go-os-frontend/apps/apps-browser/src/launcher/module.tsx`
+  - `go-go-os-frontend/packages/engine/src/components/shell/windowing/desktopMenuRuntime.tsx`
