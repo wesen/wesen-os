@@ -23,7 +23,7 @@ RelatedFiles:
       Note: Primary technical deliverable produced during this investigation.
 ExternalSources: []
 Summary: Chronological investigation diary for the SQLite query app ticket, including evidence gathering, design decisions, and delivery workflow.
-LastUpdated: 2026-03-01T13:30:00-05:00
+LastUpdated: 2026-03-01T16:02:00-05:00
 WhatFor: Preserve an auditable, continuation-friendly record of research, decisions, and execution steps for this ticket.
 WhenToUse: Use this diary to review what was done, why decisions were made, and how to validate or continue this work.
 ---
@@ -1409,3 +1409,76 @@ This step converts the implementation into an executable handoff package: onboar
 
 - Tasks checked in this step:
   - Phase 8 / all items in `tasks.md`.
+
+## Step 16: Correct backlog scope for missing `wesen-os` backend composition tasks
+
+I reviewed the current runtime behavior after validation runs and confirmed that SQLite was wired on the launcher frontend side but not yet composed as a backend module in `wesen-os`. This explained why SQLite did not appear in the Apps Browser inventory endpoint (`/api/os/apps`), despite being launchable from frontend module registration.
+
+To prevent the same mismatch from being missed again, I updated the OS-03 backlog with explicit composition and discoverability tasks.
+
+### Prompt Context
+
+**User prompt (verbatim):** "why is the backend not wired in yet? shouldn't that be in the ticket?"
+
+**Assistant interpretation:** Audit the ticket scope against actual runtime wiring and add missing actionable tasks.
+
+**Inferred user intent:** Make the ticket execution-complete by tracking all integration layers, not only app-local implementation.
+
+**Commit (code):** N/A (ticket documentation update)
+
+### What I did
+
+- Confirmed frontend sqlite launcher registration exists:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/apps/os-launcher/src/app/modules.tsx`
+- Confirmed backend module registry in `wesen-os` does not include sqlite yet:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/cmd/wesen-os-launcher/main.go`
+- Updated task backlog with missing work:
+  - Added Phase 9: `wesen-os` backend composition and app discoverability.
+  - Expanded Phase 7 to include composition integration tests and sqlite endpoint route validation.
+- Recorded the scope correction in:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/ttmp/2026/03/01/OS-03-SQLITE-QUERY-APP--sqlite-query-app-with-backend-gui-components-and-hypercard-query-integration/changelog.md`
+
+### Why
+
+- Ticket coverage needs to reflect user-visible runtime behavior in composed launcher mode, not only app-local code in `go-go-app-sqlite`.
+- Without explicit composition tasks, frontend launchability can mask backend discoverability gaps.
+
+### What worked
+
+- The gap was straightforward to verify from code and runtime checks.
+- Converting the gap into concrete task items made remaining work explicit and reviewable.
+
+### What didn't work
+
+- Earlier checklist phases implicitly assumed backend composition was covered, but no explicit task captured it.
+
+### What I learned
+
+- For split-repo app work, backlog phases need an explicit composition layer (`wesen-os`) in addition to app-local phases.
+
+### What was tricky to build
+
+- The main subtlety was distinguishing "frontend module is visible/launchable" from "backend app is discoverable and routable via `/api/os/apps`".
+
+### What warrants a second pair of eyes
+
+- Review whether `required-apps` default should include sqlite now or remain optional for staged rollout.
+- Confirm whether sqlite reflection endpoint must be required in this phase or can be deferred.
+
+### What should be done in the future
+
+- Use the new Phase 9 tasks as gating criteria before marking integration complete.
+
+### Code review instructions
+
+- Review backlog updates in:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/ttmp/2026/03/01/OS-03-SQLITE-QUERY-APP--sqlite-query-app-with-backend-gui-components-and-hypercard-query-integration/tasks.md`
+- Confirm evidence files:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/apps/os-launcher/src/app/modules.tsx`
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/cmd/wesen-os-launcher/main.go`
+
+### Technical details
+
+- New checklist additions:
+  - Phase 7 `wesen-os` composition tests.
+  - Phase 9 `wesen-os` backend composition and discoverability tasks.

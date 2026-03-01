@@ -83,9 +83,11 @@
 - [x] Add backend unit tests for request validation and query policy enforcement.
 - [x] Add backend integration tests against temporary DB files for query execution and history/saved queries.
 - [x] Add migration tests for metadata schema bootstrap.
+- [ ] Add `wesen-os` composition integration test that asserts sqlite module is mounted in launcher runtime (`/api/os/apps` contains `sqlite`).
+- [ ] Add `wesen-os` integration test that exercises sqlite namespaced endpoint routing (`/api/apps/sqlite/health` and one query endpoint roundtrip).
 - [ ] Add frontend component tests for editor/results/history/saved query UI behaviors.
 - [ ] Add frontend integration test for execute-query happy path and error path.
-- [ ] Add launcher/module smoke test to confirm app icon launch and window rendering.
+- [ ] Add launcher/module smoke test to confirm app icon launch, window rendering, and sqlite discoverability in Apps Browser app inventory.
 - [ ] Add HyperCard integration test for intent execution roundtrip and normalized response mapping.
 
 ## Phase 8: Operational Docs and Handoff
@@ -98,3 +100,13 @@
 - [x] Add troubleshooting section entry for malformed intent payloads.
 - [x] Update OS-03 design doc with final implemented file paths and API contracts after code lands.
 - [x] Update OS-03 diary and changelog with implementation commits and validation evidence.
+
+## Phase 9: `wesen-os` Backend Composition and App Discoverability
+
+- [ ] Add sqlite backend module wrapper package in `wesen-os` (adapter implementing `backendhost.AppBackendModule` around `go-go-app-sqlite` backend component/runtime).
+- [ ] Register sqlite backend module in `cmd/wesen-os-launcher/main.go` module list so it is included in lifecycle startup and namespaced route mounting.
+- [ ] Thread sqlite runtime configuration through launcher flags/env (`dbPath`, read-only, row limit, statement timeout, and policy-related config).
+- [ ] Decide and document required-app semantics: whether sqlite is in default `required-apps` or optional by default; implement choice in launcher defaults.
+- [ ] Ensure sqlite reflection/manifest metadata appears via `/api/os/apps` and `/api/os/apps/sqlite/reflection` where supported.
+- [ ] Update launcher smoke script to assert sqlite backend discoverability and route health (not only frontend launch behavior).
+- [ ] Update startup/runbook docs in `wesen-os` and OS-03 references to include sqlite backend composition and verification commands.
