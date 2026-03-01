@@ -23,6 +23,8 @@ import (
 	webchat "github.com/go-go-golems/pinocchio/pkg/webchat"
 	webhttp "github.com/go-go-golems/pinocchio/pkg/webchat/http"
 	"github.com/pkg/errors"
+
+	wesendoc "github.com/go-go-golems/wesen-os/pkg/doc"
 	"github.com/spf13/cobra"
 
 	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorydb"
@@ -430,6 +432,9 @@ func main() {
 	}
 
 	helpSystem := help.NewHelpSystem()
+	if err := wesendoc.AddDocToHelpSystem(helpSystem); err != nil {
+		cobra.CheckErr(err)
+	}
 	help_cmd.SetupCobraRootCommand(helpSystem, root)
 
 	if err := clay.InitGlazed("wesen-os", root); err != nil {

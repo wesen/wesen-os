@@ -51,7 +51,7 @@ npm run launcher:smoke            # runtime smoke checks
 
 ```bash
 npm run launcher:binary:build
-./build/wesen-os-launcher wesen-os-launcher --arc-enabled=false --addr 127.0.0.1:8091
+./build/wesen-os-launcher wesen-os-launcher --addr 127.0.0.1:8091
 ```
 
 Then open `http://127.0.0.1:8091/`.

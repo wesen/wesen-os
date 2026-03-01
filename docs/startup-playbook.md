@@ -36,7 +36,7 @@ tmux -S "$SOCKET" split-window -h -t "$SESSION":0 -c "$ROOT/wesen-os"
 
 # pane 0: backend
 tmux -S "$SOCKET" send-keys -t "$SESSION":0.0 \
-  "go run ./cmd/wesen-os-launcher wesen-os-launcher --arc-enabled=false --addr 127.0.0.1:8091" C-m
+  "go run ./cmd/wesen-os-launcher wesen-os-launcher --addr 127.0.0.1:8091" C-m
 
 # pane 1: frontend
 tmux -S "$SOCKET" send-keys -t "$SESSION":0.1 \
@@ -46,7 +46,6 @@ tmux -S "$SOCKET" attach -t "$SESSION"
 ```
 
 Notes:
-- `--arc-enabled=false` is the recommended local default unless your ARC runtime is configured.
 - Backend URL: `http://127.0.0.1:8091`
 - Frontend URL: `http://127.0.0.1:5173`
 
@@ -62,7 +61,7 @@ tmux -S "$SOCKET" send-keys -t "$SESSION":0.0 C-c
 tmux -S "$SOCKET" send-keys -t "$SESSION":0.0 \
   "cd /home/manuel/workspaces/2026-02-22/add-gepa-optimizer/wesen-os" C-m
 tmux -S "$SOCKET" send-keys -t "$SESSION":0.0 \
-  "go run ./cmd/wesen-os-launcher wesen-os-launcher --arc-enabled=false --addr 127.0.0.1:8091" C-m
+  "go run ./cmd/wesen-os-launcher wesen-os-launcher --addr 127.0.0.1:8091" C-m
 
 tmux -S "$SOCKET" send-keys -t "$SESSION":0.1 C-c
 tmux -S "$SOCKET" send-keys -t "$SESSION":0.1 \
@@ -87,7 +86,7 @@ Both should return JSON with app entries (for example `inventory`, `gepa`).
 ```bash
 cd wesen-os
 npm run launcher:binary:build
-./build/wesen-os-launcher wesen-os-launcher --arc-enabled=false --addr 127.0.0.1:8091
+./build/wesen-os-launcher wesen-os-launcher --addr 127.0.0.1:8091
 ```
 
 ## Common Issues
@@ -96,6 +95,7 @@ npm run launcher:binary:build
   - backend is not running or still starting;
   - check backend pane output with `tmux capture-pane`.
 - backend appears stuck at startup:
-  - run with `--arc-enabled=false` unless ARC is intentionally configured.
+  - retry with ARC disabled:
+  - `go run ./cmd/wesen-os-launcher wesen-os-launcher --arc-enabled=false --addr 127.0.0.1:8091`
 - stale listener on `:8091`:
   - `lsof-who -p 8091 -k`
