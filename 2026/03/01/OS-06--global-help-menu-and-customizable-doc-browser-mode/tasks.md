@@ -39,17 +39,17 @@
 
 ## Phase 5: UI/UX Behavior
 
-- [ ] `General Help` opens help-mode browser at home screen.
-- [ ] `Apps Documentation Browser` opens apps-mode browser at current docs center home.
-- [ ] Search, open, back navigation, and new-window behavior work in both modes.
-- [ ] Global help mode hides app-only affordances that assume app manifest membership.
+- [x] `General Help` opens help-mode browser at home screen.
+- [x] `Apps Documentation Browser` opens apps-mode browser at current docs center home.
+- [x] Search, open, back navigation, and new-window behavior work in both modes.
+- [x] Global help mode hides app-only affordances that assume app manifest membership.
 
 ## Phase 6: Tests
 
-- [ ] Update `apps-browser` launcher command tests for new help command and mode parsing.
-- [ ] Add/adjust doc browser component tests for mode-specific rendering and data fetching.
-- [ ] Update launcher runtime menu test to assert presence of top-level `Help` menu.
-- [ ] Verify no regressions in existing docs browser tests.
+- [x] Update `apps-browser` launcher command tests for new help command and mode parsing.
+- [x] Add/adjust doc browser component tests for mode-specific rendering and data fetching.
+- [x] Update launcher runtime menu test to assert presence of top-level `Help` menu.
+- [x] Verify no regressions in existing docs browser tests.
 
 ## Phase 7: Manual QA
 
