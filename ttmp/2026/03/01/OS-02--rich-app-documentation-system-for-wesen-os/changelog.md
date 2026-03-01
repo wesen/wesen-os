@@ -192,3 +192,14 @@ Uploaded the latest OS-02 ticket bundle (index + rollout plan + tasks + changelo
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/ttmp/2026/03/01/OS-02--rich-app-documentation-system-for-wesen-os/index.md — Included in uploaded bundle
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/ttmp/2026/03/01/OS-02--rich-app-documentation-system-for-wesen-os/design-doc/03-backend-documentation-system-rollout-plan-inventory-arc-agi-gepa.md — Included in uploaded bundle
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/ttmp/2026/03/01/OS-02--rich-app-documentation-system-for-wesen-os/reference/01-investigation-diary-backend-documentation-system.md — Included in uploaded bundle
+
+
+## 2026-03-01
+
+Added a dedicated Glazed help topic for OS-02 backend documentation system usage in `wesen-os/pkg/doc/topics/05-backend-documentation-system.md`, and added cross-references from the main operations/backend guides so the page is discoverable via `glaze help`.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/pkg/doc/topics/05-backend-documentation-system.md — New top-level docs system guide with contracts, authoring flow, validation commands, and troubleshooting
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/pkg/doc/topics/01-wesen-os-guide.md — Added cross-reference to `backend-documentation-system`
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/pkg/doc/topics/02-backend-developer-guide.md — Added cross-reference to `backend-documentation-system`

@@ -41,7 +41,7 @@ RelatedFiles:
       Note: Verified gepa adapter reflection mapping and temporary docs ownership need
 ExternalSources: []
 Summary: 'Chronological investigation diary for OS-02 backend planning work: ticket discovery, architecture evidence gathering, design-gap analysis, and production of the backend rollout design document.'
-LastUpdated: 2026-03-01T14:20:00-05:00
+LastUpdated: 2026-03-01T14:28:00-05:00
 WhatFor: Continuation log for future contributors implementing the backend docs system and validating decisions made during planning.
 WhenToUse: Read this before continuing OS-02 backend implementation, especially for command history, discovered constraints, and known risk points.
 ---
@@ -1007,3 +1007,83 @@ OK: uploaded OS-02 Backend Documentation Rollout (2026-03-01).pdf -> /ai/2026/03
 - Upload command family used:
   - `remarquee upload bundle --dry-run ...`
   - `remarquee upload bundle ... --remote-dir /ai/2026/03/01/OS-02 --toc-depth 2`
+
+## Step 13: Add Dedicated Glazed Help Page For OS-02 Docs System
+
+I added a dedicated top-level help topic in `wesen-os/pkg/doc/topics` for the backend documentation system and linked it from existing high-traffic guides. The new page consolidates the OS-02 contracts, module authoring workflow, endpoint behavior, smoke checks, and troubleshooting into one discoverable place.
+
+This was requested to align with Glazed help-page conventions and match style with existing `pkg/doc/topics/*` guides.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Create a proper documentation on this in wesen-os/pkg/doc/ according to $glazed-help-page-authoring in the same style as other docs."
+
+**Assistant interpretation:** Add a new Glazed-compatible help markdown entry with correct frontmatter and deep, operational content consistent with current guide style.
+
+**Inferred user intent:** Make OS-02 documentation system knowledge first-class in CLI help so contributors can find and use it without ticket context.
+
+**Commit (code):** pending
+
+### What I did
+
+- Reviewed Glazed authoring references:
+  - `glaze help how-to-write-good-documentation-pages`
+  - `glaze help writing-help-entries`
+- Added new docs topic:
+  - `wesen-os/pkg/doc/topics/05-backend-documentation-system.md`
+  - frontmatter includes:
+    - unique `Slug: backend-documentation-system`
+    - `SectionType: GeneralTopic`
+    - focused topics/commands/flags metadata
+- Authored the page in the same narrative style as existing topics:
+  - motivation and architecture split
+  - data contracts and endpoint semantics
+  - module authoring workflow (`embed`, parse, mount, expose, test)
+  - frontend consumption notes
+  - copy/paste validation commands
+  - troubleshooting table + see-also section
+- Added discoverability cross-links:
+  - `pkg/doc/topics/01-wesen-os-guide.md`
+  - `pkg/doc/topics/02-backend-developer-guide.md`
+- Ran quick validation:
+  - `go test ./cmd/wesen-os-launcher ./pkg/doc ./pkg/launcherui -count=1` (pass)
+
+### Why
+
+- Existing docs mention the docs system in scattered sections; this creates a single canonical reference.
+- A dedicated help slug improves discoverability with `glaze help backend-documentation-system`.
+
+### What worked
+
+- Existing docs structure and conventions made integration straightforward.
+- Help page metadata and content pattern match current `pkg/doc/topics` style.
+
+### What didn't work
+
+- N/A in this step.
+
+### What I learned
+
+- Cross-linking from both ops guide and backend guide is important; users enter docs from different starting points.
+
+### What was tricky to build
+
+- The main tricky part was avoiding overlap with `backend-developer-guide` while still providing enough implementation depth. I resolved this by focusing the new topic on OS-02-specific contracts and validation workflow, not generic module lifecycle content.
+
+### What warrants a second pair of eyes
+
+- Confirm the new topic should stay `IsTopLevel: true` or be downgraded if top-level listing becomes crowded.
+
+### What should be done in the future
+
+- If a dedicated frontend docs-browser UI lands, add a short "UI usage" subsection and link it here.
+
+### Code review instructions
+
+- Read:
+  - `wesen-os/pkg/doc/topics/05-backend-documentation-system.md`
+- Verify discoverability links from:
+  - `wesen-os/pkg/doc/topics/01-wesen-os-guide.md`
+  - `wesen-os/pkg/doc/topics/02-backend-developer-guide.md`
+- Run:
+  - `go test ./cmd/wesen-os-launcher ./pkg/doc ./pkg/launcherui -count=1`

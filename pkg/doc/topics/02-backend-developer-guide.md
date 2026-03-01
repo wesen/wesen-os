@@ -18,7 +18,7 @@ SectionType: GeneralTopic
 
 This guide covers everything a Go developer needs to build, test, and integrate a backend app module into the wesen-os launcher. It starts with the conceptual foundations — what modules are and why the system is designed around them — then moves through the contract reference with concrete examples drawn from the inventory, GEPA, and ARC-AGI modules.
 
-For frontend module development, see `frontend-developer-guide`. For building a complete app with both backend and frontend, see `building-a-full-app`. For workspace setup and operations, see `wesen-os-guide`. For the HyperCard card system that frontend modules use to create interactive UI, see `hypercard-environment-guide`.
+For frontend module development, see `frontend-developer-guide`. For the dedicated OS-02 docs architecture and endpoint contracts, see `backend-documentation-system`. For building a complete app with both backend and frontend, see `building-a-full-app`. For workspace setup and operations, see `wesen-os-guide`. For the HyperCard card system that frontend modules use to create interactive UI, see `hypercard-environment-guide`.
 
 ## What Modules Are and Why They Exist
 
@@ -728,6 +728,7 @@ The ARC module demonstrates config normalization (setting defaults for driver, r
 ## See Also
 
 - `wesen-os-guide` — Workspace setup, build pipeline, configuration reference
+- `backend-documentation-system` — Structured docs system contracts, module authoring flow, and endpoint smoke checks
 - `frontend-developer-guide` — Building the frontend side of your app
 - `hypercard-environment-guide` — The HyperCard runtime, UI DSL, and sandboxed card system
 - `building-a-full-app` — Complete backend+frontend integration walkthrough

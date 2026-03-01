@@ -18,7 +18,7 @@ SectionType: GeneralTopic
 
 This is the operations guide for the wesen-os launcher: the composition runtime that assembles backend app modules (inventory, GEPA, ARC-AGI) and a frontend shell into a single Go binary with embedded SPA assets. It covers everything from first-day workspace setup through binary packaging and troubleshooting.
 
-For building new backend modules, see `backend-developer-guide`. For building new frontend app modules, see `frontend-developer-guide`. For building a complete app with both sides, see `building-a-full-app`. For the HyperCard runtime and card system, see `hypercard-environment-guide`.
+For building new backend modules, see `backend-developer-guide`. For the structured backend docs system (module docs pages, docs hints, and aggregate docs endpoint), see `backend-documentation-system`. For building new frontend app modules, see `frontend-developer-guide`. For building a complete app with both sides, see `building-a-full-app`. For the HyperCard runtime and card system, see `hypercard-environment-guide`.
 
 ## Design Philosophy
 
@@ -638,6 +638,7 @@ These commands are useful in scripts, CI pipelines, and smoke tests. The `npm ru
 ## See Also
 
 - `backend-developer-guide` — Building backend app modules
+- `backend-documentation-system` — Structured backend docs contracts, endpoints, and validation workflow
 - `frontend-developer-guide` — Building frontend app modules
 - `hypercard-environment-guide` — The HyperCard runtime, UI DSL, and sandboxed card system
 - `building-a-full-app` — End-to-end guide for a complete app
