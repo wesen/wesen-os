@@ -24,18 +24,18 @@
 
 ## Phase 3: API Layer For Help Mode
 
-- [ ] Add typed API hooks in `appsApi.ts` for:
-- [ ] `/api/os/help`
-- [ ] `/api/os/help/{slug}`
-- [ ] Add/extend domain types to represent global help toc and detail payloads.
+- [x] Add typed API hooks in `appsApi.ts` for:
+- [x] `/api/os/help`
+- [x] `/api/os/help/{slug}`
+- [x] Add/extend domain types to represent global help toc and detail payloads.
 
 ## Phase 4: Customizable Doc Browser Mode
 
-- [ ] Add doc-browser mode/config props at `DocBrowserWindow` and context boundary.
-- [ ] Implement `help` mode home screen data source independent of `/api/os/apps`.
-- [ ] Implement `help` mode reader source using `/api/os/help/{slug}`.
-- [ ] Keep `apps` mode behavior unchanged for module docs browsing.
-- [ ] Ensure mode-specific labels/titles are configurable (header text, empty states, menu labels).
+- [x] Add doc-browser mode/config props at `DocBrowserWindow` and context boundary.
+- [x] Implement `help` mode home screen data source independent of `/api/os/apps`.
+- [x] Implement `help` mode reader source using `/api/os/help/{slug}`.
+- [x] Keep `apps` mode behavior unchanged for module docs browsing.
+- [x] Ensure mode-specific labels/titles are configurable (header text, empty states, menu labels).
 
 ## Phase 5: UI/UX Behavior
 
