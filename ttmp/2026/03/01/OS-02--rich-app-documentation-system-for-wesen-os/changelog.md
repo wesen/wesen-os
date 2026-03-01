@@ -89,3 +89,23 @@ Implemented OS-02 phase 3 in `go-go-app-inventory`: added embedded module docs c
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-inventory/pkg/backendmodule/docs_store.go — Embedded docs store loader
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-inventory/pkg/backendmodule/module.go — `DocStore()` exposure and docs route mounting
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-inventory/pkg/backendmodule/module_test.go — Docs route + manifest hint expectations
+
+
+## 2026-03-01
+
+Implemented OS-02 phase 4 in `go-go-app-arc-agi-3`: added ARC docs corpus, embedded docs loader, `/docs` route mounting, `DocStore()` exposure, reflection docs-link alignment, and docs-specific backendmodule tests.
+
+### Related Commits
+
+- `go-go-app-arc-agi-3`: `b7542a4` — `arc-agi: add module docs corpus, routes, and docstore`
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-arc-agi-3/pkg/backendmodule/docs/overview.md — ARC backend overview doc
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-arc-agi-3/pkg/backendmodule/docs/session-lifecycle.md — ARC session lifecycle doc
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-arc-agi-3/pkg/backendmodule/docs/api-reference.md — ARC route reference doc
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-arc-agi-3/pkg/backendmodule/docs/runtime-modes.md — ARC runtime configuration doc
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-arc-agi-3/pkg/backendmodule/docs_store.go — Embedded docs store loader
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-arc-agi-3/pkg/backendmodule/module.go — Docs mounting and `DocStore()` exposure
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-arc-agi-3/pkg/backendmodule/reflection.go — Docs endpoint links in reflection payload
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-arc-agi-3/pkg/backendmodule/module_test.go — Docs route and reflection/docs consistency coverage

@@ -41,7 +41,7 @@ RelatedFiles:
       Note: Verified gepa adapter reflection mapping and temporary docs ownership need
 ExternalSources: []
 Summary: 'Chronological investigation diary for OS-02 backend planning work: ticket discovery, architecture evidence gathering, design-gap analysis, and production of the backend rollout design document.'
-LastUpdated: 2026-03-01T14:35:00-05:00
+LastUpdated: 2026-03-01T14:48:00-05:00
 WhatFor: Continuation log for future contributors implementing the backend docs system and validating decisions made during planning.
 WhenToUse: Read this before continuing OS-02 backend implementation, especially for command history, discovered constraints, and known risk points.
 ---
@@ -463,4 +463,68 @@ gofmt -w pkg/backendmodule/module.go pkg/backendmodule/docs_store.go pkg/backend
 go test ./pkg/backendmodule ./pkg/backendcomponent -count=1
 go test ./... -count=1
 git commit -m "inventory: add module docs corpus, routes, and docstore"
+```
+
+## Step 6: Implement OS-02 Phase 4 In go-go-app-arc-agi-3
+
+I completed the ARC module docs rollout using the same module-owned pattern as inventory: embedded docs pages, module route mounting, and host-visible docs store exposure.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Work on it task by task, committing after each "big enough" group of changes to avoid too many commits, keep a frequent diary. Check tasks off as you go."
+
+**Assistant interpretation:** Continue with the next checklist phase and keep commits phase-sized.
+
+**Inferred user intent:** Make steady ticket-tracked progress through the rollout sequence.
+
+**Commit (code):** `b7542a4` — `arc-agi: add module docs corpus, routes, and docstore`
+
+### What I did
+
+- Added ARC docs corpus in `pkg/backendmodule/docs/`:
+  - `overview.md`
+  - `session-lifecycle.md`
+  - `api-reference.md`
+  - `runtime-modes.md`
+- Added embedded docs loader:
+  - `pkg/backendmodule/docs_store.go`
+- Updated ARC module:
+  - loads docs store during `NewModuleWithRuntime`
+  - surfaces docs parse failure during `Init`
+  - mounts docs routes via `docmw.MountRoutes(...)`
+  - exposes `DocStore()` for host docs hint support
+  - adds `docs` capability to manifest
+- Updated reflection payload:
+  - adds docs overview URL link
+  - keeps repository guide link
+  - adds `docs-list` and `docs-get` API entries
+- Extended tests:
+  - verifies docs store exists and expected count
+  - verifies reflection contains docs API entries
+  - verifies `/docs` and `/docs/{slug}` endpoints
+
+### Why
+
+- ARC already had mature reflection/schema surfaces, so this phase validates docs parity for a non-chat module and confirms reflection/docs link alignment.
+
+### Validation
+
+- Workspace test runs:
+  - `go test ./pkg/backendmodule -count=1`
+  - `go test ./... -count=1`
+
+### Note
+
+- I attempted a `GOWORK=off` sanity run and confirmed it currently fails because the tagged `go-go-os-backend` version does not yet include the new `pkg/docmw` package. Per user instruction, rollout continues in workspace mode only.
+
+### Technical details
+
+- Commands used:
+
+```bash
+cd /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-arc-agi-3
+gofmt -w pkg/backendmodule/module.go pkg/backendmodule/reflection.go pkg/backendmodule/docs_store.go pkg/backendmodule/module_test.go
+go test ./pkg/backendmodule -count=1
+go test ./... -count=1
+git commit -m "arc-agi: add module docs corpus, routes, and docstore"
 ```

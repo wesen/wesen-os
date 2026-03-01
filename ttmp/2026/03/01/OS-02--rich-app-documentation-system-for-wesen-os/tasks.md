@@ -61,17 +61,17 @@
 
 ## Phase 4: ARC-AGI Docs Rollout (`go-go-app-arc-agi-3`)
 
-- [ ] Add ARC docs source directory (`pkg/backendmodule/docs/`).
-- [ ] Migrate/split current ARC guide into structured pages:
-- [ ] `overview.md`
-- [ ] `session-lifecycle.md`
-- [ ] `api-reference.md`
-- [ ] `runtime-modes.md`
-- [ ] Load docs store in ARC module startup/init.
-- [ ] Mount ARC docs routes (`/docs`, `/docs/{slug}`).
-- [ ] Expose `DocStore()` from ARC module.
-- [ ] Update ARC reflection docs links to point to docs endpoints where applicable.
-- [ ] Add ARC tests for docs routes and reflection/docs consistency.
+- [x] Add ARC docs source directory (`pkg/backendmodule/docs/`).
+- [x] Migrate/split current ARC guide into structured pages:
+- [x] `overview.md`
+- [x] `session-lifecycle.md`
+- [x] `api-reference.md`
+- [x] `runtime-modes.md`
+- [x] Load docs store in ARC module startup/init.
+- [x] Mount ARC docs routes (`/docs`, `/docs/{slug}`).
+- [x] Expose `DocStore()` from ARC module.
+- [x] Update ARC reflection docs links to point to docs endpoints where applicable.
+- [x] Add ARC tests for docs routes and reflection/docs consistency.
 
 ## Phase 5: GEPA Docs Rollout (`go-go-gepa`)
 
