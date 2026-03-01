@@ -1,0 +1,49 @@
+name: wesen-os-launcher-frontend-ci
+
+on:
+  push:
+    branches:
+      - main
+      - task/**
+  pull_request:
+
+jobs:
+  launcher-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout wesen-os
+        uses: actions/checkout@v4
+
+      - name: Checkout go-go-os platform repo
+        uses: actions/checkout@v4
+        with:
+          repository: go-go-golems/go-go-os
+          path: go-go-os
+
+      - name: Checkout go-go-app-inventory repo
+        uses: actions/checkout@v4
+        with:
+          repository: go-go-golems/go-go-app-inventory
+          path: go-go-app-inventory
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install go-go-os frontend dependencies
+        working-directory: go-go-os
+        run: npm install
+
+      - name: Install go-go-app-inventory frontend dependencies
+        working-directory: go-go-app-inventory
+        run: npm install
+
+      - name: Install wesen-os frontend dependencies
+        run: npm install
+
+      - name: Run launcher frontend build
+        run: npm run launcher:frontend:build
+
+      - name: Run launcher frontend tests
+        run: npm run test

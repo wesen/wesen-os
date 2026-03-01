@@ -51,6 +51,8 @@ release:
 bump-glazed:
 	go get github.com/go-go-golems/glazed@latest
 	go get github.com/go-go-golems/clay@latest
+	go get github.com/go-go-golems/go-go-os-backend@latest
+	# go get github.com/go-go-golems/go-go-os-app-inventory@latest
 	go mod tidy
 
 XXX_BINARY=$(shell which XXX)
