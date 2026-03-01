@@ -2,6 +2,19 @@
 
 ## 2026-03-01
 
+- Added tmux dev orchestration script for launcher development with automatic port probing and Vite proxy wiring to the selected backend port.
+- Added npm/pnpm helper commands for start/restart/status/attach/stop developer workflow.
+- Updated startup documentation to use the new script-based lifecycle instead of manual tmux command sequences.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/scripts/launcher-dev-tmux.sh — New dev session manager script (`start|restart|stop|status|attach`) with auto-port selection.
+- /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/package.json — Added `launcher:dev:*` scripts.
+- /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/docs/startup-playbook.md — Updated startup/restart/health-check flow to use script.
+- /home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/README.md — Added quick command references for script-driven launcher dev workflow.
+
+## 2026-03-01
+
 - Completed `wesen-os` sqlite backend composition: added sqlite backend adapter module package, launcher module registration, runtime flag/config threading, and default required-app semantics (`inventory,sqlite`).
 - Added `wesen-os` integration coverage for sqlite discoverability and routing (`/api/os/apps`, `/api/apps/sqlite/health`, `/api/apps/sqlite/query`, and sqlite reflection endpoint).
 - Updated launcher smoke automation to assert sqlite backend discoverability and query route readiness in composed launcher runtime.

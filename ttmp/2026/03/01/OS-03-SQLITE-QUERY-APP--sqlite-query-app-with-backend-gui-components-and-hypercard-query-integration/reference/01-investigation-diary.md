@@ -1573,3 +1573,106 @@ I also aligned the active build/test path with workspace mode as requested, so l
   - `go test ./...`
   - `pnpm run launcher:smoke`
   - `pnpm test`
+
+## Step 18: Add tmux dev launcher script with automatic port fallback and proxy wiring
+
+I added a dedicated developer script to manage the local launcher stack in tmux. The script abstracts session creation and restart behavior, checks preferred ports, and automatically walks to the next free port when collisions occur.
+
+This closes the manual setup gap where frontend and backend could silently drift due hardcoded ports. The script now starts both processes with consistent runtime wiring and exposes a simple lifecycle interface (`start/restart/stop/status/attach`).
+
+### Prompt Context
+
+**User prompt (verbatim):** "can you make a real launcher script that: 
+
+- checks the ports and gets the next bestone
+- runs a tmux and starts the vite dev and backend (properly configuring the proxy port) so that they run in a shell
+
+That way I can easily start/restart/stop dev setup"
+
+**Assistant interpretation:** Build a production-usable local dev orchestration script for `wesen-os` that handles port conflicts automatically and makes tmux-based lifecycle management one command away.
+
+**Inferred user intent:** Remove repetitive manual setup and make dev startup/restart/stop reliable even when default ports are occupied.
+
+**Commit (code):** pending
+
+### What I did
+
+- Added script:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/scripts/launcher-dev-tmux.sh`
+- Implemented commands:
+  - `start`, `restart`, `stop`, `status`, `attach`
+- Implemented port probing:
+  - preferred backend from `8091`, frontend from `5273`
+  - auto-increment fallback if occupied
+  - avoids selecting same port for backend/frontend
+- Implemented proxy wiring:
+  - frontend pane command sets `INVENTORY_CHAT_BACKEND=http://<host>:<backend-port>`
+  - launches Vite with explicit chosen frontend port
+- Added script helpers in:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/package.json`
+    - `launcher:dev:start`
+    - `launcher:dev:restart`
+    - `launcher:dev:stop`
+    - `launcher:dev:status`
+    - `launcher:dev:attach`
+- Updated docs:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/README.md`
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/docs/startup-playbook.md`
+
+### Why
+
+- Manual tmux setup was error-prone and not resilient to occupied defaults (`8091`, `5273`).
+- Proxy target mismatch between Vite and backend port is a common source of confusing startup failures.
+
+### What worked
+
+- Dry-run lifecycle in disposable session:
+  - `start --session codex-dev-test --backend-port 8091 --frontend-port 5273 --detached`
+  - selected backend `8092` automatically because `8091` was occupied.
+- Verified backend + frontend routing:
+  - `curl http://127.0.0.1:8092/api/os/apps` returned `200`.
+  - `curl http://127.0.0.1:5273/api/os/apps` returned `200` through Vite proxy.
+- Verified restart/stop commands behaved as expected.
+
+### What didn't work
+
+- Initial frontend command used `pnpm run dev -- --host ... --port ...`, which forwarded an extra `--` and caused Vite to ignore target port args in this environment.
+- Fixed by switching pane launch to `pnpm exec vite --host ... --port ...`.
+- Initial backend startup with ARC default caused runtime exits in this environment; defaulted script to `--arc-enabled=false` (still overrideable).
+
+### What I learned
+
+- For tmux-managed startup scripts, explicit process commands (`pnpm exec vite`) are more predictable than layered script forwarding when extra args are required.
+
+### What was tricky to build
+
+- Ensuring restart behavior reused the same ports when possible instead of drifting to new ones each time.
+- I resolved this by issuing `Ctrl-C` first, then probing ports, then launching commands again in the same panes.
+
+### What warrants a second pair of eyes
+
+- Verify whether defaulting `--arc-enabled=false` should remain the standard behavior for team workflows or be exposed as profile-specific config in docs.
+
+### What should be done in the future
+
+- Add an optional readiness wait mode (`--wait-ready`) that blocks until both backend and frontend health endpoints respond.
+
+### Code review instructions
+
+- Review script behavior and option parsing:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/scripts/launcher-dev-tmux.sh`
+- Review command entry points:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/package.json`
+- Review usage docs:
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/docs/startup-playbook.md`
+  - `/home/manuel/workspaces/2026-03-01/sqlite-app/wesen-os/README.md`
+
+### Technical details
+
+- Script validation:
+  - `bash -n scripts/launcher-dev-tmux.sh`
+- Lifecycle validation (throwaway session):
+  - `bash ./scripts/launcher-dev-tmux.sh start --session codex-dev-test --backend-port 8091 --frontend-port 5273 --detached`
+  - `bash ./scripts/launcher-dev-tmux.sh status --session codex-dev-test`
+  - `bash ./scripts/launcher-dev-tmux.sh restart --session codex-dev-test --detached`
+  - `bash ./scripts/launcher-dev-tmux.sh stop --session codex-dev-test`

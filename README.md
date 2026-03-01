@@ -25,9 +25,9 @@ Your workspace should contain these directories side-by-side:
 ## Frontend Commands
 
 ```bash
-npm install
-npm run build
-npm run test
+pnpm install
+pnpm run build
+pnpm run test
 ```
 
 ## Startup Playbook
@@ -41,16 +41,20 @@ Use [`docs/startup-playbook.md`](docs/startup-playbook.md) for:
 ## Launcher Assembly Commands
 
 ```bash
-npm run launcher:frontend:build   # build apps/os-launcher
-npm run launcher:ui:sync          # copy dist -> pkg/launcherui/dist
-npm run launcher:binary:build     # frontend build + sync + go build
-npm run launcher:smoke            # runtime smoke checks
+pnpm run launcher:frontend:build   # build apps/os-launcher
+pnpm run launcher:ui:sync          # copy dist -> pkg/launcherui/dist
+pnpm run launcher:binary:build     # frontend build + sync + go build
+pnpm run launcher:smoke            # runtime smoke checks
+pnpm run launcher:dev:start        # tmux dev session (auto ports + proxy wiring)
+pnpm run launcher:dev:restart      # restart both panes
+pnpm run launcher:dev:status       # show current ports/session
+pnpm run launcher:dev:stop         # stop tmux dev session
 ```
 
 ## Running the Launcher
 
 ```bash
-npm run launcher:binary:build
+pnpm run launcher:binary:build
 ./build/wesen-os-launcher wesen-os-launcher --addr 127.0.0.1:8091
 ```
 

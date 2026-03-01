@@ -13,6 +13,11 @@
     "launcher:ui:sync": "bash ./scripts/launcher-ui-sync.sh",
     "launcher:binary:build": "npm run launcher:frontend:build && npm run launcher:ui:sync && bash ./scripts/build-wesen-os-launcher.sh",
     "launcher:smoke": "bash ./scripts/smoke-wesen-os-launcher.sh",
+    "launcher:dev:start": "bash ./scripts/launcher-dev-tmux.sh start",
+    "launcher:dev:restart": "bash ./scripts/launcher-dev-tmux.sh restart",
+    "launcher:dev:stop": "bash ./scripts/launcher-dev-tmux.sh stop",
+    "launcher:dev:status": "bash ./scripts/launcher-dev-tmux.sh status",
+    "launcher:dev:attach": "bash ./scripts/launcher-dev-tmux.sh attach",
     "workspace:setup": "bash ./scripts/setup-workspace.sh",
     "workspace:test": "bash ./scripts/test-workspace.sh"
   },

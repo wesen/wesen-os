@@ -19,64 +19,51 @@ Install dependencies once:
 
 ```bash
 cd wesen-os
-npm install
+pnpm install
 ```
 
 ## Start Backend + Frontend In tmux
 
-Use one tmux window with two panes so process restarts do not close panes.
+Use the dev manager script. It will:
+- pick the next free backend/frontend ports (starting at `8091` and `5273`)
+- set `INVENTORY_CHAT_BACKEND` so Vite proxy points at the chosen backend port
+- start backend + frontend in one tmux window with two panes
 
 ```bash
-ROOT=/home/manuel/workspaces/2026-02-22/add-gepa-optimizer
-SOCKET=/tmp/tmux-1000/default
-SESSION=dev
-
-tmux -S "$SOCKET" new-session -d -s "$SESSION" -c "$ROOT/wesen-os"
-tmux -S "$SOCKET" split-window -h -t "$SESSION":0 -c "$ROOT/wesen-os"
-
-# pane 0: backend
-tmux -S "$SOCKET" send-keys -t "$SESSION":0.0 \
-  "go run ./cmd/wesen-os-launcher wesen-os-launcher --addr 127.0.0.1:8091" C-m
-
-# pane 1: frontend
-tmux -S "$SOCKET" send-keys -t "$SESSION":0.1 \
-  "npm run dev -w apps/os-launcher" C-m
-
-tmux -S "$SOCKET" attach -t "$SESSION"
+cd wesen-os
+pnpm run launcher:dev:start
 ```
 
-Notes:
-- Backend URL: `http://127.0.0.1:8091`
-- Frontend URL: `http://127.0.0.1:5173`
-
-## Restart In The Same Panes
-
-From any shell:
+Optional explicit overrides:
 
 ```bash
-SOCKET=/tmp/tmux-1000/default
-SESSION=dev
-
-tmux -S "$SOCKET" send-keys -t "$SESSION":0.0 C-c
-tmux -S "$SOCKET" send-keys -t "$SESSION":0.0 \
-  "cd /home/manuel/workspaces/2026-02-22/add-gepa-optimizer/wesen-os" C-m
-tmux -S "$SOCKET" send-keys -t "$SESSION":0.0 \
-  "go run ./cmd/wesen-os-launcher wesen-os-launcher --addr 127.0.0.1:8091" C-m
-
-tmux -S "$SOCKET" send-keys -t "$SESSION":0.1 C-c
-tmux -S "$SOCKET" send-keys -t "$SESSION":0.1 \
-  "cd /home/manuel/workspaces/2026-02-22/add-gepa-optimizer/wesen-os" C-m
-tmux -S "$SOCKET" send-keys -t "$SESSION":0.1 \
-  "npm run dev -w apps/os-launcher" C-m
+bash ./scripts/launcher-dev-tmux.sh start \
+  --backend-port 18091 \
+  --frontend-port 5274 \
+  --session wesen-dev
 ```
 
-`Ctrl-C` stops only the foreground process and keeps the pane alive.
+## Restart / Stop / Status
+
+```bash
+pnpm run launcher:dev:restart
+pnpm run launcher:dev:status
+pnpm run launcher:dev:stop
+```
 
 ## Health Checks
 
+First print selected ports:
+
 ```bash
-curl -sS http://127.0.0.1:8091/api/os/apps
-curl -sS http://127.0.0.1:5173/api/os/apps
+pnpm run launcher:dev:status
+```
+
+Then query backend directly and through frontend dev proxy:
+
+```bash
+curl -sS http://127.0.0.1:<backend-port>/api/os/apps
+curl -sS http://127.0.0.1:<frontend-port>/api/os/apps
 ```
 
 Both should return JSON with app entries (for example `inventory`, `gepa`).
@@ -91,11 +78,11 @@ npm run launcher:binary:build
 
 ## Common Issues
 
-- `connection refused` on `:8091`:
+- `connection refused` on backend port:
   - backend is not running or still starting;
   - check backend pane output with `tmux capture-pane`.
 - backend appears stuck at startup:
   - retry with ARC disabled:
-  - `go run ./cmd/wesen-os-launcher wesen-os-launcher --arc-enabled=false --addr 127.0.0.1:8091`
-- stale listener on `:8091`:
-  - `lsof-who -p 8091 -k`
+  - `go run ./cmd/wesen-os-launcher wesen-os-launcher --arc-enabled=false --addr 127.0.0.1:<backend-port>`
+- stale listener on selected backend port:
+  - `lsof-who -p <backend-port> -k`
