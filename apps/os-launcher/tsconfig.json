@@ -53,6 +53,12 @@
       ],
       "@hypercard/inventory/reducers": ["../../../go-go-app-inventory/apps/inventory/src/reducers.ts"],
       "@hypercard/inventory/*": ["../../../go-go-app-inventory/apps/inventory/src/*"]
+      ,
+      "@hypercard/sqlite": ["../../../go-go-app-sqlite/apps/sqlite/src/index.ts"],
+      "@hypercard/sqlite/launcher": [
+        "../../../go-go-app-sqlite/apps/sqlite/src/launcher/public.ts"
+      ],
+      "@hypercard/sqlite/*": ["../../../go-go-app-sqlite/apps/sqlite/src/*"]
     }
   },
   "include": ["src"],

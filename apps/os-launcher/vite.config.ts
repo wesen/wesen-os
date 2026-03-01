@@ -54,6 +54,11 @@ export default defineConfig({
         'go-go-app-inventory/apps/inventory/src/reducers.ts',
       ),
       '@hypercard/inventory': path.resolve(workspaceRoot, 'go-go-app-inventory/apps/inventory/src'),
+      '@hypercard/sqlite/launcher': path.resolve(
+        workspaceRoot,
+        'go-go-app-sqlite/apps/sqlite/src/launcher/public.ts',
+      ),
+      '@hypercard/sqlite': path.resolve(workspaceRoot, 'go-go-app-sqlite/apps/sqlite/src'),
     },
   },
   server: {

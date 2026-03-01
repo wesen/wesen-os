@@ -40,7 +40,7 @@ describe('launcher host wiring', () => {
 
     const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
     const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
-    const appIds = ['inventory', 'todo', 'crm', 'book-tracker-debug', 'arc-agi-player', 'apps-browser', 'hypercard-tools'];
+    const appIds = ['inventory', 'sqlite', 'todo', 'crm', 'book-tracker-debug', 'arc-agi-player', 'apps-browser', 'hypercard-tools'];
 
     for (const appId of appIds) {
       const handled = routeContributionCommand(`icon.open.${appId}`, handlers, commandContext());
@@ -52,7 +52,7 @@ describe('launcher host wiring', () => {
       const [payload] = hostContext.openWindow.mock.calls[index] as [
         { content: { kind: string; appKey?: string; card?: { stackId?: string } } },
       ];
-      if (appId === 'inventory' || appId === 'apps-browser' || appId === 'arc-agi-player') {
+      if (appId === 'inventory' || appId === 'sqlite' || appId === 'apps-browser' || appId === 'arc-agi-player') {
         expect(payload.content.kind).toBe('app');
         expect(payload.content.appKey).toMatch(new RegExp(`^${appId}:`));
       } else {
@@ -190,6 +190,7 @@ describe('launcher host wiring', () => {
       ),
       readFileSync(new URL('../../../../../go-go-os-frontend/apps/apps-browser/src/launcher/module.tsx', import.meta.url), 'utf8'),
       readFileSync(new URL('../../../../../go-go-os-frontend/apps/hypercard-tools/src/launcher/module.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../../go-go-app-sqlite/apps/sqlite/src/launcher/module.tsx', import.meta.url), 'utf8'),
     ];
 
     const placeholderLabels = [
@@ -200,6 +201,7 @@ describe('launcher host wiring', () => {
       'ARC-AGI Module',
       'Apps Browser Module',
       'HyperCard Tools Module',
+      'SQLite Module',
     ];
     for (const source of moduleSources) {
       for (const label of placeholderLabels) {
@@ -215,6 +217,7 @@ describe('launcher host wiring', () => {
       expect(payload.id).toContain(module.manifest.id);
       if (
         module.manifest.id === 'inventory' ||
+        module.manifest.id === 'sqlite' ||
         module.manifest.id === 'apps-browser' ||
         module.manifest.id === 'arc-agi-player'
       ) {
