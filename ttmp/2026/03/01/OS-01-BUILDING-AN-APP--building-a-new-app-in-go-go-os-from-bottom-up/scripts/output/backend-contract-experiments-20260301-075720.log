@@ -1,0 +1,7 @@
+Backend Contract Experiments
+workspace_root=/home/manuel/workspaces/2026-02-22/add-gepa-optimizer
+started_at=2026-03-01T07:57:20-05:00
+
+=== go-go-os-backend backendhost contract tests ===
+COMMAND: bash -lc cd '/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-backend' && go test ./pkg/backendhost -run 'Test(NewModuleRegistry_RejectsDuplicateAppID|MountNamespacedRoutes_MountsUnderAppPrefix|RegisterAppsManifestEndpoint_ReturnsManifestAndHealth|RegisterAppsManifestEndpoint_ModuleReflectionRoute_ReturnsPayload)' -v
+/home/manuel/.hishtory/config.sh: line 72: bind: warning: line editing not enabled

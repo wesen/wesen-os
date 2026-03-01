@@ -1,0 +1,576 @@
+Packaging/Composition Experiments
+workspace_root=/home/manuel/workspaces/2026-02-22/add-gepa-optimizer
+started_at=2026-03-01T07:56:59-05:00
+
+=== workspace modules (go.work) ===
+go 1.25.7
+
+use (
+	./geppetto
+	./glazed
+	./go-go-app-arc-agi-3
+	./go-go-app-inventory
+	./go-go-gepa
+	./go-go-goja
+	./go-go-os-backend
+	./pinocchio
+	./wesen-os
+)
+
+=== wesen-os module replaces ===
+module github.com/go-go-golems/wesen-os
+
+go 1.25.7
+
+replace github.com/go-go-golems/go-go-app-inventory => ../go-go-app-inventory
+
+replace github.com/go-go-golems/go-go-app-arc-agi => ../go-go-app-arc-agi-3
+
+require (
+	github.com/go-go-golems/clay v0.4.0
+	github.com/go-go-golems/geppetto v0.10.2
+	github.com/go-go-golems/glazed v1.0.4
+	github.com/go-go-golems/go-go-app-arc-agi v0.0.0-00010101000000-000000000000
+	github.com/go-go-golems/go-go-app-inventory v0.0.0-00010101000000-000000000000
+	github.com/go-go-golems/go-go-gepa v0.0.0-20260223022920-190ca45ac964
+	github.com/go-go-golems/pinocchio v0.10.1
+	github.com/go-go-golems/plz-confirm v0.0.4
+	github.com/google/uuid v1.6.0
+	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
+	github.com/pkg/errors v0.9.1
+	github.com/spf13/cobra v1.10.2
+	github.com/stretchr/testify v1.11.1
+	google.golang.org/protobuf v1.36.11
+)
+
+require (
+	cloud.google.com/go v0.121.1 // indirect
+	cloud.google.com/go/ai v0.8.0 // indirect
+	cloud.google.com/go/auth v0.18.1 // indirect
+	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
+	cloud.google.com/go/compute/metadata v0.9.0 // indirect
+	cloud.google.com/go/longrunning v0.6.7 // indirect
+	github.com/BurntSushi/toml v1.3.2 // indirect
+	github.com/Masterminds/goutils v1.1.1 // indirect
+	github.com/Masterminds/semver v1.5.0 // indirect
+	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
+	github.com/Rican7/retry v0.3.1 // indirect
+	github.com/ThreeDotsLabs/watermill v1.5.1 // indirect
+	github.com/ThreeDotsLabs/watermill-redisstream v1.4.3 // indirect
+	github.com/adrg/frontmatter v0.2.0 // indirect
+	github.com/alecthomas/chroma/v2 v2.16.0 // indirect
+	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de // indirect
+	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
+	github.com/atotto/clipboard v0.1.4 // indirect
+	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
+	github.com/aymerick/douceur v0.2.0 // indirect
+	github.com/bahlo/generic-list-go v0.2.0 // indirect
+	github.com/bmatcuk/doublestar/v4 v4.10.0 // indirect
+	github.com/buger/jsonparser v1.1.1 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/charmbracelet/bubbles v1.0.0 // indirect
+	github.com/charmbracelet/bubbletea v1.3.10 // indirect
+	github.com/charmbracelet/colorprofile v0.4.1 // indirect
+	github.com/charmbracelet/glamour v0.10.0 // indirect
+	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834 // indirect
+	github.com/charmbracelet/x/ansi v0.11.6 // indirect
+	github.com/charmbracelet/x/cellbuf v0.0.15 // indirect
+	github.com/charmbracelet/x/exp/slice v0.0.0-20250327172914-2fdc97757edf // indirect
+	github.com/charmbracelet/x/term v0.2.2 // indirect
+	github.com/clipperhouse/displaywidth v0.9.0 // indirect
+	github.com/clipperhouse/stringish v0.1.1 // indirect
+	github.com/clipperhouse/uax29/v2 v2.5.0 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/dlclark/regexp2 v1.11.5 // indirect
+	github.com/dop251/goja v0.0.0-20260219130522-0ba9a5494a59 // indirect
+	github.com/dop251/goja_nodejs v0.0.0-20260212111938-1f56ff5bcf14 // indirect
+	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
+	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/fsnotify/fsnotify v1.9.0 // indirect
+	github.com/go-go-golems/go-go-goja v0.4.0 // indirect
+	github.com/go-go-golems/go-go-os-backend v0.0.1
+	github.com/go-logr/logr v1.4.3 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/go-openapi/errors v0.22.0 // indirect
+	github.com/go-openapi/strfmt v0.23.0 // indirect
+	github.com/go-sourcemap/sourcemap v2.1.4+incompatible // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
+	github.com/google/generative-ai-go v0.20.1 // indirect
+	github.com/google/pprof v0.0.0-20241029153458-d1b30febd7db // indirect
+	github.com/google/s2a-go v0.1.9 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.11 // indirect
+	github.com/googleapis/gax-go/v2 v2.17.0 // indirect
+	github.com/gorilla/css v1.0.1 // indirect
+	github.com/huandu/go-clone v1.7.2 // indirect
+	github.com/huandu/xstrings v1.5.0 // indirect
+	github.com/imdario/mergo v0.3.16 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/invopop/jsonschema v0.13.0 // indirect
+	github.com/itchyny/gojq v0.12.12 // indirect
+	github.com/itchyny/timefmt-go v0.1.5 // indirect
+	github.com/jedib0t/go-pretty v4.3.0+incompatible // indirect
+	github.com/kopoli/go-terminal-size v0.0.0-20170219200355-5c97524c8b54 // indirect
+	github.com/lithammer/shortuuid/v3 v3.0.7 // indirect
+	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
+	github.com/mailru/easyjson v0.9.0 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-localereader v0.0.1 // indirect
+	github.com/mattn/go-runewidth v0.0.19 // indirect
+	github.com/mattn/go-sqlite3 v1.14.34 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.27 // indirect
+	github.com/mitchellh/copystructure v1.2.0 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
+	github.com/muesli/cancelreader v0.2.2 // indirect
+	github.com/muesli/reflow v0.3.0 // indirect
+	github.com/muesli/termenv v0.16.0 // indirect
+	github.com/oklog/ulid v1.3.1 // indirect
+	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
+	github.com/redis/go-redis/v9 v9.18.0 // indirect
+	github.com/richardlehane/mscfb v1.0.4 // indirect
+	github.com/richardlehane/msoleps v1.0.4 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/rs/zerolog v1.34.0 // indirect
+	github.com/sagikazarmark/locafero v0.11.0 // indirect
+	github.com/sahilm/fuzzy v0.1.1 // indirect
+	github.com/sashabaranov/go-openai v1.41.1 // indirect
+	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
+	github.com/spf13/afero v1.15.0 // indirect
+	github.com/spf13/cast v1.10.0 // indirect
+	github.com/spf13/pflag v1.0.10 // indirect
+	github.com/spf13/viper v1.21.0 // indirect
+	github.com/subosito/gotenv v1.6.0 // indirect
+	github.com/tiendc/go-deepcopy v1.7.1 // indirect
+	github.com/tj/go-naturaldate v1.3.0 // indirect
+	github.com/ugorji/go/codec v1.3.0 // indirect
+	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
+	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
+	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
+	github.com/xuri/efp v0.0.1 // indirect
+	github.com/xuri/excelize/v2 v2.10.0 // indirect
+	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9 // indirect
+	github.com/yuin/goldmark v1.7.8 // indirect
+	github.com/yuin/goldmark-emoji v1.0.5 // indirect
+	go.mongodb.org/mongo-driver v1.14.0 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
+	go.opentelemetry.io/otel v1.40.0 // indirect
+	go.opentelemetry.io/otel/metric v1.40.0 // indirect
+	go.opentelemetry.io/otel/trace v1.40.0 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	golang.org/x/crypto v0.48.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/oauth2 v0.35.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/term v0.40.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/time v0.14.0 // indirect
+	google.golang.org/api v0.266.0 // indirect
+	google.golang.org/appengine v1.6.8 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20260128011058-8636f8732409 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20 // indirect
+	google.golang.org/grpc v1.78.0 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
+)
+
+replace github.com/go-go-golems/go-go-gepa => ../go-go-gepa
+
+replace github.com/go-go-golems/go-go-os-backend => ../go-go-os-backend
+
+=== launcher frontend scripts ===
+{
+  "name": "wesen-os-frontend",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/os-launcher",
+    "build": "npm run build -w apps/os-launcher",
+    "test": "npm run test -w apps/os-launcher",
+    "typecheck": "node ./node_modules/typescript/bin/tsc --build",
+    "launcher:frontend:build": "npm run build -w apps/os-launcher",
+    "launcher:ui:sync": "bash ./scripts/launcher-ui-sync.sh",
+    "launcher:binary:build": "npm run launcher:frontend:build && npm run launcher:ui:sync && bash ./scripts/build-wesen-os-launcher.sh",
+    "launcher:smoke": "bash ./scripts/smoke-wesen-os-launcher.sh"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.15",
+    "typescript": "~5.7.0",
+    "vitest": "^4.0.18"
+  }
+}
+
+=== launcher build/sync scripts ===
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SRC_DIST="${ROOT_DIR}/apps/os-launcher/dist"
+DST_DIST="${ROOT_DIR}/pkg/launcherui/dist"
+
+if [[ ! -d "${SRC_DIST}" ]]; then
+  echo "missing launcher frontend dist: ${SRC_DIST}" >&2
+  echo "run: npm run launcher:frontend:build" >&2
+  exit 1
+fi
+
+mkdir -p "${DST_DIST}"
+
+find "${DST_DIST}" -mindepth 1 -maxdepth 1 ! -name '.embedkeep' -exec rm -rf {} +
+cp -R "${SRC_DIST}/." "${DST_DIST}/"
+
+echo "[launcher:ui:sync] synced ${SRC_DIST} -> ${DST_DIST}"
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BIN_PATH="${LAUNCHER_BIN:-${ROOT_DIR}/build/wesen-os-launcher}"
+
+mkdir -p "$(dirname "${BIN_PATH}")"
+
+echo "[launcher:binary:build] building ${BIN_PATH}"
+(cd "${ROOT_DIR}" && GOWORK=off go build -o "${BIN_PATH}" ./cmd/wesen-os-launcher)
+
+echo "[launcher:binary:build] built ${BIN_PATH}"
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BIN_PATH="${LAUNCHER_BIN:-${ROOT_DIR}/build/wesen-os-launcher}"
+PORT="${LAUNCHER_PORT:-18091}"
+BASE_URL="http://127.0.0.1:${PORT}"
+MAX_STARTUP_MS="${MAX_STARTUP_MS:-20000}"
+SKIP_BUILD=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --skip-build)
+      SKIP_BUILD=1
+      shift
+      ;;
+    --port)
+      PORT="$2"
+      BASE_URL="http://127.0.0.1:${PORT}"
+      shift 2
+      ;;
+    *)
+      echo "unknown argument: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/wesen-os-launcher-smoke.XXXXXX")"
+LOG_FILE="${WORK_DIR}/launcher.log"
+MISSING_LOG_FILE="${WORK_DIR}/missing-required.log"
+HOME_DIR="${WORK_DIR}/home"
+XDG_CONFIG_DIR="${WORK_DIR}/xdg-config"
+PROFILE_REGISTRY_FILE="${WORK_DIR}/profiles.runtime.yaml"
+PID=""
+
+mkdir -p "${HOME_DIR}" "${XDG_CONFIG_DIR}"
+
+cat >"${PROFILE_REGISTRY_FILE}" <<'YAML'
+slug: smoke
+profiles:
+  default:
+    slug: default
+    runtime:
+      step_settings_patch:
+        ai-chat:
+          ai-engine: gpt-4.1-mini
+YAML
+
+cleanup() {
+  if [[ -n "${PID}" ]] && kill -0 "${PID}" >/dev/null 2>&1; then
+    kill "${PID}" >/dev/null 2>&1 || true
+    wait "${PID}" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
+
+fail() {
+  local message="$1"
+  echo "FAIL: ${message}" >&2
+  if [[ -f "${LOG_FILE}" ]]; then
+    echo "--- launcher log tail ---" >&2
+    tail -n 80 "${LOG_FILE}" >&2 || true
+  fi
+  if [[ -f "${MISSING_LOG_FILE}" ]]; then
+    echo "--- missing-required log ---" >&2
+    cat "${MISSING_LOG_FILE}" >&2 || true
+  fi
+  exit 1
+}
+
+if [[ "${SKIP_BUILD}" -eq 0 ]]; then
+  echo "[smoke] building launcher binary"
+  (cd "${ROOT_DIR}" && npm run launcher:binary:build)
+fi
+
+if [[ ! -x "${BIN_PATH}" ]]; then
+  fail "launcher binary is missing: ${BIN_PATH}"
+fi
+
+echo "[smoke] launching ${BIN_PATH}"
+START_MS="$(date +%s%3N)"
+HOME="${HOME_DIR}" XDG_CONFIG_HOME="${XDG_CONFIG_DIR}" "${BIN_PATH}" wesen-os-launcher \
+  --addr "127.0.0.1:${PORT}" \
+  --profile default \
+  --profile-registries "${PROFILE_REGISTRY_FILE}" \
+  --inventory-db "${WORK_DIR}/inventory.db" \
+  --timeline-dsn "file:${WORK_DIR}/timeline.db?_foreign_keys=on" \
+  --turns-dsn "file:${WORK_DIR}/turns.db?_foreign_keys=on" \
+  --inventory-seed-on-start=true \
+  --inventory-reset-on-start=true \
+  >"${LOG_FILE}" 2>&1 &
+PID=$!
+
+READY=0
+for _ in $(seq 1 200); do
+  if curl -fsS "${BASE_URL}/api/os/apps" >"${WORK_DIR}/apps.json" 2>/dev/null; then
+    READY=1
+    break
+  fi
+  if ! kill -0 "${PID}" >/dev/null 2>&1; then
+    fail "launcher process exited before readiness"
+  fi
+  sleep 0.1
+done
+
+if [[ "${READY}" -ne 1 ]]; then
+  fail "launcher did not become ready at ${BASE_URL}"
+fi
+
+STARTUP_MS="$(( $(date +%s%3N) - START_MS ))"
+echo "[smoke] startup_ms=${STARTUP_MS}"
+if (( STARTUP_MS > MAX_STARTUP_MS )); then
+  fail "startup exceeded threshold (${STARTUP_MS}ms > ${MAX_STARTUP_MS}ms)"
+fi
+
+curl -fsS "${BASE_URL}/" >"${WORK_DIR}/root.html" || fail "launcher root route is not reachable"
+grep -qi '<div id="root"' "${WORK_DIR}/root.html" || fail "launcher root HTML missing root mount"
+
+grep -q '"app_id":"inventory"' "${WORK_DIR}/apps.json" || fail "/api/os/apps missing inventory app"
+grep -q '"healthy":true' "${WORK_DIR}/apps.json" || fail "/api/os/apps does not report healthy modules"
+
+PROFILE_STATUS="$(curl -sS -o "${WORK_DIR}/profiles.json" -w "%{http_code}" "${BASE_URL}/api/apps/inventory/api/chat/profiles")"
+if [[ "${PROFILE_STATUS}" != "200" ]]; then
+  fail "namespaced backend endpoint returned ${PROFILE_STATUS}"
+fi
+grep -q '"slug"' "${WORK_DIR}/profiles.json" || fail "namespaced profile payload missing slug field"
+
+for route in "/chat" "/ws?conv_id=legacy-smoke" "/api/timeline?conv_id=legacy-smoke"; do
+  LEGACY_STATUS="$(curl -sS -o /dev/null -w "%{http_code}" "${BASE_URL}${route}")"
+  if [[ "${LEGACY_STATUS}" != "404" ]]; then
+    fail "legacy alias still reachable (${route} -> ${LEGACY_STATUS})"
+  fi
+done
+
+if HOME="${HOME_DIR}" XDG_CONFIG_HOME="${XDG_CONFIG_DIR}" "${BIN_PATH}" wesen-os-launcher \
+  --addr "127.0.0.1:0" \
+  --profile default \
+  --profile-registries "${PROFILE_REGISTRY_FILE}" \
+  --required-apps "inventory,missing" \
+  --inventory-db "${WORK_DIR}/inventory-missing.db" \
+  >"${MISSING_LOG_FILE}" 2>&1; then
+  fail "missing required app check unexpectedly passed"
+fi
+grep -q 'required backend module "missing" is not registered' "${MISSING_LOG_FILE}" || fail "missing required app failure message mismatch"
+
+echo "[smoke] PASS"
+echo "[smoke] logs: ${LOG_FILE}"
+
+=== launcher embed handler ===
+package launcherui
+
+import (
+	"embed"
+	"io/fs"
+	"net/http"
+	"net/url"
+	"path"
+	"strings"
+)
+
+//go:embed all:dist
+var embeddedDistFS embed.FS
+
+// Handler serves embedded launcher UI assets with SPA fallback.
+func Handler() http.Handler {
+	distFS, err := fs.Sub(embeddedDistFS, "dist")
+	if err != nil {
+		return http.NotFoundHandler()
+	}
+	return newSPAHandler(distFS)
+}
+
+func newSPAHandler(distFS fs.FS) http.Handler {
+	fileServer := http.FileServer(http.FS(distFS))
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			http.NotFound(w, r)
+			return
+		}
+
+		cleanPath := path.Clean("/" + strings.TrimSpace(r.URL.Path))
+		if cleanPath == "." {
+			cleanPath = "/"
+		}
+		candidate := strings.TrimPrefix(cleanPath, "/")
+		if candidate == "" {
+			candidate = "index.html"
+		}
+
+		if fileExists(distFS, candidate) {
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+
+		if path.Ext(candidate) != "" {
+			http.NotFound(w, r)
+			return
+		}
+
+		indexBytes, err := fs.ReadFile(distFS, "index.html")
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(indexBytes)
+	})
+}
+
+func fileExists(distFS fs.FS, name string) bool {
+	info, err := fs.Stat(distFS, name)
+	if err != nil {
+		return false
+	}
+	return !info.IsDir()
+}
+
+func cloneURL(in *url.URL) *url.URL {
+	if in == nil {
+		return &url.URL{Path: "/"}
+	}
+	copyURL := *in
+	return &copyURL
+}
+
+=== launcher Vite proxy map ===
+import path from 'node:path';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+
+const workspaceRoot = path.resolve(__dirname, '../../..');
+const inventoryBackendTarget = process.env.INVENTORY_CHAT_BACKEND ?? 'http://127.0.0.1:8091';
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+    alias: {
+      react: path.resolve(workspaceRoot, 'go-go-os-frontend/packages/engine/node_modules/react'),
+      'react/jsx-runtime': path.resolve(
+        workspaceRoot,
+        'go-go-os-frontend/packages/engine/node_modules/react/jsx-runtime.js',
+      ),
+      'react/jsx-dev-runtime': path.resolve(
+        workspaceRoot,
+        'go-go-os-frontend/packages/engine/node_modules/react/jsx-dev-runtime.js',
+      ),
+      'react-dom': path.resolve(workspaceRoot, 'go-go-os-frontend/packages/engine/node_modules/react-dom'),
+      'react-redux': path.resolve(workspaceRoot, 'go-go-os-frontend/packages/engine/node_modules/react-redux'),
+      '@reduxjs/toolkit': path.resolve(workspaceRoot, 'go-go-os-frontend/packages/engine/node_modules/@reduxjs/toolkit'),
+      '@hypercard/engine': path.resolve(workspaceRoot, 'go-go-os-frontend/packages/engine/src'),
+      '@hypercard/chat-runtime': path.resolve(workspaceRoot, 'go-go-os-frontend/packages/chat-runtime/src'),
+      '@hypercard/hypercard-runtime': path.resolve(workspaceRoot, 'go-go-os-frontend/packages/hypercard-runtime/src'),
+      '@hypercard/desktop-os': path.resolve(workspaceRoot, 'go-go-os-frontend/packages/desktop-os/src'),
+      '@hypercard/confirm-runtime': path.resolve(workspaceRoot, 'go-go-os-frontend/packages/confirm-runtime/src'),
+      '@hypercard/todo': path.resolve(workspaceRoot, 'go-go-os-frontend/apps/todo'),
+      '@hypercard/crm': path.resolve(workspaceRoot, 'go-go-os-frontend/apps/crm'),
+      '@hypercard/book-tracker-debug': path.resolve(workspaceRoot, 'go-go-os-frontend/apps/book-tracker-debug'),
+      '@hypercard/apps-browser/launcher': path.resolve(
+        workspaceRoot,
+        'go-go-os-frontend/apps/apps-browser/src/launcher/public.ts',
+      ),
+      '@hypercard/apps-browser': path.resolve(workspaceRoot, 'go-go-os-frontend/apps/apps-browser/src'),
+      '@hypercard/hypercard-tools/launcher': path.resolve(
+        workspaceRoot,
+        'go-go-os-frontend/apps/hypercard-tools/src/launcher/public.ts',
+      ),
+      '@hypercard/hypercard-tools': path.resolve(workspaceRoot, 'go-go-os-frontend/apps/hypercard-tools/src'),
+      '@hypercard/arc-agi-player/launcher': path.resolve(
+        workspaceRoot,
+        'go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts',
+      ),
+      '@hypercard/arc-agi-player': path.resolve(workspaceRoot, 'go-go-app-arc-agi-3/apps/arc-agi-player/src'),
+      '@hypercard/inventory/launcher': path.resolve(
+        workspaceRoot,
+        'go-go-app-inventory/apps/inventory/src/launcher/public.ts',
+      ),
+      '@hypercard/inventory/reducers': path.resolve(
+        workspaceRoot,
+        'go-go-app-inventory/apps/inventory/src/reducers.ts',
+      ),
+      '@hypercard/inventory': path.resolve(workspaceRoot, 'go-go-app-inventory/apps/inventory/src'),
+    },
+  },
+  server: {
+    proxy: {
+      '/api/apps/inventory/chat': {
+        target: inventoryBackendTarget,
+        changeOrigin: true,
+      },
+      '/api/apps/inventory/ws': {
+        target: inventoryBackendTarget,
+        ws: true,
+        changeOrigin: true,
+      },
+      '/api/apps/inventory/api': {
+        target: inventoryBackendTarget,
+        changeOrigin: true,
+      },
+      '/api/apps/inventory/confirm': {
+        target: inventoryBackendTarget,
+        changeOrigin: true,
+      },
+      '/api/apps/inventory/confirm/ws': {
+        target: inventoryBackendTarget,
+        ws: true,
+        changeOrigin: true,
+      },
+      '/api/os/apps': {
+        target: inventoryBackendTarget,
+        changeOrigin: true,
+      },
+      '/api/apps': {
+        target: inventoryBackendTarget,
+        ws: true,
+        changeOrigin: true,
+      },
+    },
+  },
+});
+
+=== run targeted tests for packaging/route assumptions ===
+=== RUN   TestSPAHandler_FallsBackToIndexForClientRoutes
+--- PASS: TestSPAHandler_FallsBackToIndexForClientRoutes (0.00s)
+PASS
+ok  	github.com/go-go-golems/wesen-os/pkg/launcherui	0.003s
+FAIL	./pkg/backendhost [setup failed]
+FAIL

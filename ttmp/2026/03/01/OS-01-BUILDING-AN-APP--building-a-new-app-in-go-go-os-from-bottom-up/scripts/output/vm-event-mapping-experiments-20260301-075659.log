@@ -1,0 +1,162 @@
+VM/Event Mapping Experiments
+workspace_root=/home/manuel/workspaces/2026-02-22/add-gepa-optimizer
+started_at=2026-03-01T07:56:59-05:00
+
+=== Bootstrap dispatch primitives ===
+87:function defineStackBundle(factory) {
+89:    throw new Error('defineStackBundle requires a factory function');
+97:    throw new Error('Stack bundle did not register via defineStackBundle');
+172:globalThis.defineStackBundle = defineStackBundle;
+181:      throw new Error('Stack bundle did not register via defineStackBundle');
+220:    const dispatchCardAction = (actionType, payload) => {
+228:    const dispatchSessionAction = (actionType, payload) => {
+236:    const dispatchDomainAction = (domain, actionType, payload) => {
+245:    const dispatchSystemCommand = (command, payload) => {
+258:        dispatchCardAction,
+259:        dispatchSessionAction,
+260:        dispatchDomainAction,
+261:        dispatchSystemCommand,
+
+=== Runtime intent routing ===
+2:import { authorizeDomainIntent, authorizeSystemIntent } from '../features/pluginCardRuntime';
+3:import { ingestRuntimeIntent } from '../features/pluginCardRuntime';
+30:function toSystemAction(intent: SystemIntent, context: IntentDispatchContext): unknown | null {
+69:function toDomainAction(intent: Extract<RuntimeIntent, { scope: 'domain' }>, context: IntentDispatchContext) {
+83:export function dispatchRuntimeIntent(intent: RuntimeIntent, context: IntentDispatchContext) {
+85:    ingestRuntimeIntent({
+97:    const decision = authorizeDomainIntent(runtimeSession.capabilities, intent.domain);
+104:    const decision = authorizeSystemIntent(runtimeSession.capabilities, intent.command);
+111:    context.dispatch(toDomainAction(intent, context));
+116:    const action = toSystemAction(intent, context);
+
+=== Artifact projection to runtime cards ===
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/chat-runtime/src/chat/sem/timelineMapper.ts:63:  kindHint?: 'hypercard.widget.v1' | 'hypercard.card.v2',
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/chat-runtime/src/chat/sem/timelineMapper.ts:75:  if (kindHint === 'hypercard.widget.v1' || kindHint === 'hypercard.card.v2') {
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/chat-runtime/src/chat/sem/timelineMapper.ts:83:): { runtimeCardId?: string; runtimeCardCode?: string } {
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/chat-runtime/src/chat/sem/timelineMapper.ts:94:    runtimeCardId: stringField(card, 'id'),
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/chat-runtime/src/chat/sem/timelineMapper.ts:95:    runtimeCardCode: stringField(card, 'code'),
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/chat-runtime/src/chat/sem/timelineMapper.ts:101:  kind: 'hypercard.widget.v1' | 'hypercard.card.v2',
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/chat-runtime/src/chat/sem/timelineMapper.ts:115:  if (kind === 'hypercard.widget.v1') {
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/chat-runtime/src/chat/sem/timelineMapper.ts:132:  const { runtimeCardId, runtimeCardCode } = runtimeCardFromResult(resultRecord);
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/chat-runtime/src/chat/sem/timelineMapper.ts:143:      runtimeCardId,
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/chat-runtime/src/chat/sem/timelineMapper.ts:144:      runtimeCardCode,
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/chat-runtime/src/chat/sem/timelineMapper.ts:153:  if (entity.kind === 'hypercard.widget.v1') {
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/chat-runtime/src/chat/sem/timelineMapper.ts:154:    return remapHypercardEntity(entity, 'hypercard.widget.v1');
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/chat-runtime/src/chat/sem/timelineMapper.ts:156:  if (entity.kind === 'hypercard.card.v2') {
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/chat-runtime/src/chat/sem/timelineMapper.ts:157:    return remapHypercardEntity(entity, 'hypercard.card.v2');
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactProjectionMiddleware.ts:3:import { registerRuntimeCard } from '../../plugin-runtime';
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactProjectionMiddleware.ts:4:import { extractArtifactUpsertFromTimelineEntity } from './artifactRuntime';
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactProjectionMiddleware.ts:12:  const upsert = extractArtifactUpsertFromTimelineEntity(entity.kind, entity.props);
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactProjectionMiddleware.ts:24:  if (upsert.runtimeCardId && upsert.runtimeCardCode) {
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactProjectionMiddleware.ts:25:    registerRuntimeCard(upsert.runtimeCardId, upsert.runtimeCardCode);
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:11:  runtimeCardId?: string;
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:12:  runtimeCardCode?: string;
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:86:        upsert.runtimeCardId = stringField(cardData, 'id');
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:87:        upsert.runtimeCardCode = stringField(cardData, 'code');
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:103:  if (type === 'hypercard.widget.v1') {
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:108:  if (type === 'hypercard.card.v2') {
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:115:        upsert.runtimeCardId = stringField(cardData, 'id');
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:116:        upsert.runtimeCardCode = stringField(cardData, 'code');
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:133:    entityKind !== 'hypercard.widget.v1' &&
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:134:    entityKind !== 'hypercard.card.v2'
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:145:  const hint = entityKind === 'hypercard.widget.v1' ? 'widget' : 'card';
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:167:          fromRaw.runtimeCardId = stringField(cardData, 'id');
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:168:          fromRaw.runtimeCardCode = stringField(cardData, 'code');
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:190:    runtimeCardId: stringField(props, 'runtimeCardId'),
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:191:    runtimeCardCode: stringField(props, 'runtimeCardCode'),
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:195:export function extractArtifactUpsertFromTimelineEntity(
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:212:  if (kind === 'hypercard.widget.v1') {
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:215:  if (kind === 'hypercard.card.v2') {
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:239:  runtimeCardId?: string;
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:245:  const runtimeCardId = cleanString(input.runtimeCardId);
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:246:  if (!runtimeCardId) {
+/home/manuel/workspaces/2026-02-22/add-gepa-optimizer/go-go-os-frontend/packages/hypercard-runtime/src/hypercard/artifacts/artifactRuntime.ts:262:        cardId: runtimeCardId,
+
+=== Inventory plugin bundle intent emissions ===
+151:          go({ dispatchSystemCommand }, args) {
+152:            dispatchSystemCommand('nav.go', { cardId: String(asRecord(args).cardId || 'home') });
+178:          go({ dispatchSystemCommand }, args) {
+179:            dispatchSystemCommand('nav.go', { cardId: String(asRecord(args).cardId || 'home') });
+181:          open({ dispatchSystemCommand }, args) {
+182:            dispatchSystemCommand('nav.go', {
+212:          open({ dispatchSystemCommand }, args) {
+213:            dispatchSystemCommand('nav.go', {
+218:          notify({ dispatchSystemCommand }, args) {
+219:            dispatchSystemCommand('notify', { message: String(asRecord(args).message || '') });
+244:          open({ dispatchSystemCommand }, args) {
+245:            dispatchSystemCommand('nav.go', {
+307:          back({ dispatchSystemCommand }) {
+308:            dispatchSystemCommand('nav.back');
+310:          change({ dispatchCardAction }, args) {
+323:            dispatchCardAction('set', {
+331:            dispatchDomainAction('inventory', 'updateQty', {
+336:          save({ dispatchCardAction, dispatchDomainAction, dispatchSystemCommand, cardState, globalState }) {
+339:            dispatchDomainAction('inventory', 'saveItem', {
+343:            dispatchCardAction('patch', { edits: {} });
+344:            dispatchSystemCommand('notify', { message: 'Saved ' + sku });
+346:          remove({ dispatchDomainAction, dispatchSystemCommand, globalState }) {
+349:            dispatchDomainAction('inventory', 'deleteItem', { sku });
+350:            dispatchSystemCommand('notify', { message: 'Deleted ' + sku });
+351:            dispatchSystemCommand('nav.back');
+394:          change({ dispatchCardAction }, args) {
+401:            dispatchCardAction('set', {
+406:          submit({ dispatchCardAction, dispatchDomainAction, dispatchSystemCommand, cardState }) {
+411:              dispatchCardAction('set', {
+418:            dispatchDomainAction('inventory', 'createItem', {
+428:            dispatchCardAction('patch', {
+432:            dispatchSystemCommand('notify', { message: 'Created ' + sku });
+434:          goHome({ dispatchSystemCommand }) {
+435:            dispatchSystemCommand('nav.go', { cardId: 'home' });
+463:          change({ dispatchCardAction }, args) {
+470:            dispatchCardAction('set', {
+475:          submit({ dispatchCardAction, dispatchDomainAction, dispatchSystemCommand, cardState }) {
+480:              dispatchCardAction('set', {
+487:            dispatchDomainAction('inventory', 'receiveStock', { sku, qty });
+488:            dispatchCardAction('patch', {
+492:            dispatchSystemCommand('notify', { message: 'Received stock for ' + sku });
+512:          change({ dispatchCardAction }, args) {
+513:            dispatchCardAction('set', {
+518:          submit({ dispatchCardAction, cardState, globalState }) {
+522:              dispatchCardAction('set', {
+528:            dispatchCardAction('set', {
+555:          notify({ dispatchSystemCommand }, args) {
+556:            dispatchSystemCommand('notify', { message: String(asRecord(args).message || '') });
+
+=== ARC plugin bundle intent emissions ===
+47:  function notify(dispatchSystemCommand, message) {
+48:    dispatchSystemCommand('notify', { message: String(message || '') });
+112:          setGameId({ dispatchSessionAction }, args) {
+114:            dispatchSessionAction('patch', { arcGameId: value });
+117:          quickGame({ dispatchSessionAction }, args) {
+122:            dispatchSessionAction('patch', { arcGameId: gameId });
+125:          loadGames({ dispatchDomainAction, dispatchSessionAction }) {
+127:            dispatchSessionAction('patch', {
+132:            dispatchDomainAction('arc', 'command.request', {
+139:          createSession({ dispatchDomainAction, dispatchSessionAction }) {
+141:            dispatchSessionAction('patch', {
+146:            dispatchDomainAction('arc', 'command.request', {
+153:          resetGame({ dispatchDomainAction, dispatchSessionAction, dispatchSystemCommand, sessionState }) {
+156:              notify(dispatchSystemCommand, 'Create a session first.');
+160:              notify(dispatchSystemCommand, 'Load Games, then choose a Game ID first.');
+165:            dispatchSessionAction('patch', {
+170:            dispatchDomainAction('arc', 'command.request', {
+180:          doAction({ dispatchDomainAction, dispatchSessionAction, dispatchSystemCommand, sessionState }, args) {
+183:              notify(dispatchSystemCommand, 'Create a session first.');
+187:              notify(dispatchSystemCommand, 'Load Games, then choose a Game ID first.');
+193:            dispatchSessionAction('patch', {
+198:            dispatchDomainAction('arc', 'command.request', {
+209:          loadTimeline({ dispatchDomainAction, dispatchSessionAction, dispatchSystemCommand, sessionState }) {
+212:              notify(dispatchSystemCommand, 'Create a session first.');
+217:            dispatchSessionAction('patch', {
+222:            dispatchDomainAction('arc', 'command.request', {
+
+=== Inventory reducer action contracts (domain sink) ===
+17:    updateQty(state, action: PayloadAction<{ sku: string; delta: number }>) {
+21:    saveItem(state, action: PayloadAction<{ sku: string; edits: Partial<Item> }>) {
+25:    deleteItem(state, action: PayloadAction<{ sku: string }>) {
+28:    createItem(state, action: PayloadAction<Item>) {
+31:    receiveStock(state, action: PayloadAction<{ sku: string; qty: number }>) {
+38:export const { updateQty, saveItem, deleteItem, createItem, receiveStock } = inventorySlice.actions;
+
+completed_at=2026-03-01T07:56:59-05:00
+status=ok
