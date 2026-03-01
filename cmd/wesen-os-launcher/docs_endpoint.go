@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"sort"
 	"strings"
 
+	"github.com/go-go-golems/glazed/pkg/help"
 	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
+	"github.com/go-go-golems/go-go-os-backend/pkg/docmw"
+	wesendoc "github.com/go-go-golems/wesen-os/pkg/doc"
 )
 
 type osDocResult struct {
@@ -39,7 +43,104 @@ type osDocsResponse struct {
 	} `json:"facets"`
 }
 
-func registerOSDocsEndpoint(mux *http.ServeMux, registry *backendhost.ModuleRegistry) {
+const launcherHelpModuleID = "wesen-os"
+
+func loadLauncherHelpDocStore() *docmw.DocStore {
+	helpSystem := help.NewHelpSystem()
+	if err := wesendoc.AddDocToHelpSystem(helpSystem); err != nil {
+		return nil
+	}
+
+	sections, err := helpSystem.Store.List(context.Background(), "order_num ASC")
+	if err != nil {
+		return nil
+	}
+
+	docs := make([]docmw.ModuleDoc, 0, len(sections))
+	for _, section := range sections {
+		slug := strings.TrimSpace(section.Slug)
+		title := strings.TrimSpace(section.Title)
+		if slug == "" || title == "" {
+			continue
+		}
+		docs = append(docs, docmw.ModuleDoc{
+			ModuleID: launcherHelpModuleID,
+			Slug:     slug,
+			Title:    title,
+			DocType:  mapHelpSectionType(section.SectionType),
+			Topics:   append([]string(nil), section.Topics...),
+			Summary:  strings.TrimSpace(section.Short),
+			Order:    section.Order,
+			Content:  strings.TrimSpace(section.Content),
+		})
+	}
+	store, err := docmw.NewDocStore(launcherHelpModuleID, docs)
+	if err != nil {
+		return nil
+	}
+	return store
+}
+
+func mapHelpSectionType(sectionType help.SectionType) string {
+	switch sectionType {
+	case help.SectionTutorial:
+		return "tutorial"
+	case help.SectionExample:
+		return "example"
+	case help.SectionApplication:
+		return "application"
+	default:
+		return "guide"
+	}
+}
+
+func registerOSHelpEndpoint(mux *http.ServeMux, store *docmw.DocStore) {
+	if mux == nil {
+		return
+	}
+	if store == nil {
+		emptyStore, err := docmw.NewDocStore(launcherHelpModuleID, nil)
+		if err != nil {
+			return
+		}
+		store = emptyStore
+	}
+
+	mux.HandleFunc("/api/os/help", func(w http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		osWriteJSON(w, struct {
+			ModuleID string            `json:"module_id"`
+			Docs     []docmw.ModuleDoc `json:"docs"`
+		}{
+			ModuleID: store.ModuleID,
+			Docs:     store.TOC(),
+		})
+	})
+
+	mux.HandleFunc("/api/os/help/", func(w http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		slug := strings.TrimPrefix(req.URL.Path, "/api/os/help/")
+		slug = strings.TrimSpace(slug)
+		if slug == "" || strings.Contains(slug, "/") {
+			http.NotFound(w, req)
+			return
+		}
+		doc, ok := store.Get(slug)
+		if !ok {
+			http.NotFound(w, req)
+			return
+		}
+		osWriteJSON(w, doc)
+	})
+}
+
+func registerOSDocsEndpoint(mux *http.ServeMux, registry *backendhost.ModuleRegistry, launcherHelpStore *docmw.DocStore) {
 	if mux == nil || registry == nil {
 		return
 	}
@@ -54,7 +155,7 @@ func registerOSDocsEndpoint(mux *http.ServeMux, registry *backendhost.ModuleRegi
 		docTypeFilter := csvSet(req.URL.Query().Get("doc_type"))
 		topicFilter := csvSet(req.URL.Query().Get("topics"))
 
-		results := make([]osDocResult, 0, 32)
+		results := make([]osDocResult, 0, 48)
 		for _, module := range registry.Modules() {
 			documentable, ok := module.(backendhost.DocumentableAppBackendModule)
 			if !ok {
@@ -69,31 +170,13 @@ func registerOSDocsEndpoint(mux *http.ServeMux, registry *backendhost.ModuleRegi
 			if len(moduleFilter) > 0 && !setContains(moduleFilter, moduleID) {
 				continue
 			}
+			results = appendDocsFromStore(results, store, moduleID, "/api/apps/"+moduleID+"/docs/", query, docTypeFilter, topicFilter)
+		}
 
-			for _, doc := range store.TOC() {
-				result := osDocResult{
-					ModuleID: moduleID,
-					Slug:     doc.Slug,
-					Title:    doc.Title,
-					DocType:  doc.DocType,
-					Topics:   append([]string(nil), doc.Topics...),
-					Summary:  doc.Summary,
-					URL:      "/api/apps/" + moduleID + "/docs/" + doc.Slug,
-				}
-
-				if len(docTypeFilter) > 0 && !setContains(docTypeFilter, strings.ToLower(strings.TrimSpace(result.DocType))) {
-					continue
-				}
-				if len(topicFilter) > 0 && !intersectsSet(topicFilter, result.Topics) {
-					continue
-				}
-				if query != "" {
-					haystack := strings.ToLower(result.Title + "\n" + result.Summary + "\n" + result.Slug + "\n" + result.ModuleID)
-					if !strings.Contains(haystack, query) {
-						continue
-					}
-				}
-				results = append(results, result)
+		if launcherHelpStore != nil {
+			moduleID := strings.TrimSpace(launcherHelpStore.ModuleID)
+			if moduleID != "" && (len(moduleFilter) == 0 || setContains(moduleFilter, moduleID)) {
+				results = appendDocsFromStore(results, launcherHelpStore, moduleID, "/api/os/help/", query, docTypeFilter, topicFilter)
 			}
 		}
 
@@ -115,6 +198,47 @@ func registerOSDocsEndpoint(mux *http.ServeMux, registry *backendhost.ModuleRegi
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(response)
 	})
+}
+
+func appendDocsFromStore(
+	results []osDocResult,
+	store *docmw.DocStore,
+	moduleID string,
+	urlPrefix string,
+	query string,
+	docTypeFilter map[string]struct{},
+	topicFilter map[string]struct{},
+) []osDocResult {
+	if store == nil {
+		return results
+	}
+
+	for _, doc := range store.TOC() {
+		result := osDocResult{
+			ModuleID: moduleID,
+			Slug:     doc.Slug,
+			Title:    doc.Title,
+			DocType:  doc.DocType,
+			Topics:   append([]string(nil), doc.Topics...),
+			Summary:  doc.Summary,
+			URL:      urlPrefix + doc.Slug,
+		}
+		if len(docTypeFilter) > 0 && !setContains(docTypeFilter, strings.ToLower(strings.TrimSpace(result.DocType))) {
+			continue
+		}
+		if len(topicFilter) > 0 && !intersectsSet(topicFilter, result.Topics) {
+			continue
+		}
+		if query != "" {
+			haystack := strings.ToLower(result.Title + "\n" + result.Summary + "\n" + result.Slug + "\n" + result.ModuleID)
+			if !strings.Contains(haystack, query) {
+				continue
+			}
+		}
+		results = append(results, result)
+	}
+
+	return results
 }
 
 func csvSet(raw string) map[string]struct{} {
@@ -195,4 +319,9 @@ func buildModuleFacets(results []osDocResult) []osDocsModuleFacet {
 	}
 	sort.Slice(facets, func(i, j int) bool { return facets[i].ID < facets[j].ID })
 	return facets
+}
+
+func osWriteJSON(w http.ResponseWriter, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(v)
 }

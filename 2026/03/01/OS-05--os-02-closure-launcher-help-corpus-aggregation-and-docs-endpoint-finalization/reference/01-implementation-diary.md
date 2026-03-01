@@ -115,3 +115,101 @@ docmgr --root . doc add --ticket OS-05 --doc-type design-doc \
 docmgr --root . doc add --ticket OS-05 --doc-type reference \
   --title "Implementation Diary"
 ```
+
+## Step 2: Implement Launcher Help Endpoints And Aggregate Docs Inclusion
+
+I implemented backend changes in the launcher so embedded glazed help pages are
+available at runtime and are included in the aggregate docs index. The
+implementation intentionally reuses `docmw.ModuleDoc` and `DocStore` rather
+than introducing a second docs model just for launcher help content.
+
+I also extended integration tests to lock the new contracts: `/api/os/help`,
+`/api/os/help/{slug}`, and `/api/os/docs?module=wesen-os` now have explicit
+assertions, while existing module docs checks remain unchanged.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Execute the new ticket tasks immediately and land backend functionality in grouped commits with running diary updates.
+
+**Inferred user intent:** Convert ticket planning into real working behavior without postponing implementation.
+
+### What I did
+
+- Added launcher help docs loader from embedded glazed sections:
+  - `loadLauncherHelpDocStore()`
+  - section type mapping to docs `doc_type`.
+- Added launcher help runtime endpoints:
+  - `GET /api/os/help`
+  - `GET /api/os/help/{slug}`
+- Extended aggregate docs endpoint wiring:
+  - `/api/os/docs` now merges launcher help docs with module docs.
+- Updated launcher startup wiring to register help routes and pass launcher help
+  store into aggregate endpoint registration.
+- Added integration coverage for:
+  - `/api/os/help` list response,
+  - `/api/os/help/{slug}` detail response,
+  - launcher module presence in `/api/os/docs` and module filter behavior.
+- Ran:
+  - `go test ./cmd/wesen-os-launcher -count=1`
+  - `go test ./... -count=1`
+
+### Why
+
+- OS-02 closure required launcher help corpus inclusion in runtime docs
+  discovery.
+- Shared doc store model keeps endpoint behavior coherent across module docs and
+  launcher docs.
+
+### What worked
+
+- Existing `wesendoc.AddDocToHelpSystem` made it straightforward to load help
+  sections without re-parsing markdown manually.
+- Integration tests passed after route and aggregation wiring changes.
+
+### What didn't work
+
+- Initial broad patch for integration test wiring failed due mismatched context
+  in one section; re-reading exact call sites and applying a targeted patch
+  resolved it.
+
+### What I learned
+
+- The current aggregate endpoint implementation was easy to extend by extracting
+  doc-store append logic into one helper and adding launcher as another source.
+
+### What was tricky to build
+
+- Keeping payload compatibility while adding a new data source required careful
+  URL/module-id mapping decisions. I used a stable launcher module id
+  (`wesen-os`) and launcher-specific doc URLs (`/api/os/help/{slug}`) so
+  filtering semantics stay predictable.
+
+### What warrants a second pair of eyes
+
+- `doc_type` mapping for glazed section types (`guide`, `tutorial`, `example`,
+  `application`) should be reviewed for frontend facet UX expectations.
+
+### What should be done in the future
+
+- Evaluate whether launcher help should also expose commands/flags metadata in
+  runtime docs payloads for richer frontend filtering.
+
+### Code review instructions
+
+- Review `docs_endpoint.go` first:
+  - loader conversion,
+  - new `/api/os/help*` handlers,
+  - aggregate merge logic.
+- Review `main.go` registration changes.
+- Validate integration tests in `main_integration_test.go` for new contracts.
+
+### Technical details
+
+Test commands:
+
+```bash
+go test ./cmd/wesen-os-launcher -count=1
+go test ./... -count=1
+```

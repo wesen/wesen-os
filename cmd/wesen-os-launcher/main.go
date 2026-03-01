@@ -277,7 +277,9 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 
 	appMux := http.NewServeMux()
 	backendhost.RegisterAppsManifestEndpoint(appMux, moduleRegistry)
-	registerOSDocsEndpoint(appMux, moduleRegistry)
+	launcherHelpStore := loadLauncherHelpDocStore()
+	registerOSHelpEndpoint(appMux, launcherHelpStore)
+	registerOSDocsEndpoint(appMux, moduleRegistry, launcherHelpStore)
 	for _, module := range moduleRegistry.Modules() {
 		manifest := module.Manifest()
 		if err := backendhost.MountNamespacedRoutes(appMux, manifest.AppID, module.MountRoutes); err != nil {
