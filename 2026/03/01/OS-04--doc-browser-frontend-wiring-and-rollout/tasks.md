@@ -55,16 +55,16 @@
 ## Phase 6: Advanced Doc Interaction Follow-Up
 
 - [x] Research Control/Command-click behavior and store findings in ticket reference doc.
-- [ ] Allow opening module docs from the Documentation section in `ModuleBrowserWindow` detail panel.
-- [ ] Replace raw `<a href>` doc links in module detail panel with launcher command action that opens docs reader/module docs window.
-- [ ] Allow multiple documentation windows in parallel:
-- [ ] Remove single-window dedupe behavior for docs windows or gate it behind explicit `newWindow` command payload.
-- [ ] Preserve existing same-window navigation behavior as default click; open separate window only for explicit new-window actions.
-- [ ] Add right-click context action on doc links/cards:
-- [ ] "Open in New Documentation Window"
-- [ ] "Open in Current Documentation Window"
-- [ ] Research and implement Control/Command-click behavior for new-window opening:
-- [ ] Define platform-specific behavior (`Ctrl+Click`, `Cmd+Click`, middle-click) and fallback semantics.
+- [x] Allow opening module docs from the Documentation section in `ModuleBrowserWindow` detail panel.
+- [x] Replace raw `<a href>` doc links in module detail panel with launcher command action that opens docs reader/module docs window.
+- [x] Allow multiple documentation windows in parallel:
+- [x] Remove single-window dedupe behavior for docs windows or gate it behind explicit `newWindow` command payload.
+- [x] Preserve existing same-window navigation behavior as default click; open separate window only for explicit new-window actions.
+- [x] Add right-click context action on doc links/cards:
+- [x] "Open in New Documentation Window"
+- [x] "Open in Current Documentation Window"
+- [x] Research and implement Control/Command-click behavior for new-window opening:
+- [x] Define platform-specific behavior (`Ctrl+Click`, `Cmd+Click`, middle-click) and fallback semantics.
 - [ ] Add regression tests for multi-window docs behavior and modifier-key link actions.
 - [ ] Extend runtime smoke checklist for parallel doc windows and context-menu actions.
 

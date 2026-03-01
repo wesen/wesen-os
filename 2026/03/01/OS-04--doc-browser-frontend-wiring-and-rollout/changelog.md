@@ -45,6 +45,32 @@
   - `reference/02-documentation-link-interaction-research-ctrl-click-context-multi-window.md`
   - Includes technical design options, platform behavior notes, constraints, and task decomposition.
 
+- Implemented Phase 6 advanced doc interaction features:
+  - Created `docLinkInteraction.ts` utility with `isNewWindowClick`, `parseModuleDocUrl`, and `createDocLinkHandlers` for consistent doc link behavior across all surfaces.
+  - Updated `buildDocBrowserWindowPayload` in `module.tsx` with `newWindow` option: counter-based unique IDs and unique dedupe keys for parallel windows.
+  - Replaced raw `<a href>` doc links in `BrowserDetailPanel` `ModuleDetail` with clickable buttons that route through launcher command flow via `onOpenDoc` callback.
+  - Wired `onOpenDoc` prop through `ModuleBrowserWindow` and into the launcher adapter in `module.tsx`.
+  - Extended `DocBrowserContext` with `openDocNewWindow`, `docLinkMenu`, `showDocLinkMenu`, `closeDocLinkMenu` for context menu state management.
+  - Added `DocLinkContextMenu` component in `DocBrowserWindow` with "Open in This Window" and "Open in New Window" actions.
+  - Wired `onOpenDocNewWindow` callback through `DocBrowserWindow` and into the launcher adapter.
+  - Updated all five doc browser screens with modifier-click and context menu support:
+    - `DocCenterHome` module card doc links
+    - `DocSearchScreen` result cards
+    - `ModuleDocsScreen` doc entry cards
+    - `DocReaderScreen` see-also links
+    - `TopicBrowserScreen` doc rows
+  - Added CSS styling for context menu (`doc-link-menu`, `doc-link-menu-backdrop`, `doc-link-menu-item`) in `DocBrowserWindow.css`.
+  - Added CSS styling for doc link button (`browser-detail-doc-link`) in `ModuleBrowserWindow.css`.
+  - Added Storybook stories across all screen story files demonstrating new-window callback behavior:
+    - `DocBrowserWindow.stories.tsx`: `WithNewWindowCallback`
+    - `DocReaderScreen.stories.tsx`: `SeeAlsoWithNewWindow`, `ApiReferenceWithNewWindow`, `NavigationWithNewWindow`
+    - `DocSearchScreen.stories.tsx`: `SearchWithNewWindow`, `EmptySearchWithNewWindow`
+    - `ModuleDocsScreen.stories.tsx`: `InventoryWithNewWindow`, `ArcAgiWithNewWindow`, `GepaWithNewWindow`
+    - `TopicBrowserScreen.stories.tsx`: `TopicWithNewWindow`, `NoTopicWithNewWindow`
+    - `ModuleBrowserWindow.stories.tsx`: `GepaWithDocLinks`, `InventoryWithDocLinks`, `ArcAgiWithDocLinks`, `FullyWiredGepa`
+  - Verified all 17 existing tests pass with no regressions.
+  - 18 files changed, ~433 insertions.
+
 ### Related Files
 
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/2026/03/01/OS-04--doc-browser-frontend-wiring-and-rollout/index.md

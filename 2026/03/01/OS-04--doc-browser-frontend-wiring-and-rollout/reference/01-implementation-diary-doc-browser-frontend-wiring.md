@@ -433,3 +433,134 @@ I also created and filled a dedicated research document with concrete implementa
   - `go-go-os-frontend/apps/apps-browser/src/components/BrowserDetailPanel.tsx`
   - `go-go-os-frontend/apps/apps-browser/src/launcher/module.tsx`
   - `go-go-os-frontend/packages/engine/src/components/shell/windowing/desktopMenuRuntime.tsx`
+
+## Step 6: Implement Phase 6 Advanced Doc Interactions
+
+I implemented the core Phase 6 features: opening docs from the module detail panel, parallel doc windows, right-click context menus, and Ctrl/Cmd-click new-window behavior across all doc browser surfaces.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue implementing Phase 6 tasks from OS-04 ticket" / "Don't forget to add copious storybook stories" / "keep a frequent diary as well as you work"
+
+**Assistant interpretation:** Execute Phase 6 interaction upgrades from the research doc, covering all doc link surfaces with consistent modifier-click and context menu behavior, plus comprehensive Storybook coverage.
+
+**Inferred user intent:** Ship the full advanced interaction feature set with visual proof via stories and thorough documentation.
+
+**Commit (code):** pending
+
+### What I did
+
+**1. Created `docLinkInteraction.ts` utility:**
+- `isNewWindowClick(event)`: detects Cmd/Ctrl-click and middle-click.
+- `parseModuleDocUrl(url)`: extracts moduleId/slug from `/api/apps/{module}/docs/{slug}` URLs.
+- `createDocLinkHandlers(target, openDoc, openDocNewWindow, showMenu)`: returns `onClick`, `onAuxClick`, `onContextMenu` handlers with consistent behavior.
+
+**2. Updated `buildDocBrowserWindowPayload` in `module.tsx`:**
+- Added `newWindow` option with counter-based unique window IDs and unique dedupe keys.
+- Default behavior preserved (single shared window), explicit new-window path for modifier/context actions.
+
+**3. Wired module detail panel doc links (`BrowserDetailPanel.tsx`):**
+- Replaced raw `<a href>` links with `<button data-part="browser-detail-doc-link">` elements.
+- `parseModuleDocUrl` determines if a doc URL is an internal module doc; if so, routes through `onOpenDoc` callback.
+- Supports Cmd/Ctrl-click for new window (third boolean arg) and middle-click.
+- Fallback: non-module URLs still render as external links.
+
+**4. Threaded `onOpenDoc` through component hierarchy:**
+- `ModuleBrowserWindow` accepts `onOpenDoc?: (moduleId, slug, newWindow?) => void`.
+- Passed down to `BrowserDetailPanel` → `ModuleDetail`.
+- Launcher adapter in `module.tsx` connects to `buildDocBrowserWindowPayload`.
+
+**5. Extended `DocBrowserContext` for context menu state:**
+- Added `openDocNewWindow`, `docLinkMenu`, `showDocLinkMenu`, `closeDocLinkMenu` to context value.
+- `DocLinkMenuState` tracks position (x, y) and target (moduleId, slug).
+- `DocBrowserProvider` accepts `onOpenDocNewWindow` prop.
+
+**6. Added `DocLinkContextMenu` component in `DocBrowserWindow`:**
+- Renders backdrop + positioned menu with "Open in This Window" and "Open in New Window" items.
+- "Open in New Window" only shown when `openDocNewWindow` callback is available.
+- Positioned at cursor location from `onContextMenu` event.
+
+**7. Updated all five doc browser screens with `createDocLinkHandlers`:**
+- `DocCenterHome`: module card doc links.
+- `DocSearchScreen`: result cards.
+- `ModuleDocsScreen`: doc entry cards.
+- `DocReaderScreen`: see-also links (with special handling for entries without moduleId).
+- `TopicBrowserScreen`: doc rows in topic detail.
+
+**8. Added CSS styling:**
+- `DocBrowserWindow.css`: `doc-link-menu-backdrop` (fixed overlay), `doc-link-menu` (positioned dropdown), `doc-link-menu-item` (hover highlight).
+- `ModuleBrowserWindow.css`: `browser-detail-doc-link` (underlined clickable button styled like a link).
+
+**9. Added copious Storybook stories:**
+- `DocBrowserWindow.stories.tsx`: `WithNewWindowCallback`
+- `DocReaderScreen.stories.tsx`: `SeeAlsoWithNewWindow`, `ApiReferenceWithNewWindow`, `NavigationWithNewWindow`
+- `DocSearchScreen.stories.tsx`: `SearchWithNewWindow`, `EmptySearchWithNewWindow`
+- `ModuleDocsScreen.stories.tsx`: `InventoryWithNewWindow`, `ArcAgiWithNewWindow`, `GepaWithNewWindow`
+- `TopicBrowserScreen.stories.tsx`: `TopicWithNewWindow`, `NoTopicWithNewWindow`
+- `ModuleBrowserWindow.stories.tsx`: `GepaWithDocLinks`, `InventoryWithDocLinks`, `ArcAgiWithDocLinks`, `FullyWiredGepa`
+
+### Why
+
+- The research doc (Step 5) identified these as the highest-value interaction improvements for power users who want to browse multiple docs simultaneously.
+- Consistent modifier-click behavior across all surfaces reduces cognitive load.
+- Context menus make the new-window capability discoverable without requiring keyboard knowledge.
+
+### What worked
+
+- The `createDocLinkHandlers` utility made it straightforward to apply consistent behavior across all five screens with minimal per-screen code.
+- The `DocBrowserContext` approach for context menu state kept the menu logic centralized in `DocBrowserWindow` rather than scattered across screens.
+- Existing test suite (17 tests) continued to pass without modification, confirming no regressions.
+
+### What didn't work
+
+- Initial Storybook stories used `fn()` from `@storybook/test`, but the package wasn't installed in the monorepo.
+  - Fix: replaced `fn()` with inline `console.log` callback functions.
+- The `replace_all` parameter on the Edit tool doesn't work when there are multiple identical matches (requires unique context). Used `sed` for bulk find-and-replace instead.
+
+### What I learned
+
+- The `@storybook/test` package is not part of the default Storybook 8 installation in this monorepo; stories should use inline callbacks or check package availability before importing.
+- The `DocBrowserContext` pattern (reducer + context) scales well for adding new interaction state without modifying screen components' internal logic.
+
+### What was tricky to build
+
+- The `BrowserDetailPanel` doc link replacement required careful handling: only internal module doc URLs should become clickable buttons, while external URLs should remain as `<a>` links. `parseModuleDocUrl` handles this distinction.
+- The `SeeAlsoSection` in `DocReaderScreen` needed special handling for entries without a `moduleId` (just a slug), which render as plain text instead of clickable links.
+- Context menu positioning uses `event.clientX/clientY` which gives fixed-position coordinates; the menu itself is `position: fixed` to match.
+
+### What warrants a second pair of eyes
+
+- The context menu uses `position: fixed` with `clientX/clientY`, which works for the doc browser's scrollable content area but may need adjustment if the doc browser is ever rendered inside a transformed container.
+- The `newWindow` counter in `buildDocBrowserWindowPayload` is module-scoped (not persistent), so window IDs reset on page reload. This is acceptable for the current use case but would need persistence if window state is ever serialized.
+
+### What should be done in the future
+
+- Add regression tests for multi-window docs behavior and modifier-key link actions (Phase 6 remaining tasks).
+- Run runtime smoke checklist for parallel doc windows and context-menu actions.
+- Consider keyboard shortcut hints in the context menu (e.g., "Open in New Window (Ctrl+Click)").
+
+### Code review instructions
+
+- Start with the interaction utility:
+  - `go-go-os-frontend/apps/apps-browser/src/components/doc-browser/docLinkInteraction.ts`
+- Then review the context/window plumbing:
+  - `go-go-os-frontend/apps/apps-browser/src/components/doc-browser/DocBrowserContext.tsx`
+  - `go-go-os-frontend/apps/apps-browser/src/components/doc-browser/DocBrowserWindow.tsx`
+  - `go-go-os-frontend/apps/apps-browser/src/launcher/module.tsx`
+- Then review the module detail panel changes:
+  - `go-go-os-frontend/apps/apps-browser/src/components/BrowserDetailPanel.tsx`
+  - `go-go-os-frontend/apps/apps-browser/src/components/ModuleBrowserWindow.tsx`
+- Then spot-check any screen for handler wiring consistency:
+  - `go-go-os-frontend/apps/apps-browser/src/components/doc-browser/DocCenterHome.tsx`
+- Re-run tests:
+  - `pnpm --filter @hypercard/apps-browser test`
+
+### Technical details
+
+- 18 files changed, ~433 insertions, ~67 deletions.
+- New file: `docLinkInteraction.ts` (shared interaction utility).
+- Modified screens: DocCenterHome, DocSearchScreen, ModuleDocsScreen, DocReaderScreen, TopicBrowserScreen.
+- Modified infrastructure: DocBrowserContext, DocBrowserWindow, BrowserDetailPanel, ModuleBrowserWindow, module.tsx.
+- Modified CSS: DocBrowserWindow.css, ModuleBrowserWindow.css.
+- Modified stories: 6 story files with 16 new stories total.
+- All 17 existing tests pass.
