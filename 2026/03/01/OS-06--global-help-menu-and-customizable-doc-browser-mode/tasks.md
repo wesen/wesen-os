@@ -2,25 +2,25 @@
 
 ## Phase 0: Discovery
 
-- [ ] Read current apps-browser launcher command flow and doc browser route parsing.
-- [ ] Confirm launcher backend endpoints for global help are available:
-- [ ] `GET /api/os/help`
-- [ ] `GET /api/os/help/{slug}`
-- [ ] `GET /api/os/docs?module=wesen-os`
+- [x] Read current apps-browser launcher command flow and doc browser route parsing.
+- [x] Confirm launcher backend endpoints for global help are available:
+- [x] `GET /api/os/help`
+- [x] `GET /api/os/help/{slug}`
+- [x] `GET /api/os/docs?module=wesen-os`
 
 ## Phase 1: Menu Entry Design (No Backend Changes)
 
-- [ ] Add top-level `Help` menu contribution from `apps-browser` launcher module.
-- [ ] Add `General Help` menu entry mapped to a dedicated command id.
-- [ ] Add `Apps Documentation Browser` menu entry mapped to existing apps-docs open flow.
-- [ ] Ensure merge behavior is compatible if another contribution also defines `help` menu id.
+- [x] Add top-level `Help` menu contribution from `apps-browser` launcher module.
+- [x] Add `General Help` menu entry mapped to a dedicated command id.
+- [x] Add `Apps Documentation Browser` menu entry mapped to existing apps-docs open flow.
+- [x] Ensure merge behavior is compatible if another contribution also defines `help` menu id.
 
 ## Phase 2: Command And Route Contract
 
-- [ ] Add new command id for global help mode (recommended: `apps-browser.open-help`).
-- [ ] Extend doc window payload builder to include browser mode (`apps` vs `help`).
-- [ ] Extend doc appKey suffix parser to decode mode + route robustly.
-- [ ] Keep existing apps-doc routes backwards-compatible within this ticket scope.
+- [x] Add new command id for global help mode (recommended: `apps-browser.open-help`).
+- [x] Extend doc window payload builder to include browser mode (`apps` vs `help`).
+- [x] Extend doc appKey suffix parser to decode mode + route robustly.
+- [x] Keep existing apps-doc routes backwards-compatible within this ticket scope.
 
 ## Phase 3: API Layer For Help Mode
 
