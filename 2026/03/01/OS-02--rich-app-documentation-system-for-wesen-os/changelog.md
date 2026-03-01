@@ -215,3 +215,12 @@ Closed remaining OS-02 backend gaps by adding launcher help runtime docs endpoin
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/cmd/wesen-os-launcher/main.go — Startup registration wiring for launcher help docs store
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/cmd/wesen-os-launcher/main_integration_test.go — Integration tests for launcher help endpoint and /api/os/docs module filter coverage
 
+
+## 2026-03-01
+
+Marked OS-02 complete now that launcher help corpus aggregation and doctor acceptance gate are fully closed.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/wesen-os/2026/03/01/OS-02--rich-app-documentation-system-for-wesen-os/index.md — Status updated to complete
+

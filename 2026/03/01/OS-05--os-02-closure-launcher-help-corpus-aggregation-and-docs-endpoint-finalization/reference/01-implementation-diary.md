@@ -293,3 +293,69 @@ Output:
 
 - ✅ All checks passed
 ```
+
+## Step 4: Mark Tickets Complete
+
+With all OS-05 tasks checked and OS-02 acceptance gates fully closed, I updated
+both ticket index statuses to `complete` and recorded that state transition in
+their changelogs.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Finish the workflow end-to-end, including final ticket state updates.
+
+**Inferred user intent:** Leave no ambiguous “active” ticket state once the scoped implementation is done.
+
+### What I did
+
+- Ran:
+  - `docmgr --root . meta update --ticket OS-05 --field Status --value complete`
+  - `docmgr --root . meta update --ticket OS-02 --field Status --value complete`
+- Added closure changelog entries in both tickets.
+
+### Why
+
+- Completed work should have matching ticket status to avoid stale active work
+  appearing in backlog views.
+
+### What worked
+
+- Both metadata updates applied cleanly and changelogs were updated.
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- The docmgr status update workflow is lightweight enough to include in every
+  closure commit.
+
+### What was tricky to build
+
+- Ensuring completion status is set only after all checklist + doctor evidence
+  is in place, not before.
+
+### What warrants a second pair of eyes
+
+- Confirm ticket status transitions are aligned with team convention (some teams
+  prefer `review` before `complete`).
+
+### What should be done in the future
+
+- Consider adding a ticket template rule that completion requires a final doctor
+  run timestamp in the diary/changelog.
+
+### Code review instructions
+
+- Inspect OS-02 and OS-05 `index.md` frontmatter for `Status: complete`.
+- Review corresponding changelog entries.
+
+### Technical details
+
+```bash
+docmgr --root . meta update --ticket OS-05 --field Status --value complete
+docmgr --root . meta update --ticket OS-02 --field Status --value complete
+```
