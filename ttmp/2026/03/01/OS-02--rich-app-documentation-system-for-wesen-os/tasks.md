@@ -44,20 +44,20 @@
 
 ## Phase 3: Inventory Docs Rollout (`go-go-app-inventory`)
 
-- [ ] Add inventory docs source directory under module ownership (`pkg/backendmodule/docs/`).
-- [ ] Author initial inventory docs pages:
-- [ ] `overview.md`
-- [ ] `api-reference.md`
-- [ ] `profiles-and-runtime.md`
-- [ ] `troubleshooting.md`
-- [ ] Load docs store in inventory backend module init path.
-- [ ] Mount module-local docs routes (`/docs`, `/docs/{slug}`) in inventory module.
-- [ ] Expose `DocStore()` from inventory module.
-- [ ] Add inventory module tests:
-- [ ] docs loader initialization
-- [ ] docs TOC endpoint
-- [ ] docs slug endpoint
-- [ ] manifest docs hint integration expectations
+- [x] Add inventory docs source directory under module ownership (`pkg/backendmodule/docs/`).
+- [x] Author initial inventory docs pages:
+- [x] `overview.md`
+- [x] `api-reference.md`
+- [x] `profiles-and-runtime.md`
+- [x] `troubleshooting.md`
+- [x] Load docs store in inventory backend module init path.
+- [x] Mount module-local docs routes (`/docs`, `/docs/{slug}`) in inventory module.
+- [x] Expose `DocStore()` from inventory module.
+- [x] Add inventory module tests:
+- [x] docs loader initialization
+- [x] docs TOC endpoint
+- [x] docs slug endpoint
+- [x] manifest docs hint integration expectations
 
 ## Phase 4: ARC-AGI Docs Rollout (`go-go-app-arc-agi-3`)
 

@@ -70,3 +70,22 @@ Implemented OS-02 phases 1-2 in `go-go-os-backend`: added new `pkg/docmw` docs p
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-backend/pkg/backendhost/module.go — `DocumentableAppBackendModule` optional host interface
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-backend/pkg/backendhost/manifest_endpoint.go — Manifest `docs` hint output
 - /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-os-backend/pkg/backendhost/backendhost_test.go — Manifest docs hint test coverage
+
+
+## 2026-03-01
+
+Implemented OS-02 phase 3 in `go-go-app-inventory`: added embedded module docs corpus, wired docs store loading into inventory backend module, mounted `/docs` routes, exposed `DocStore()`, and extended tests for docs routes + manifest docs hint integration expectations.
+
+### Related Commits
+
+- `go-go-app-inventory`: `b58f1a0` — `inventory: add module docs corpus, routes, and docstore`
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-inventory/pkg/backendmodule/docs/overview.md — Inventory backend module overview doc
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-inventory/pkg/backendmodule/docs/api-reference.md — Inventory route reference doc
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-inventory/pkg/backendmodule/docs/profiles-and-runtime.md — Runtime/profile behavior doc
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-inventory/pkg/backendmodule/docs/troubleshooting.md — Inventory troubleshooting doc
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-inventory/pkg/backendmodule/docs_store.go — Embedded docs store loader
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-inventory/pkg/backendmodule/module.go — `DocStore()` exposure and docs route mounting
+- /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-inventory/pkg/backendmodule/module_test.go — Docs route + manifest hint expectations

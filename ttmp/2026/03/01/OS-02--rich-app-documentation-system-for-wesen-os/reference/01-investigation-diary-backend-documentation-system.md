@@ -41,7 +41,7 @@ RelatedFiles:
       Note: Verified gepa adapter reflection mapping and temporary docs ownership need
 ExternalSources: []
 Summary: 'Chronological investigation diary for OS-02 backend planning work: ticket discovery, architecture evidence gathering, design-gap analysis, and production of the backend rollout design document.'
-LastUpdated: 2026-03-01T14:20:00-05:00
+LastUpdated: 2026-03-01T14:35:00-05:00
 WhatFor: Continuation log for future contributors implementing the backend docs system and validating decisions made during planning.
 WhenToUse: Read this before continuing OS-02 backend implementation, especially for command history, discovered constraints, and known risk points.
 ---
@@ -399,4 +399,68 @@ gofmt -w pkg/docmw/docmw.go pkg/docmw/vocabulary.go pkg/docmw/docmw_test.go pkg/
 go test ./pkg/docmw ./pkg/backendhost -count=1
 go test ./... -count=1
 git commit -m "backendhost: add module docs store, routes, and manifest hints"
+```
+
+## Step 5: Implement OS-02 Phase 3 In go-go-app-inventory
+
+I completed the inventory module rollout so docs are now first-class inventory module routes and are surfaced through the new host `DocumentableAppBackendModule` contract.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Work on it task by task, committing after each "big enough" group of changes to avoid too many commits, keep a frequent diary. Check tasks off as you go."
+
+**Assistant interpretation:** Continue sequential execution and commit inventory docs integration as its own substantial phase.
+
+**Inferred user intent:** Build incremental cross-repo progress while preserving traceability.
+
+**Commit (code):** `b58f1a0` — `inventory: add module docs corpus, routes, and docstore`
+
+### What I did
+
+- Added inventory docs corpus in `pkg/backendmodule/docs/`:
+  - `overview.md`
+  - `api-reference.md`
+  - `profiles-and-runtime.md`
+  - `troubleshooting.md`
+- Added embedded docs loader:
+  - `pkg/backendmodule/docs_store.go`
+  - parses embedded markdown into `docmw.DocStore`
+- Updated module wiring in `pkg/backendmodule/module.go`:
+  - stores docs parse result/error on construction
+  - mounts docs routes (`/docs`, `/docs/{slug}`) after component routes
+  - implements `DocStore() *docmw.DocStore`
+  - adds compile-time assertion for `DocumentableAppBackendModule`
+- Updated reflection payload:
+  - added docs-related API entries (`docs-list`, `docs-get`)
+  - added docs overview link
+- Extended tests in `pkg/backendmodule/module_test.go`:
+  - validates docs store load and expected doc count
+  - validates docs endpoints can be mounted and served
+  - validates manifest includes docs hint via backendhost manifest endpoint
+
+### Why
+
+- Inventory is the first concrete module rollout and validates the full docs contract from module package to host manifest integration.
+- This removes uncertainty before repeating the same pattern in ARC and GEPA.
+
+### What worked
+
+- Package and repo tests passed with workspace-local backendhost changes:
+  - `go test ./pkg/backendmodule ./pkg/backendcomponent -count=1`
+  - `go test ./... -count=1`
+
+### What should be done next
+
+- Apply the same module-owned docs pattern to ARC (`go-go-app-arc-agi-3`) for Phase 4.
+
+### Technical details
+
+- Commands used:
+
+```bash
+cd /home/manuel/workspaces/2026-03-01/add-os-doc-browser/go-go-app-inventory
+gofmt -w pkg/backendmodule/module.go pkg/backendmodule/docs_store.go pkg/backendmodule/reflection.go pkg/backendmodule/module_test.go
+go test ./pkg/backendmodule ./pkg/backendcomponent -count=1
+go test ./... -count=1
+git commit -m "inventory: add module docs corpus, routes, and docstore"
 ```
