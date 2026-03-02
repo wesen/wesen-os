@@ -6,6 +6,10 @@ require (
 	github.com/go-go-golems/clay v0.4.0
 	github.com/go-go-golems/geppetto v0.10.4
 	github.com/go-go-golems/glazed v1.0.4
+	github.com/go-go-golems/go-go-app-arc-agi v0.0.0-20260301233757-c94e10e7495a
+	github.com/go-go-golems/go-go-app-inventory v0.0.0-20260301235652-bf29c1fe8b1c
+	github.com/go-go-golems/go-go-app-sqlite v0.0.1
+	github.com/go-go-golems/go-go-gepa v0.0.1
 	github.com/go-go-golems/pinocchio v0.10.2
 	github.com/go-go-golems/plz-confirm v0.0.4
 	github.com/google/uuid v1.6.0
@@ -14,13 +18,6 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/protobuf v1.36.11
-)
-
-require (
-	github.com/go-go-golems/go-go-app-arc-agi v0.0.0-20260301233757-c94e10e7495a // indirect
-	github.com/go-go-golems/go-go-app-inventory v0.0.0-20260301235652-bf29c1fe8b1c // indirect
-	github.com/go-go-golems/go-go-gepa v0.0.1 // indirect
-	github.com/go-go-golems/go-go-os-frontend v0.0.0-20260301235710-66c12b2b4fc6 // indirect
 )
 
 require (
