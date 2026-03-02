@@ -140,10 +140,17 @@ func registerOSHelpEndpoint(mux *http.ServeMux, store *docmw.DocStore) {
 	})
 }
 
-func registerOSDocsEndpoint(mux *http.ServeMux, registry *backendhost.ModuleRegistry, launcherHelpStore *docmw.DocStore) {
+func registerOSDocsEndpoint(
+	mux *http.ServeMux,
+	registry *backendhost.ModuleRegistry,
+	launcherHelpStore *docmw.DocStore,
+	root string,
+) {
 	if mux == nil || registry == nil {
 		return
 	}
+	apiPrefix := rootedAPIPath(root)
+
 	mux.HandleFunc("/api/os/docs", func(w http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -170,13 +177,13 @@ func registerOSDocsEndpoint(mux *http.ServeMux, registry *backendhost.ModuleRegi
 			if len(moduleFilter) > 0 && !setContains(moduleFilter, moduleID) {
 				continue
 			}
-			results = appendDocsFromStore(results, store, moduleID, "/api/apps/"+moduleID+"/docs/", query, docTypeFilter, topicFilter)
+			results = appendDocsFromStore(results, store, moduleID, apiPrefix+"/apps/"+moduleID+"/docs/", query, docTypeFilter, topicFilter)
 		}
 
 		if launcherHelpStore != nil {
 			moduleID := strings.TrimSpace(launcherHelpStore.ModuleID)
 			if moduleID != "" && (len(moduleFilter) == 0 || setContains(moduleFilter, moduleID)) {
-				results = appendDocsFromStore(results, launcherHelpStore, moduleID, "/api/os/help/", query, docTypeFilter, topicFilter)
+				results = appendDocsFromStore(results, launcherHelpStore, moduleID, apiPrefix+"/os/help/", query, docTypeFilter, topicFilter)
 			}
 		}
 
@@ -198,6 +205,21 @@ func registerOSDocsEndpoint(mux *http.ServeMux, registry *backendhost.ModuleRegi
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(response)
 	})
+}
+
+func rootedAPIPath(root string) string {
+	normalized := strings.TrimSpace(root)
+	if normalized == "" || normalized == "/" {
+		return "/api"
+	}
+	if !strings.HasPrefix(normalized, "/") {
+		normalized = "/" + normalized
+	}
+	normalized = strings.TrimRight(normalized, "/")
+	if normalized == "" {
+		return "/api"
+	}
+	return normalized + "/api"
 }
 
 func appendDocsFromStore(

@@ -245,7 +245,7 @@ func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat
 	backendhost.RegisterAppsManifestEndpoint(appMux, moduleRegistry)
 	launcherHelpStore := loadLauncherHelpDocStore()
 	registerOSHelpEndpoint(appMux, launcherHelpStore)
-	registerOSDocsEndpoint(appMux, moduleRegistry, launcherHelpStore)
+	registerOSDocsEndpoint(appMux, moduleRegistry, launcherHelpStore, "/")
 	for _, module := range moduleRegistry.Modules() {
 		manifest := module.Manifest()
 		require.NoError(t, backendhost.MountNamespacedRoutes(appMux, manifest.AppID, module.MountRoutes))
@@ -325,7 +325,7 @@ func TestWSHandler_EmitsHypercardLifecycleEvents(t *testing.T) {
 	backendhost.RegisterAppsManifestEndpoint(appMux, moduleRegistry)
 	launcherHelpStore := loadLauncherHelpDocStore()
 	registerOSHelpEndpoint(appMux, launcherHelpStore)
-	registerOSDocsEndpoint(appMux, moduleRegistry, launcherHelpStore)
+	registerOSDocsEndpoint(appMux, moduleRegistry, launcherHelpStore, "/")
 	for _, module := range moduleRegistry.Modules() {
 		manifest := module.Manifest()
 		require.NoError(t, backendhost.MountNamespacedRoutes(appMux, manifest.AppID, module.MountRoutes))
