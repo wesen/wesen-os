@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	inventorybackendmodule "github.com/go-go-golems/go-go-app-inventory/pkg/backendmodule"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorytools"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/pinoweb"
 	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
@@ -83,6 +84,8 @@ const integrationAppBasePath = "/api/apps/inventory"
 const integrationGepaAppBasePath = "/api/apps/gepa"
 const integrationArcAppBasePath = "/api/apps/arc-agi"
 const integrationSQLiteAppBasePath = "/api/apps/sqlite"
+const integrationOSDocsPath = "/api/os/docs"
+const integrationOSHelpPath = "/api/os/help"
 
 func integrationChatPath() string           { return integrationAppBasePath + "/chat" }
 func integrationWSPath() string             { return integrationAppBasePath + "/ws" }
@@ -90,13 +93,19 @@ func integrationTimelinePath() string       { return integrationAppBasePath + "/
 func integrationProfilesPath() string       { return integrationAppBasePath + "/api/chat/profiles" }
 func integrationCurrentProfilePath() string { return integrationAppBasePath + "/api/chat/profile" }
 func integrationConfirmPath() string        { return integrationAppBasePath + "/confirm" }
+func integrationInventoryDocsPath() string  { return integrationAppBasePath + "/docs" }
 func integrationGEPAScriptsPath() string    { return integrationGepaAppBasePath + "/scripts" }
 func integrationGEPARunsPath() string       { return integrationGepaAppBasePath + "/runs" }
+func integrationGEPADocsPath() string       { return integrationGepaAppBasePath + "/docs" }
 func integrationARCHealthPath() string      { return integrationArcAppBasePath + "/health" }
 func integrationSQLiteHealthPath() string   { return integrationSQLiteAppBasePath + "/health" }
 func integrationSQLiteQueryPath() string    { return integrationSQLiteAppBasePath + "/query" }
+func integrationARCDocsPath() string        { return integrationArcAppBasePath + "/docs" }
 func integrationARCSchemaPath() string {
 	return integrationArcAppBasePath + "/schemas/arc.health.response.v1"
+}
+func integrationOSHelpDocPath(slug string) string {
+	return integrationOSHelpPath + "/" + strings.TrimSpace(slug)
 }
 func integrationDebugConversationsPath() string {
 	return integrationAppBasePath + "/api/debug/conversations"
@@ -238,13 +247,16 @@ func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat
 	)
 
 	moduleRegistry, err := backendhost.NewModuleRegistry(
-		newInventoryBackendModule(
-			webchatSrv,
-			resolver,
-			profileRegistry,
-			nil,
-			inventoryExtensionSchemas(),
-		),
+		inventorybackendmodule.NewModule(inventorybackendmodule.Options{
+			Server:              webchatSrv,
+			RequestResolver:     resolver,
+			ProfileRegistry:     profileRegistry,
+			DefaultRegistrySlug: gepprofiles.MustRegistrySlug(profileRegistrySlug),
+			ExtensionSchemas:    inventoryExtensionSchemas(),
+			WriteActor:          "wesen-os-launcher",
+			WriteSource:         "http-api",
+			ConfirmMountPath:    "/confirm",
+		}),
 		newIntegrationSQLiteModule(t),
 		newIntegrationGEPAModule(t),
 		newIntegrationARCModule(t),
@@ -253,12 +265,15 @@ func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat
 
 	lifecycle := backendhost.NewLifecycleManager(moduleRegistry)
 	require.NoError(t, lifecycle.Startup(context.Background(), backendhost.StartupOptions{
-		RequiredAppIDs: []string{inventoryBackendAppID},
+		RequiredAppIDs: []string{inventorybackendmodule.AppID},
 	}))
 	t.Cleanup(func() { _ = lifecycle.Stop(context.Background()) })
 
 	appMux := http.NewServeMux()
 	backendhost.RegisterAppsManifestEndpoint(appMux, moduleRegistry)
+	launcherHelpStore := loadLauncherHelpDocStore()
+	registerOSHelpEndpoint(appMux, launcherHelpStore)
+	registerOSDocsEndpoint(appMux, moduleRegistry, launcherHelpStore, "/")
 	for _, module := range moduleRegistry.Modules() {
 		manifest := module.Manifest()
 		require.NoError(t, backendhost.MountNamespacedRoutes(appMux, manifest.AppID, module.MountRoutes))
@@ -313,13 +328,16 @@ func TestWSHandler_EmitsHypercardLifecycleEvents(t *testing.T) {
 	)
 
 	moduleRegistry, err := backendhost.NewModuleRegistry(
-		newInventoryBackendModule(
-			webchatSrv,
-			resolver,
-			profileRegistry,
-			nil,
-			inventoryExtensionSchemas(),
-		),
+		inventorybackendmodule.NewModule(inventorybackendmodule.Options{
+			Server:              webchatSrv,
+			RequestResolver:     resolver,
+			ProfileRegistry:     profileRegistry,
+			DefaultRegistrySlug: gepprofiles.MustRegistrySlug(profileRegistrySlug),
+			ExtensionSchemas:    inventoryExtensionSchemas(),
+			WriteActor:          "wesen-os-launcher",
+			WriteSource:         "http-api",
+			ConfirmMountPath:    "/confirm",
+		}),
 		newIntegrationSQLiteModule(t),
 		newIntegrationGEPAModule(t),
 		newIntegrationARCModule(t),
@@ -328,12 +346,15 @@ func TestWSHandler_EmitsHypercardLifecycleEvents(t *testing.T) {
 
 	lifecycle := backendhost.NewLifecycleManager(moduleRegistry)
 	require.NoError(t, lifecycle.Startup(context.Background(), backendhost.StartupOptions{
-		RequiredAppIDs: []string{inventoryBackendAppID},
+		RequiredAppIDs: []string{inventorybackendmodule.AppID},
 	}))
 	defer func() { _ = lifecycle.Stop(context.Background()) }()
 
 	appMux := http.NewServeMux()
 	backendhost.RegisterAppsManifestEndpoint(appMux, moduleRegistry)
+	launcherHelpStore := loadLauncherHelpDocStore()
+	registerOSHelpEndpoint(appMux, launcherHelpStore)
+	registerOSDocsEndpoint(appMux, moduleRegistry, launcherHelpStore, "/")
 	for _, module := range moduleRegistry.Modules() {
 		manifest := module.Manifest()
 		require.NoError(t, backendhost.MountNamespacedRoutes(appMux, manifest.AppID, module.MountRoutes))
@@ -478,7 +499,7 @@ func TestOSAppsEndpoint_ListsInventoryModuleCapabilities(t *testing.T) {
 
 	inventoryFound := false
 	for _, app := range payload.Apps {
-		if appID, _ := app["app_id"].(string); appID == inventoryBackendAppID {
+		if appID, _ := app["app_id"].(string); appID == inventorybackendmodule.AppID {
 			inventoryFound = true
 			require.Equal(t, "Inventory", app["name"])
 			require.Equal(t, true, app["required"])
@@ -487,9 +508,169 @@ func TestOSAppsEndpoint_ListsInventoryModuleCapabilities(t *testing.T) {
 			require.True(t, ok)
 			require.Contains(t, caps, any("chat"))
 			require.Contains(t, caps, any("profiles"))
+			reflection, ok := app["reflection"].(map[string]any)
+			require.True(t, ok)
+			require.Equal(t, true, reflection["available"])
+			require.Equal(t, "/api/os/apps/inventory/reflection", reflection["url"])
+			docs, ok := app["docs"].(map[string]any)
+			require.True(t, ok)
+			require.Equal(t, true, docs["available"])
+			require.Equal(t, "/api/apps/inventory/docs", docs["url"])
 		}
 	}
 	require.True(t, inventoryFound, "expected inventory backend module in /api/os/apps payload")
+}
+
+func TestInventoryModule_ReflectionEndpoint(t *testing.T) {
+	srv := newIntegrationServer(t)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/os/apps/inventory/reflection")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var payload map[string]any
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
+	require.Equal(t, "inventory", payload["app_id"])
+	apis, ok := payload["apis"].([]any)
+	require.True(t, ok)
+	require.NotEmpty(t, apis)
+}
+
+func TestModuleDocsEndpoints_InventoryArcAndGepa(t *testing.T) {
+	srv := newIntegrationServer(t)
+	defer srv.Close()
+
+	tests := []struct {
+		path     string
+		moduleID string
+	}{
+		{path: integrationInventoryDocsPath(), moduleID: "inventory"},
+		{path: integrationARCDocsPath(), moduleID: "arc-agi"},
+		{path: integrationGEPADocsPath(), moduleID: "gepa"},
+	}
+	for _, tc := range tests {
+		resp, err := http.Get(srv.URL + tc.path)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var payload map[string]any
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
+		require.Equal(t, tc.moduleID, payload["module_id"])
+		docs, ok := payload["docs"].([]any)
+		require.True(t, ok)
+		require.NotEmpty(t, docs)
+	}
+
+	detailResp, err := http.Get(srv.URL + integrationInventoryDocsPath() + "/overview")
+	require.NoError(t, err)
+	defer detailResp.Body.Close()
+	require.Equal(t, http.StatusOK, detailResp.StatusCode)
+	require.Contains(t, mustReadAll(t, detailResp.Body), `"slug":"overview"`)
+}
+
+func TestOSHelpEndpoint_ListsAndReturnsLauncherDocs(t *testing.T) {
+	srv := newIntegrationServer(t)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + integrationOSHelpPath)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var payload map[string]any
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
+	require.Equal(t, launcherHelpModuleID, payload["module_id"])
+	docs, ok := payload["docs"].([]any)
+	require.True(t, ok)
+	require.NotEmpty(t, docs)
+
+	detailResp, err := http.Get(srv.URL + integrationOSHelpDocPath("wesen-os-guide"))
+	require.NoError(t, err)
+	defer detailResp.Body.Close()
+	require.Equal(t, http.StatusOK, detailResp.StatusCode)
+
+	var detail map[string]any
+	require.NoError(t, json.NewDecoder(detailResp.Body).Decode(&detail))
+	require.Equal(t, launcherHelpModuleID, detail["module_id"])
+	require.Equal(t, "wesen-os-guide", detail["slug"])
+	content, ok := detail["content"].(string)
+	require.True(t, ok)
+	require.NotEmpty(t, content)
+}
+
+func TestOSDocsEndpoint_AggregatesAndFiltersModuleDocs(t *testing.T) {
+	srv := newIntegrationServer(t)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + integrationOSDocsPath)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var payload struct {
+		Total   int              `json:"total"`
+		Results []map[string]any `json:"results"`
+		Facets  map[string]any   `json:"facets"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
+	require.GreaterOrEqual(t, payload.Total, 10)
+	require.NotEmpty(t, payload.Results)
+
+	foundModules := map[string]bool{}
+	for _, result := range payload.Results {
+		moduleID, _ := result["module_id"].(string)
+		foundModules[moduleID] = true
+	}
+	require.True(t, foundModules["inventory"])
+	require.True(t, foundModules["arc-agi"])
+	require.True(t, foundModules["gepa"])
+	require.True(t, foundModules[launcherHelpModuleID])
+
+	filteredResp, err := http.Get(srv.URL + integrationOSDocsPath + "?module=gepa")
+	require.NoError(t, err)
+	defer filteredResp.Body.Close()
+	require.Equal(t, http.StatusOK, filteredResp.StatusCode)
+
+	var filtered struct {
+		Total   int              `json:"total"`
+		Results []map[string]any `json:"results"`
+	}
+	require.NoError(t, json.NewDecoder(filteredResp.Body).Decode(&filtered))
+	require.GreaterOrEqual(t, filtered.Total, 3)
+	for _, result := range filtered.Results {
+		require.Equal(t, "gepa", result["module_id"])
+	}
+
+	launcherResp, err := http.Get(srv.URL + integrationOSDocsPath + "?module=" + launcherHelpModuleID)
+	require.NoError(t, err)
+	defer launcherResp.Body.Close()
+	require.Equal(t, http.StatusOK, launcherResp.StatusCode)
+
+	var launcherPayload struct {
+		Total   int              `json:"total"`
+		Results []map[string]any `json:"results"`
+	}
+	require.NoError(t, json.NewDecoder(launcherResp.Body).Decode(&launcherPayload))
+	require.Greater(t, launcherPayload.Total, 0)
+	for _, result := range launcherPayload.Results {
+		require.Equal(t, launcherHelpModuleID, result["module_id"])
+		url, _ := result["url"].(string)
+		require.Contains(t, url, "/api/os/help/")
+	}
+
+	queryResp, err := http.Get(srv.URL + integrationOSDocsPath + "?query=session")
+	require.NoError(t, err)
+	defer queryResp.Body.Close()
+	require.Equal(t, http.StatusOK, queryResp.StatusCode)
+
+	var queryPayload struct {
+		Total int `json:"total"`
+	}
+	require.NoError(t, json.NewDecoder(queryResp.Body).Decode(&queryPayload))
+	require.Greater(t, queryPayload.Total, 0)
 }
 
 func TestOSAppsEndpoint_ListsGEPAModuleReflectionMetadata(t *testing.T) {
@@ -516,6 +697,10 @@ func TestOSAppsEndpoint_ListsGEPAModuleReflectionMetadata(t *testing.T) {
 			require.True(t, ok)
 			require.Equal(t, true, reflection["available"])
 			require.Equal(t, "/api/os/apps/gepa/reflection", reflection["url"])
+			docs, ok := app["docs"].(map[string]any)
+			require.True(t, ok)
+			require.Equal(t, true, docs["available"])
+			require.Equal(t, "/api/apps/gepa/docs", docs["url"])
 		}
 	}
 	require.True(t, gepaFound, "expected gepa backend module in /api/os/apps payload")
@@ -545,6 +730,10 @@ func TestOSAppsEndpoint_ListsARCModuleReflectionMetadata(t *testing.T) {
 			require.True(t, ok)
 			require.Equal(t, true, reflection["available"])
 			require.Equal(t, "/api/os/apps/arc-agi/reflection", reflection["url"])
+			docs, ok := app["docs"].(map[string]any)
+			require.True(t, ok)
+			require.Equal(t, true, docs["available"])
+			require.Equal(t, "/api/apps/arc-agi/docs", docs["url"])
 		}
 	}
 	require.True(t, arcFound, "expected arc-agi backend module in /api/os/apps payload")
@@ -1617,4 +1806,11 @@ func mustConversationRuntimeKey(t *testing.T, srv *httptest.Server, convID strin
 		runtimeKey, _ = payload["runtime_key"].(string)
 	}
 	return strings.TrimSpace(runtimeKey)
+}
+
+func mustReadAll(t *testing.T, reader io.Reader) string {
+	t.Helper()
+	raw, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	return string(raw)
 }

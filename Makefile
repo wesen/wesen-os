@@ -46,16 +46,18 @@ tag-patch:
 
 release:
 	git push origin --tags
-	GOPROXY=proxy.golang.org go list -m github.com/go-go-golems/XXX@$(shell svu current)
+	GOPROXY=proxy.golang.org go list -m github.com/go-go-golems/wesen-os@$(shell svu current)
 
 bump-glazed:
 	go get github.com/go-go-golems/glazed@latest
 	go get github.com/go-go-golems/clay@latest
 	go get github.com/go-go-golems/go-go-os-backend@latest
-	# go get github.com/go-go-golems/go-go-os-app-inventory@latest
+	go get github.com/go-go-golems/go-go-os-frontend@latest
+	go get github.com/go-go-golems/go-go-app-arc-agi@latest
+	go get github.com/go-go-golems/go-go-app-inventory@latest
+	go get github.com/go-go-golems/go-go-gepa@latest
+	go get github.com/go-go-golems/geppetto@latest
+	go get github.com/go-go-golems/pinocchio@latest
+	go get github.com/go-go-golems/plz-confirm@latest
 	go mod tidy
 
-XXX_BINARY=$(shell which XXX)
-install:
-	go build -o ./dist/XXX ./cmd/XXX && \
-		cp ./dist/XXX $(XXX_BINARY)

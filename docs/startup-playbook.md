@@ -20,6 +20,39 @@ Install dependencies once:
 ```bash
 cd wesen-os
 pnpm install
+
+cd ../go-go-os-frontend
+pnpm install
+```
+
+Why both installs are required:
+
+- `apps/os-launcher/vite.config.ts` aliases React and shared frontend packages to paths under `../go-go-os-frontend/...`.
+- If `go-go-os-frontend` dependencies are not installed, Vite can fail with errors like `Could not load .../go-go-os-frontend/.../node_modules/react`.
+
+## One-Time Backend Embed Bootstrap
+
+`go run ./cmd/wesen-os-launcher ...` uses `go:embed all:dist` in `pkg/launcherui/handler.go`.
+That means `wesen-os/pkg/launcherui/dist` must exist before backend startup.
+
+Do one of the following once per clean checkout:
+
+1. Full frontend build + sync (recommended):
+
+```bash
+cd wesen-os
+pnpm --dir apps/os-launcher build
+bash ./scripts/launcher-ui-sync.sh
+```
+
+2. Minimal placeholder (API-only backend startup):
+
+```bash
+cd wesen-os
+mkdir -p pkg/launcherui/dist
+cat > pkg/launcherui/dist/index.html <<'HTML'
+<!doctype html><html><body>launcher placeholder</body></html>
+HTML
 ```
 
 ## Start Backend + Frontend In tmux
@@ -72,7 +105,7 @@ Both should return JSON with app entries (for example `inventory`, `gepa`).
 
 ```bash
 cd wesen-os
-npm run launcher:binary:build
+pnpm run launcher:binary:build
 ./build/wesen-os-launcher wesen-os-launcher --addr 127.0.0.1:8091
 ```
 
@@ -81,6 +114,13 @@ npm run launcher:binary:build
 - `connection refused` on backend port:
   - backend is not running or still starting;
   - check backend pane output with `tmux capture-pane`.
+- `pattern all:dist: no matching files found`:
+  - `pkg/launcherui/dist` is missing for `go:embed`;
+  - run the "One-Time Backend Embed Bootstrap" step above.
+- `vite: not found` or missing `.../go-go-os-frontend/.../node_modules/react`:
+  - dependencies are not installed in one or both repos;
+  - run `cd wesen-os && pnpm install`
+  - run `cd ../go-go-os-frontend && pnpm install`
 - backend appears stuck at startup:
   - retry with ARC disabled:
   - `go run ./cmd/wesen-os-launcher wesen-os-launcher --arc-enabled=false --addr 127.0.0.1:<backend-port>`

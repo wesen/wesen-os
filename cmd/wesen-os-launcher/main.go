@@ -27,6 +27,7 @@ import (
 	wesendoc "github.com/go-go-golems/wesen-os/pkg/doc"
 	"github.com/spf13/cobra"
 
+	inventorybackendmodule "github.com/go-go-golems/go-go-app-inventory/pkg/backendmodule"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorydb"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorytools"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/pinoweb"
@@ -226,9 +227,10 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 	if err != nil {
 		return errors.Wrap(err, "initialize profile registry")
 	}
+	registrySlug := gepprofiles.MustRegistrySlug(profileRegistrySlug)
 	requestResolver := pinoweb.NewStrictRequestResolver("inventory").WithProfileRegistry(
 		profileRegistry,
-		gepprofiles.MustRegistrySlug(profileRegistrySlug),
+		registrySlug,
 	)
 
 	srv, err := webchat.NewServer(
@@ -277,13 +279,17 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 	}
 
 	modules := []backendhost.AppBackendModule{
-		newInventoryBackendModule(
-			srv,
-			requestResolver,
-			profileRegistry,
-			composer.MiddlewareDefinitions(),
-			inventoryExtensionSchemas(),
-		),
+		inventorybackendmodule.NewModule(inventorybackendmodule.Options{
+			Server:                srv,
+			RequestResolver:       requestResolver,
+			ProfileRegistry:       profileRegistry,
+			DefaultRegistrySlug:   registrySlug,
+			MiddlewareDefinitions: composer.MiddlewareDefinitions(),
+			ExtensionSchemas:      inventoryExtensionSchemas(),
+			WriteActor:            "wesen-os-launcher",
+			WriteSource:           "http-api",
+			ConfirmMountPath:      "/confirm",
+		}),
 		sqliteModule,
 		gepaModule,
 	}
@@ -322,6 +328,9 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 
 	appMux := http.NewServeMux()
 	backendhost.RegisterAppsManifestEndpoint(appMux, moduleRegistry)
+	launcherHelpStore := loadLauncherHelpDocStore()
+	registerOSHelpEndpoint(appMux, launcherHelpStore)
+	registerOSDocsEndpoint(appMux, moduleRegistry, launcherHelpStore, cfg.Root)
 	for _, module := range moduleRegistry.Modules() {
 		manifest := module.Manifest()
 		if err := backendhost.MountNamespacedRoutes(appMux, manifest.AppID, module.MountRoutes); err != nil {

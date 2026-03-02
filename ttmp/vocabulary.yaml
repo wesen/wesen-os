@@ -1,16 +1,64 @@
 topics:
+    - slug: chat
+      description: Chat backend and frontend surfaces
+    - slug: backend
+      description: Backend services
+    - slug: websocket
+      description: WebSocket lifecycle & events
+    - slug: apps-browser
+      description: Apps Browser module and related backend/frontend contracts
+    - slug: documentation
+      description: Documentation systems, content modeling, and docs delivery
     - slug: frontend
-      description: Frontend UI and presentation layer
+      description: Frontend app integration and UI contracts
+    - slug: reflection
+      description: Backend reflection metadata and discoverability contracts
     - slug: sqlite
       description: SQLite database app and related components
     - slug: ux
       description: User experience design and interaction patterns
+    - slug: temporal-relationships
+      description: Topic used by MEN-TR-0001 research and implementation docs
+    - slug: pinocchio
+      description: Topic used by MEN-TR-0001 research and implementation docs
+    - slug: geppetto
+      description: Topic used by MEN-TR-0001 research and implementation docs
+    - slug: goja
+      description: Topic used by MEN-TR-0001 research and implementation docs
+    - slug: extraction
+      description: Topic used by MEN-TR-0001 research and implementation docs
+    - slug: structured-output
+      description: Schema-constrained model output and extraction payload contracts
+    - slug: cozodb
+      description: CozoDB extraction examples and runtime patterns
+    - slug: config
+      description: Configuration schema and runtime option composition
 docTypes:
+    - slug: design-doc
+      description: Structured rationale and architecture notes
+    - slug: reference
+      description: Reference docs and API contracts
+    - slug: playbook
+      description: Operational procedures and QA/Smoke steps
     - slug: index
-      description: Ticket index document
+      description: Ticket landing page
+    - slug: skill
+      description: Skill documentation (what it's for and when to use it)
 intent:
     - slug: long-term
-      description: Long-term reference document
+      description: Likely to persist
+    - slug: short-term
+      description: Short-term documentation for active work
+    - slug: throwaway
+      description: Temporary/experimental documentation
 status:
+    - slug: draft
+      description: Initial draft state
     - slug: active
-      description: Currently active and in progress
+      description: Active work in progress
+    - slug: review
+      description: Ready for review
+    - slug: complete
+      description: Work completed
+    - slug: archived
+      description: Archived/completed work

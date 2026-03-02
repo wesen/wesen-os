@@ -2,18 +2,11 @@ module github.com/go-go-golems/wesen-os
 
 go 1.25.7
 
-replace github.com/go-go-golems/go-go-app-inventory => ../go-go-app-inventory
-
-replace github.com/go-go-golems/go-go-app-arc-agi => ../go-go-app-arc-agi-3
-
 require (
 	github.com/go-go-golems/clay v0.4.0
-	github.com/go-go-golems/geppetto v0.10.3
+	github.com/go-go-golems/geppetto v0.10.4
 	github.com/go-go-golems/glazed v1.0.4
-	github.com/go-go-golems/go-go-app-arc-agi v0.0.0-00010101000000-000000000000
-	github.com/go-go-golems/go-go-app-inventory v0.0.0-00010101000000-000000000000
-	github.com/go-go-golems/go-go-gepa v0.0.0-20260223022920-190ca45ac964
-	github.com/go-go-golems/pinocchio v0.10.1
+	github.com/go-go-golems/pinocchio v0.10.2
 	github.com/go-go-golems/plz-confirm v0.0.4
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
@@ -21,6 +14,13 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/protobuf v1.36.11
+)
+
+require (
+	github.com/go-go-golems/go-go-app-arc-agi v0.0.0-20260301233757-c94e10e7495a // indirect
+	github.com/go-go-golems/go-go-app-inventory v0.0.0-20260301235652-bf29c1fe8b1c // indirect
+	github.com/go-go-golems/go-go-gepa v0.0.1 // indirect
+	github.com/go-go-golems/go-go-os-frontend v0.0.0-20260301235710-66c12b2b4fc6 // indirect
 )
 
 require (
@@ -69,7 +69,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-go-golems/go-go-goja v0.4.0 // indirect
-	github.com/go-go-golems/go-go-os-backend v0.0.1
+	github.com/go-go-golems/go-go-os-backend v0.0.3
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/errors v0.22.0 // indirect
@@ -162,7 +162,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/go-go-golems/go-go-gepa => ../go-go-gepa
-
-replace github.com/go-go-golems/go-go-os-backend => ../go-go-os-backend
