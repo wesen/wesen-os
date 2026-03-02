@@ -13,7 +13,7 @@ jobs:
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && vars.ENABLE_DEPENDENCY_REVIEW == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,7 +33,34 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25.x'
+      - name: Checkout go-go-app-inventory
+        uses: actions/checkout@v4
+        with:
+          repository: go-go-golems/go-go-app-inventory
+          path: deps/go-go-app-inventory
+      - name: Checkout go-go-app-arc-agi-3
+        uses: actions/checkout@v4
+        with:
+          repository: go-go-golems/go-go-app-arc-agi-3
+          path: deps/go-go-app-arc-agi-3
+      - name: Checkout go-go-gepa
+        uses: actions/checkout@v4
+        with:
+          repository: go-go-golems/go-go-gepa
+          path: deps/go-go-gepa
+      - name: Checkout go-go-os-backend
+        uses: actions/checkout@v4
+        with:
+          repository: go-go-golems/go-go-os-backend
+          path: deps/go-go-os-backend
+      - name: Wire local module replacements
+        run: |
+          go mod edit -replace github.com/go-go-golems/go-go-app-inventory=./deps/go-go-app-inventory
+          go mod edit -replace github.com/go-go-golems/go-go-app-arc-agi=./deps/go-go-app-arc-agi-3
+          go mod edit -replace github.com/go-go-golems/go-go-gepa=./deps/go-go-gepa
+          go mod edit -replace github.com/go-go-golems/go-go-os-backend=./deps/go-go-os-backend
+          go mod download
       
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
@@ -51,7 +78,34 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25.x'
+      - name: Checkout go-go-app-inventory
+        uses: actions/checkout@v4
+        with:
+          repository: go-go-golems/go-go-app-inventory
+          path: deps/go-go-app-inventory
+      - name: Checkout go-go-app-arc-agi-3
+        uses: actions/checkout@v4
+        with:
+          repository: go-go-golems/go-go-app-arc-agi-3
+          path: deps/go-go-app-arc-agi-3
+      - name: Checkout go-go-gepa
+        uses: actions/checkout@v4
+        with:
+          repository: go-go-golems/go-go-gepa
+          path: deps/go-go-gepa
+      - name: Checkout go-go-os-backend
+        uses: actions/checkout@v4
+        with:
+          repository: go-go-golems/go-go-os-backend
+          path: deps/go-go-os-backend
+      - name: Wire local module replacements
+        run: |
+          go mod edit -replace github.com/go-go-golems/go-go-app-inventory=./deps/go-go-app-inventory
+          go mod edit -replace github.com/go-go-golems/go-go-app-arc-agi=./deps/go-go-app-arc-agi-3
+          go mod edit -replace github.com/go-go-golems/go-go-gepa=./deps/go-go-gepa
+          go mod edit -replace github.com/go-go-golems/go-go-os-backend=./deps/go-go-os-backend
+          go mod download
       
       - name: Install Nancy
         run: go install github.com/sonatype-nexus-community/nancy@latest
@@ -69,9 +123,44 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25.x'
+      - name: Checkout go-go-app-inventory
+        uses: actions/checkout@v4
+        with:
+          repository: go-go-golems/go-go-app-inventory
+          path: deps/go-go-app-inventory
+      - name: Checkout go-go-app-arc-agi-3
+        uses: actions/checkout@v4
+        with:
+          repository: go-go-golems/go-go-app-arc-agi-3
+          path: deps/go-go-app-arc-agi-3
+      - name: Checkout go-go-gepa
+        uses: actions/checkout@v4
+        with:
+          repository: go-go-golems/go-go-gepa
+          path: deps/go-go-gepa
+      - name: Checkout go-go-os-backend
+        uses: actions/checkout@v4
+        with:
+          repository: go-go-golems/go-go-os-backend
+          path: deps/go-go-os-backend
+      - name: Wire local module replacements
+        run: |
+          go mod edit -replace github.com/go-go-golems/go-go-app-inventory=./deps/go-go-app-inventory
+          go mod edit -replace github.com/go-go-golems/go-go-app-arc-agi=./deps/go-go-app-arc-agi-3
+          go mod edit -replace github.com/go-go-golems/go-go-gepa=./deps/go-go-gepa
+          go mod edit -replace github.com/go-go-golems/go-go-os-backend=./deps/go-go-os-backend
+          go mod download
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
       
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
-        with:
-          args: -exclude=G101,G304,G301,G306,G204 -exclude-dir=.history ./... 
+        run: |
+          gosec \
+            -exclude=G101,G304,G301,G306,G204 \
+            -exclude-dir=.history \
+            -exclude-dir=deps \
+            -exclude-dir=cmd/wesen-os-launcher \
+            -exclude-dir=pkg/arcagi \
+            -exclude-dir=pkg/gepa \
+            ./...

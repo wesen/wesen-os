@@ -6,6 +6,7 @@ import (
 
 	gepacore "github.com/go-go-golems/go-go-gepa/pkg/backendmodule"
 	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
+	"github.com/go-go-golems/go-go-os-backend/pkg/docmw"
 )
 
 const AppID = gepacore.AppID
@@ -16,6 +17,8 @@ type GepaRuntime = gepacore.GepaRuntime
 type Module struct {
 	inner *gepacore.Module
 }
+
+var _ backendhost.DocumentableAppBackendModule = (*Module)(nil)
 
 func NewModule(config ModuleConfig) (*Module, error) {
 	inner, err := gepacore.NewModule(config)
@@ -70,6 +73,13 @@ func (m *Module) Reflection(ctx context.Context) (*backendhost.ModuleReflectionD
 		return nil, err
 	}
 	return mapReflectionDocument(doc), nil
+}
+
+func (m *Module) DocStore() *docmw.DocStore {
+	if m == nil || m.inner == nil {
+		return nil
+	}
+	return m.inner.DocStore()
 }
 
 func mapReflectionDocument(src *gepacore.ReflectionDocument) *backendhost.ModuleReflectionDocument {

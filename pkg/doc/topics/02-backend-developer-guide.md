@@ -18,7 +18,7 @@ SectionType: GeneralTopic
 
 This guide covers everything a Go developer needs to build, test, and integrate a backend app module into the wesen-os launcher. It starts with the conceptual foundations — what modules are and why the system is designed around them — then moves through the contract reference with concrete examples drawn from the inventory, GEPA, and ARC-AGI modules.
 
-For frontend module development, see `frontend-developer-guide`. For building a complete app with both backend and frontend, see `building-a-full-app`. For workspace setup and operations, see `wesen-os-guide`. For the HyperCard card system that frontend modules use to create interactive UI, see `hypercard-environment-guide`.
+For frontend module development, see `frontend-developer-guide`. For the dedicated OS-02 docs architecture and endpoint contracts, see `backend-documentation-system`. For building a complete app with both backend and frontend, see `building-a-full-app`. For workspace setup and operations, see `wesen-os-guide`. For the HyperCard card system that frontend modules use to create interactive UI, see `hypercard-environment-guide`.
 
 ## What Modules Are and Why They Exist
 
@@ -220,9 +220,9 @@ type AppBackendManifest struct {
 
 | App | Capabilities |
 |---|---|
-| inventory | `chat`, `ws`, `timeline`, `profiles`, `confirm` |
-| gepa | `scripts`, `runs`, `timeline`, `reflection` |
-| arc-agi | `games`, `sessions`, `actions`, `timeline`, `reflection` |
+| inventory | `chat`, `ws`, `timeline`, `profiles`, `confirm`, `docs` |
+| gepa | `scripts`, `runs`, `timeline`, `reflection`, `docs` |
+| arc-agi | `games`, `sessions`, `actions`, `timeline`, `reflection`, `docs` |
 
 ### Lifecycle: Init, Start, Stop, Health
 
@@ -364,6 +364,111 @@ func (m *Module) Reflection(ctx context.Context) (*backendhost.ModuleReflectionD
 
 **Why add reflection early:** Reflection documents accumulate during development. If you add them later, you have to reconstruct the full API surface from handlers. Starting with reflection keeps documentation synchronized with implementation.
 
+## Module Documentation System (OS-02)
+
+OS-02 adds a structured docs system that runs alongside reflection. Reflection is API-oriented metadata; module docs are authored Markdown pages for runbooks, overviews, API explanations, and troubleshooting guides.
+
+### Backend Contract
+
+Modules that expose docs implement the optional `DocumentableAppBackendModule` interface:
+
+```go
+type DocumentableAppBackendModule interface {
+    AppBackendModule
+    DocStore() *docmw.DocStore
+}
+```
+
+When implemented, `/api/os/apps` includes a `docs` hint:
+
+```json
+{
+  "app_id": "inventory",
+  "name": "Inventory",
+  "docs": {
+    "available": true,
+    "url": "/api/apps/inventory/docs",
+    "count": 4,
+    "version": "v1"
+  }
+}
+```
+
+### Authoring Pattern
+
+1. Create `pkg/backendmodule/docs/*.md` pages with frontmatter.
+2. Embed docs with `//go:embed docs/*.md`.
+3. Parse docs into `docmw.DocStore` in module construction.
+4. Mount docs routes in `MountRoutes` with `docmw.MountRoutes(mux, store)`.
+5. Return the store from `DocStore()`.
+
+Required frontmatter fields:
+
+- `Title`
+- `DocType`
+
+Common optional fields:
+
+- `Slug` (defaults to filename without extension)
+- `Summary`
+- `Topics`
+- `SeeAlso`
+- `Order`
+
+Example page:
+
+```markdown
+---
+Title: Inventory API Reference
+DocType: api-reference
+Slug: api-reference
+Topics:
+  - inventory
+  - api
+Summary: Route-level contract for inventory backend endpoints.
+Order: 20
+---
+
+# Inventory API Reference
+```
+
+### Endpoint Contracts
+
+Module-local endpoints:
+
+- `GET /api/apps/<app-id>/docs`
+  - returns `{ "module_id": "...", "docs": [...] }`
+  - each entry contains metadata only (no large markdown body)
+- `GET /api/apps/<app-id>/docs/<slug>`
+  - returns one doc entry including `content`
+
+Composition endpoint:
+
+- `GET /api/os/docs`
+  - aggregates docs across all documentable modules
+  - supports filters:
+    - `query`
+    - `module`
+    - `doc_type`
+    - `topics`
+  - returns `results` and `facets` (`topics`, `doc_types`, `modules`)
+
+### Smoke Commands (Copy/Paste)
+
+```bash
+# 1) Manifest includes docs hint per app
+curl -sS http://127.0.0.1:8091/api/os/apps | jq '.apps[] | {app_id, healthy, docs, reflection}'
+
+# 2) Module docs index
+curl -sS http://127.0.0.1:8091/api/apps/inventory/docs | jq .
+
+# 3) Module docs page by slug
+curl -sS http://127.0.0.1:8091/api/apps/inventory/docs/overview | jq .
+
+# 4) Cross-module aggregated docs with filters
+curl -sS "http://127.0.0.1:8091/api/os/docs?module=inventory,gepa&doc_type=overview" | jq .
+```
+
 ## Composition Wiring
 
 How to register your module in the wesen-os launcher.
@@ -386,9 +491,9 @@ The existing loop in `RunIntoWriter` handles everything else: registry creation,
 
 ### Adapter Pattern
 
-If your module uses a different internal contract, create a thin adapter in `wesen-os/pkg/<app>/module.go`. This is how the three existing apps integrate:
+If your module uses a different internal contract, create a thin adapter package. This is how the three existing apps integrate:
 
-- **Inventory**: `wesen-os/cmd/wesen-os-launcher/inventory_backend_module.go` wraps `backendcomponent.Component` into `AppBackendModule`.
+- **Inventory**: `go-go-app-inventory/pkg/backendmodule/module.go` wraps `backendcomponent.Component` into `AppBackendModule` from within the inventory repository.
 - **ARC-AGI**: `wesen-os/pkg/arcagi/module.go` wraps the ARC module contract.
 - **GEPA**: `wesen-os/pkg/gepa/module.go` wraps the GEPA module contract.
 
@@ -575,21 +680,21 @@ func TestReflection(t *testing.T) {
 
 ### Inventory Backend
 
-**App ID:** `inventory`. **Capabilities:** `chat`, `ws`, `timeline`, `profiles`, `confirm`.
+**App ID:** `inventory`. **Capabilities:** `chat`, `ws`, `timeline`, `profiles`, `confirm`, `docs`.
 
-The inventory backend is the most full-featured module. It implements `backendcomponent.Component` (a different contract from `AppBackendModule`), which is wrapped by an adapter in `wesen-os/cmd/wesen-os-launcher/inventory_backend_module.go`. The adapter delegates manifest, routes, lifecycle, and reflection to the underlying component.
+The inventory backend is the most full-featured module. It implements `backendcomponent.Component` (a different contract from `AppBackendModule`), and is adapted in `go-go-app-inventory/pkg/backendmodule/module.go`. The adapter delegates manifest, routes, lifecycle, and reflection to the underlying component.
 
 Key patterns: webchat server integration for chat/WebSocket, tool registration for LLM-callable inventory operations, profile registry for multiple assistant personalities, SEM event mappings for hypercard timeline events (`hypercard_events.go`), runtime card composition from timeline context.
 
 ### GEPA Backend
 
-**App ID:** `gepa`. **Capabilities:** `scripts`, `runs`, `timeline`, `reflection`.
+**App ID:** `gepa`. **Capabilities:** `scripts`, `runs`, `timeline`, `reflection`, `docs`.
 
 The GEPA module is a good model for a simpler backend that doesn't use chat/WebSocket. It exposes a script runner API with concurrency limits and timeouts. Routes include script listing, run creation/listing/status, and schema discovery. Reflection describes all APIs and schemas. The adapter in `wesen-os/pkg/gepa/module.go` is straightforward.
 
 ### ARC-AGI Backend
 
-**App ID:** `arc-agi`. **Capabilities:** `games`, `sessions`, `actions`, `timeline`, `reflection`.
+**App ID:** `arc-agi`. **Capabilities:** `games`, `sessions`, `actions`, `timeline`, `reflection`, `docs`.
 
 The ARC module demonstrates config normalization (setting defaults for driver, runtime mode, API key, timeouts), conditional registration (`--arc-enabled` flag), and configurable reflection (`EnableReflection` config field). Its adapter in `wesen-os/pkg/arcagi/module.go` handles the conditional creation pattern.
 
@@ -615,10 +720,15 @@ The ARC module demonstrates config normalization (setting defaults for driver, r
 | Reflection 404 | Module doesn't implement ReflectiveAppBackendModule | Add `Reflection(ctx)` method and interface assertion |
 | Module not in `/api/os/apps` | Not registered in registry | Add to `modules` slice before `NewModuleRegistry` |
 | Health check blocks startup | Module is required and Health returns error | Fix underlying issue or remove from `--required-apps` |
+| `/api/apps/<id>/docs` returns 404 | Docs routes not mounted or module not documentable | Ensure `docmw.MountRoutes(...)` is called and `DocStore()` is exposed |
+| `/api/apps/<id>/docs` returns 500 at startup | Malformed docs frontmatter (missing `Title`/`DocType`) | Fix frontmatter and re-run startup; keep parser validation errors actionable |
+| Docs hint exists but docs list is empty unexpectedly | Embedded docs files missing or embed glob mismatch | Verify `//go:embed docs/*.md` path and that files exist in repo |
+| Docs integration differs across repos | Cross-repo dependency/setup drift (`go.work`, `replace`, local checkout mismatch) | Align sibling repos, `go.work`, and `wesen-os/go.mod` replace directives before testing |
 
 ## See Also
 
 - `wesen-os-guide` — Workspace setup, build pipeline, configuration reference
+- `backend-documentation-system` — Structured docs system contracts, module authoring flow, and endpoint smoke checks
 - `frontend-developer-guide` — Building the frontend side of your app
 - `hypercard-environment-guide` — The HyperCard runtime, UI DSL, and sandboxed card system
 - `building-a-full-app` — Complete backend+frontend integration walkthrough
