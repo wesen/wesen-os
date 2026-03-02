@@ -40,11 +40,11 @@ Current status: **active**
 
 ## Tasks
 
-See [tasks.md](./tasks.md) for the current task list.
+See [tasks.md](tasks.md) for the current task list.
 
 ## Changelog
 
-See [changelog.md](./changelog.md) for recent changes and decisions.
+See [changelog.md](changelog.md) for recent changes and decisions.
 
 ## Structure
 

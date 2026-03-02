@@ -58,37 +58,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api/apps/inventory/chat': {
-        target: inventoryBackendTarget,
-        changeOrigin: true,
-      },
-      '/api/apps/inventory/ws': {
-        target: inventoryBackendTarget,
-        ws: true,
-        changeOrigin: true,
-      },
-      '/api/apps/inventory/api': {
-        target: inventoryBackendTarget,
-        changeOrigin: true,
-      },
-      '/api/apps/inventory/confirm': {
-        target: inventoryBackendTarget,
-        changeOrigin: true,
-      },
-      '/api/apps/inventory/confirm/ws': {
-        target: inventoryBackendTarget,
-        ws: true,
-        changeOrigin: true,
-      },
-      '/api/os/apps': {
-        target: inventoryBackendTarget,
-        changeOrigin: true,
-      },
-      '/api/os/docs': {
-        target: inventoryBackendTarget,
-        changeOrigin: true,
-      },
-      '/api/apps': {
+      '/api': {
         target: inventoryBackendTarget,
         ws: true,
         changeOrigin: true,
