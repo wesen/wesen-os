@@ -1,0 +1,16 @@
+topics:
+    - slug: frontend
+      description: Frontend UI and presentation layer
+    - slug: sqlite
+      description: SQLite database app and related components
+    - slug: ux
+      description: User experience design and interaction patterns
+docTypes:
+    - slug: index
+      description: Ticket index document
+intent:
+    - slug: long-term
+      description: Long-term reference document
+status:
+    - slug: active
+      description: Currently active and in progress
