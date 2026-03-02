@@ -14,11 +14,11 @@ jobs:
       - name: Checkout wesen-os
         uses: actions/checkout@v4
 
-      - name: Checkout go-go-os platform repo
+      - name: Checkout go-go-os-frontend
         uses: actions/checkout@v4
         with:
-          repository: go-go-golems/go-go-os
-          path: go-go-os
+          repository: go-go-golems/go-go-os-frontend
+          path: go-go-os-frontend
 
       - name: Checkout go-go-app-inventory repo
         uses: actions/checkout@v4
@@ -26,21 +26,27 @@ jobs:
           repository: go-go-golems/go-go-app-inventory
           path: go-go-app-inventory
 
+      - name: Checkout go-go-app-arc-agi-3 repo
+        uses: actions/checkout@v4
+        with:
+          repository: go-go-golems/go-go-app-arc-agi-3
+          path: go-go-app-arc-agi-3
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            go-go-os-frontend/package-lock.json
 
-      - name: Install go-go-os frontend dependencies
-        working-directory: go-go-os
-        run: npm install
-
-      - name: Install go-go-app-inventory frontend dependencies
-        working-directory: go-go-app-inventory
-        run: npm install
+      - name: Install go-go-os-frontend dependencies
+        working-directory: go-go-os-frontend
+        run: npm ci
 
       - name: Install wesen-os frontend dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run launcher frontend build
         run: npm run launcher:frontend:build

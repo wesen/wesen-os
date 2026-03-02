@@ -16,6 +16,9 @@
 dist/
 build/
 node_modules/
+!pkg/launcherui/dist/
+pkg/launcherui/dist/*
+!pkg/launcherui/dist/.embedkeep
 
 # misc files and directories
 .env

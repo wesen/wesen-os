@@ -1,0 +1,1 @@
+# Keep this file tracked so go:embed always has at least one dist file in CI.
