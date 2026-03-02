@@ -10,6 +10,14 @@
 - Lint: `golangci-lint run -v` or `make lint`
 - Format: `go fmt ./...`
 
+## Workspace Setup (wesen-os launcher)
+
+- Run launcher setup and tests from `wesen-os` only.
+- Use `pnpm`, not `npm install`, for workspace bootstrap.
+- Bootstrap sibling workspace dependencies: `pnpm run workspace:setup`
+- Run the full launcher validation flow: `pnpm run workspace:test`
+- The bootstrap script expects sibling repos at `../go-go-os-frontend` and `../go-go-gepa` (it auto-clones `go-go-gepa` if missing).
+
 IMPORTANT: To run a server and do some interaction with it, use tmux, this makes it very easy to kill a server.
 Use capture-pane to read the output.
 

@@ -84,6 +84,7 @@ HOME="${HOME_DIR}" XDG_CONFIG_HOME="${XDG_CONFIG_DIR}" "${BIN_PATH}" wesen-os-la
   --addr "127.0.0.1:${PORT}" \
   --profile default \
   --profile-registries "${PROFILE_REGISTRY_FILE}" \
+  --arc-enabled=false \
   --inventory-db "${WORK_DIR}/inventory.db" \
   --timeline-dsn "file:${WORK_DIR}/timeline.db?_foreign_keys=on" \
   --turns-dsn "file:${WORK_DIR}/turns.db?_foreign_keys=on" \
@@ -118,6 +119,7 @@ curl -fsS "${BASE_URL}/" >"${WORK_DIR}/root.html" || fail "launcher root route i
 grep -qi '<div id="root"' "${WORK_DIR}/root.html" || fail "launcher root HTML missing root mount"
 
 grep -q '"app_id":"inventory"' "${WORK_DIR}/apps.json" || fail "/api/os/apps missing inventory app"
+grep -q '"app_id":"sqlite"' "${WORK_DIR}/apps.json" || fail "/api/os/apps missing sqlite app"
 grep -q '"healthy":true' "${WORK_DIR}/apps.json" || fail "/api/os/apps does not report healthy modules"
 
 PROFILE_STATUS="$(curl -sS -o "${WORK_DIR}/profiles.json" -w "%{http_code}" "${BASE_URL}/api/apps/inventory/api/chat/profiles")"
@@ -125,6 +127,20 @@ if [[ "${PROFILE_STATUS}" != "200" ]]; then
   fail "namespaced backend endpoint returned ${PROFILE_STATUS}"
 fi
 grep -q '"slug"' "${WORK_DIR}/profiles.json" || fail "namespaced profile payload missing slug field"
+
+SQLITE_HEALTH_STATUS="$(curl -sS -o "${WORK_DIR}/sqlite-health.json" -w "%{http_code}" "${BASE_URL}/api/apps/sqlite/health")"
+if [[ "${SQLITE_HEALTH_STATUS}" != "200" ]]; then
+  fail "sqlite health endpoint returned ${SQLITE_HEALTH_STATUS}"
+fi
+grep -q '"status":"ok"' "${WORK_DIR}/sqlite-health.json" || fail "sqlite health payload missing ok status"
+
+SQLITE_QUERY_STATUS="$(curl -sS -o "${WORK_DIR}/sqlite-query.json" -w "%{http_code}" "${BASE_URL}/api/apps/sqlite/query" \
+  -H 'content-type: application/json' \
+  -d '{"sql":"SELECT 1 AS one"}')"
+if [[ "${SQLITE_QUERY_STATUS}" != "200" ]]; then
+  fail "sqlite query endpoint returned ${SQLITE_QUERY_STATUS}"
+fi
+grep -q '"rows"' "${WORK_DIR}/sqlite-query.json" || fail "sqlite query payload missing rows field"
 
 for route in "/chat" "/ws?conv_id=legacy-smoke" "/api/timeline?conv_id=legacy-smoke"; do
   LEGACY_STATUS="$(curl -sS -o /dev/null -w "%{http_code}" "${BASE_URL}${route}")"

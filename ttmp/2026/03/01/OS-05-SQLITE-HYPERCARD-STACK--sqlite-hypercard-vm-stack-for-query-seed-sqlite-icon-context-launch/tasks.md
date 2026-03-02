@@ -1,0 +1,18 @@
+- [x] [1] Create sqlite HyperCard stack scaffolding (`stack.ts`, `pluginBundle.ts`, `pluginBundle.vm.js`) with cards for home/query/results/seed and runtime capability declaration.
+- [x] [2] Add launcher payload builders for sqlite card windows and wire deterministic sizing/positioning/dedupe rules for card sessions.
+- [x] [3] Add sqlite `createContributions` with command handlers for `icon.open-new.sqlite` and `sqlite.card.open.<cardId>` so right-click `Open New` launches the sqlite stack.
+- [x] [4] Add a sqlite card `WindowContentAdapter` that renders `PluginCardSessionHost` for `stackId === sqlite` while preserving existing workspace app-window behavior.
+- [x] [5] Extend sqlite launcher state with a HyperCard intent queue/result model (`queued`/`running`/`succeeded`/`failed`) and reducers for lifecycle transitions.
+- [x] [6] Map plugin runtime domain actions (`sqlite/query.execute`, `sqlite/seed.execute`) into the sqlite queue model via reducer handlers/extraReducers.
+- [x] [7] Implement a React intent runner component that claims queued jobs, executes backend calls through `handleSqliteQueryIntent`, and dispatches success/failure state updates.
+- [x] [8] Implement seed execution in the intent runner as an ordered statement pipeline (schema + sample rows) using single-statement `/query` calls and per-step error capture.
+- [x] [9] Connect the intent runner to sqlite card windows (and any sqlite host surface that should process jobs) with guardrails against duplicate processing across multiple windows.
+- [x] [10] Author VM card flows in `pluginBundle.vm.js`: SQL editor card, results card bound to projected domain state, and seed card with progress + outcome display.
+- [x] [11] Add launch menu affordances (top menu sections/commands) so developers can open specific sqlite cards directly without navigating from home.
+- [x] [12] Add/refresh TypeScript contracts for card payload/state shape used by VM cards and the host intent runner.
+- [x] [13] Add unit tests for queue reducer transitions and intent-runner execution edge cases (validation failure, backend error, cancellation/race behavior).
+- [x] [14] Add integration-ish tests for launcher command routing (`icon.open-new.sqlite`, `sqlite.card.open.*`) and sqlite card adapter rendering.
+- [x] [15] Run repo validation (`pnpm` typecheck/build + relevant tests) and record exact commands/results in the diary.
+- [x] [16] Update sqlite package documentation with a dedicated section on VM cards, intent queueing, and right-click launch behavior.
+- [x] [17] Keep implementation diary updated after each completed task, including exact commands, failures, learnings, and commit hashes.
+- [x] [18] Commit work in focused intervals (scaffolding, launcher wiring, intent runner/state, VM cards/tests/docs) and reference commits in ticket changelog.

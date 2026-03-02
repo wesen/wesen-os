@@ -13,6 +13,10 @@ topics:
       description: Frontend app integration and UI contracts
     - slug: reflection
       description: Backend reflection metadata and discoverability contracts
+    - slug: sqlite
+      description: SQLite database app and related components
+    - slug: ux
+      description: User experience design and interaction patterns
     - slug: temporal-relationships
       description: Topic used by MEN-TR-0001 research and implementation docs
     - slug: pinocchio

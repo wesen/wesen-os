@@ -24,3 +24,5 @@ pkg/launcherui/dist/*
 .env
 .envrc
 .history
+
+data/*.db*

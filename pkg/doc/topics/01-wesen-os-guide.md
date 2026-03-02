@@ -251,13 +251,13 @@ tmux send-keys -t dev:0.1 \
 
 ```bash
 # Backend tests (all modules in wesen-os)
-GOWORK=off go test ./...
+go test ./...
 
 # Frontend type checking
 npm run typecheck -w apps/os-launcher
 
 # Integration tests (starts full launcher internally)
-GOWORK=off go test ./cmd/wesen-os-launcher/ -run TestIntegration -v
+go test ./cmd/wesen-os-launcher/ -run TestIntegration -v
 ```
 
 ## Build, Package, and Deploy
@@ -325,7 +325,7 @@ replace github.com/go-go-golems/go-go-gepa => ../go-go-gepa
 replace github.com/go-go-golems/go-go-os-backend => ../go-go-os-backend
 ```
 
-**Why both `go.work` and `replace`:** The `go.work` file enables IDE support and cross-module testing. The `replace` directives ensure that `go build` inside `wesen-os/` uses local code even outside the workspace context (CI builds with `GOWORK=off`).
+**Why both `go.work` and `replace`:** The `go.work` file enables IDE support and cross-module testing. The `replace` directives ensure that `go build` inside `wesen-os/` uses local code even outside the workspace context (CI/workspace builds).
 
 ### SPA Embedding
 
@@ -586,7 +586,7 @@ These commands are useful in scripts, CI pipelines, and smoke tests. The `npm ru
 | Problem | Cause | Solution |
 |---|---|---|
 | `go:embed` pattern error | `pkg/launcherui/dist/` empty or missing | Run frontend build + dist sync first |
-| Module import errors with `GOWORK=off` | Missing `replace` directive | Add `replace` to `wesen-os/go.mod` |
+| Module import errors in workspace mode | Missing `replace` directive | Add `replace` to `wesen-os/go.mod` |
 | Vite alias resolution error | Missing alias for new import | Add alias in `vite.config.ts` |
 
 ## Glossary
