@@ -101,6 +101,12 @@ function fireContextMenu(target: Element): void {
   });
 }
 
+async function flushAsyncUi(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 function getIconLabels(container: HTMLElement): string[] {
   return Array.from(container.querySelectorAll('[data-part="windowing-icon-label"]'))
     .map((node) => node.textContent?.trim() ?? '')
@@ -128,12 +134,16 @@ describe('launcher context menu behavior', () => {
     );
     expect(openAction).not.toBeUndefined();
 
-    act(() => {
+    await act(async () => {
       openAction?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flushAsyncUi();
     });
 
     const windowCountAfter = Object.keys(store.getState().windowing.windows).length;
     expect(windowCountAfter).toBeGreaterThan(windowCountBefore);
+    await act(async () => {
+      await flushAsyncUi();
+    });
   });
 
   it('opens shell context menu from title-bar right click', async () => {

@@ -25,5 +25,11 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     exclude: ['dist/**', 'node_modules/**'],
+    setupFiles: ['src/__tests__/setup.ts'],
+    environmentOptions: {
+      jsdom: {
+        url: 'http://127.0.0.1/',
+      },
+    },
   },
 });
