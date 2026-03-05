@@ -3,6 +3,7 @@
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "preserveSymlinks": true,
     "jsx": "react-jsx",
     "strict": true,
     "esModuleInterop": true,
@@ -10,55 +11,14 @@
     "baseUrl": ".",
     "outDir": "dist",
     "paths": {
-      "react": ["../../../go-go-os-frontend/packages/engine/node_modules/@types/react/index.d.ts"],
-      "react/jsx-runtime": ["../../../go-go-os-frontend/packages/engine/node_modules/@types/react/jsx-runtime.d.ts"],
-      "react/jsx-dev-runtime": ["../../../go-go-os-frontend/packages/engine/node_modules/@types/react/jsx-dev-runtime.d.ts"],
-      "react-dom": ["../../../go-go-os-frontend/packages/engine/node_modules/@types/react-dom/index.d.ts"],
-      "react-redux": ["../../../go-go-os-frontend/packages/engine/node_modules/react-redux"],
-      "react-redux/*": ["../../../go-go-os-frontend/packages/engine/node_modules/react-redux/*"],
-      "@reduxjs/toolkit": ["../../../go-go-os-frontend/packages/engine/node_modules/@reduxjs/toolkit/dist/index.d.ts"],
-      "@reduxjs/toolkit/*": ["../../../go-go-os-frontend/packages/engine/node_modules/@reduxjs/toolkit/*"],
-      "@hypercard/desktop-os": ["../../../go-go-os-frontend/packages/desktop-os/src"],
-      "@hypercard/desktop-os/*": ["../../../go-go-os-frontend/packages/desktop-os/src/*"],
-      "@hypercard/engine": ["../../../go-go-os-frontend/packages/engine/src"],
-      "@hypercard/engine/*": ["../../../go-go-os-frontend/packages/engine/src/*"],
-      "@hypercard/chat-runtime": ["../../../go-go-os-frontend/packages/chat-runtime/src"],
-      "@hypercard/chat-runtime/*": ["../../../go-go-os-frontend/packages/chat-runtime/src/*"],
-      "@hypercard/hypercard-runtime": ["../../../go-go-os-frontend/packages/hypercard-runtime/src"],
-      "@hypercard/hypercard-runtime/*": ["../../../go-go-os-frontend/packages/hypercard-runtime/src/*"],
-      "@hypercard/confirm-runtime": ["../../../go-go-os-frontend/packages/confirm-runtime/src"],
-      "@hypercard/confirm-runtime/*": ["../../../go-go-os-frontend/packages/confirm-runtime/src/*"],
-      "@hypercard/todo": ["../../../go-go-os-frontend/apps/todo"],
-      "@hypercard/todo/*": ["../../../go-go-os-frontend/apps/todo/*"],
-      "@hypercard/crm": ["../../../go-go-os-frontend/apps/crm"],
-      "@hypercard/crm/*": ["../../../go-go-os-frontend/apps/crm/*"],
-      "@hypercard/book-tracker-debug": ["../../../go-go-os-frontend/apps/book-tracker-debug"],
-      "@hypercard/book-tracker-debug/*": ["../../../go-go-os-frontend/apps/book-tracker-debug/*"],
-      "@hypercard/apps-browser": ["../../../go-go-os-frontend/apps/apps-browser/src/index.ts"],
-      "@hypercard/apps-browser/launcher": ["../../../go-go-os-frontend/apps/apps-browser/src/launcher/public.ts"],
-      "@hypercard/apps-browser/*": ["../../../go-go-os-frontend/apps/apps-browser/src/*"],
-      "@hypercard/hypercard-tools": ["../../../go-go-os-frontend/apps/hypercard-tools/src/index.ts"],
-      "@hypercard/hypercard-tools/launcher": [
-        "../../../go-go-os-frontend/apps/hypercard-tools/src/launcher/public.ts"
-      ],
-      "@hypercard/hypercard-tools/*": ["../../../go-go-os-frontend/apps/hypercard-tools/src/*"],
-      "@hypercard/arc-agi-player": ["../../../go-go-app-arc-agi-3/apps/arc-agi-player/src/index.ts"],
       "@hypercard/arc-agi-player/launcher": [
-        "../../../go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts"
+        "../../workspace-links/go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts",
+        "./src/app/shims/arcAgiPlayerLauncher.ts"
       ],
-      "@hypercard/arc-agi-player/*": ["../../../go-go-app-arc-agi-3/apps/arc-agi-player/src/*"],
-      "@hypercard/inventory": ["../../../go-go-app-inventory/apps/inventory/src/index.ts"],
-      "@hypercard/inventory/launcher": [
-        "../../../go-go-app-inventory/apps/inventory/src/launcher/public.ts"
-      ],
-      "@hypercard/inventory/reducers": ["../../../go-go-app-inventory/apps/inventory/src/reducers.ts"],
-      "@hypercard/inventory/*": ["../../../go-go-app-inventory/apps/inventory/src/*"]
-      ,
-      "@hypercard/sqlite": ["../../../go-go-app-sqlite/apps/sqlite/src/index.ts"],
       "@hypercard/sqlite/launcher": [
-        "../../../go-go-app-sqlite/apps/sqlite/src/launcher/public.ts"
-      ],
-      "@hypercard/sqlite/*": ["../../../go-go-app-sqlite/apps/sqlite/src/*"]
+        "../../workspace-links/go-go-app-sqlite/apps/sqlite/src/launcher/public.ts",
+        "./src/app/shims/sqliteLauncher.ts"
+      ]
     }
   },
   "include": ["src"],

@@ -1,12 +1,16 @@
-import { bookTrackerLauncherModule } from '@hypercard/book-tracker-debug/src/launcher/module';
-import { crmLauncherModule } from '@hypercard/crm/src/launcher/module';
+import { bookTrackerLauncherModule } from '@hypercard/book-tracker-debug/launcher';
+import { crmLauncherModule } from '@hypercard/crm/launcher';
 import type { LaunchableAppModule } from '@hypercard/desktop-os';
 import { arcPlayerLauncherModule } from '@hypercard/arc-agi-player/launcher';
 import { appsBrowserLauncherModule } from '@hypercard/apps-browser/launcher';
 import { hypercardToolsLauncherModule } from '@hypercard/hypercard-tools/launcher';
 import { inventoryLauncherModule } from '@hypercard/inventory/launcher';
 import { sqliteLauncherModule } from '@hypercard/sqlite/launcher';
-import { todoLauncherModule } from '@hypercard/todo/src/launcher/module';
+import { todoLauncherModule } from '@hypercard/todo/launcher';
+
+function isLaunchableAppModule(module: LaunchableAppModule | null): module is LaunchableAppModule {
+  return module !== null;
+}
 
 export const launcherModules: LaunchableAppModule[] = [
   inventoryLauncherModule,
@@ -17,4 +21,4 @@ export const launcherModules: LaunchableAppModule[] = [
   arcPlayerLauncherModule,
   appsBrowserLauncherModule,
   hypercardToolsLauncherModule,
-];
+].filter(isLaunchableAppModule);

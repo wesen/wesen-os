@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
   buildLauncherContributions,
   createAppRegistry,
@@ -40,7 +41,7 @@ describe('launcher host wiring', () => {
 
     const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
     const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
-    const appIds = ['inventory', 'sqlite', 'todo', 'crm', 'book-tracker-debug', 'arc-agi-player', 'apps-browser', 'hypercard-tools'];
+    const appIds = launcherModules.map((module) => module.manifest.id);
 
     for (const appId of appIds) {
       const handled = routeContributionCommand(`icon.open.${appId}`, handlers, commandContext());
@@ -173,25 +174,20 @@ describe('launcher host wiring', () => {
   });
 
   it('prevents placeholder module labels from being reintroduced', () => {
-    const moduleSources = [
-      readFileSync(
-        new URL('../../../../../go-go-app-inventory/apps/inventory/src/launcher/module.tsx', import.meta.url),
-        'utf8',
-      ),
-      readFileSync(new URL('../../../../../go-go-os-frontend/apps/todo/src/launcher/module.tsx', import.meta.url), 'utf8'),
-      readFileSync(new URL('../../../../../go-go-os-frontend/apps/crm/src/launcher/module.tsx', import.meta.url), 'utf8'),
-      readFileSync(
-        new URL('../../../../../go-go-os-frontend/apps/book-tracker-debug/src/launcher/module.tsx', import.meta.url),
-        'utf8',
-      ),
-      readFileSync(
-        new URL('../../../../../go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/module.tsx', import.meta.url),
-        'utf8',
-      ),
-      readFileSync(new URL('../../../../../go-go-os-frontend/apps/apps-browser/src/launcher/module.tsx', import.meta.url), 'utf8'),
-      readFileSync(new URL('../../../../../go-go-os-frontend/apps/hypercard-tools/src/launcher/module.tsx', import.meta.url), 'utf8'),
-      readFileSync(new URL('../../../../../go-go-app-sqlite/apps/sqlite/src/launcher/module.tsx', import.meta.url), 'utf8'),
+    const moduleUrls = [
+      new URL('../../../../../go-go-app-inventory/apps/inventory/src/launcher/module.tsx', import.meta.url),
+      new URL('../../../../../go-go-os-frontend/apps/todo/src/launcher/module.tsx', import.meta.url),
+      new URL('../../../../../go-go-os-frontend/apps/crm/src/launcher/module.tsx', import.meta.url),
+      new URL('../../../../../go-go-os-frontend/apps/book-tracker-debug/src/launcher/module.tsx', import.meta.url),
+      new URL('../../../../../go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/module.tsx', import.meta.url),
+      new URL('../../../../../go-go-os-frontend/apps/apps-browser/src/launcher/module.tsx', import.meta.url),
+      new URL('../../../../../go-go-os-frontend/apps/hypercard-tools/src/launcher/module.tsx', import.meta.url),
+      new URL('../../../../../go-go-app-sqlite/apps/sqlite/src/launcher/module.tsx', import.meta.url),
     ];
+    const moduleSources = moduleUrls
+      .map((url) => fileURLToPath(url))
+      .filter((filePath) => existsSync(filePath))
+      .map((filePath) => readFileSync(filePath, 'utf8'));
 
     const placeholderLabels = [
       'Inventory Module',

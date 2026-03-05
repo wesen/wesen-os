@@ -7,28 +7,43 @@ This playbook is the canonical local startup flow for the split-repo workspace.
 Expected sibling layout:
 
 ```text
-<workspace>/
-  go-go-os-frontend/
-  go-go-app-inventory/
-  go-go-app-arc-agi-3/
-  go-go-os-backend/
-  wesen-os/
+wesen-os/
+  workspace-links/
+    go-go-os-frontend/
+    go-go-app-inventory/
+    go-go-app-arc-agi-3/
+    go-go-os-backend/
+    go-go-app-sqlite/
+    go-go-gepa/
 ```
 
 Install dependencies once:
 
 ```bash
 cd wesen-os
+pnpm run workspace:init-submodules
 pnpm install
-
-cd ../go-go-os-frontend
-pnpm install
+go work sync
 ```
 
-Why both installs are required:
+Why the workspace now works from the `wesen-os` repo root:
 
-- `apps/os-launcher/vite.config.ts` aliases React and shared frontend packages to paths under `../go-go-os-frontend/...`.
-- If `go-go-os-frontend` dependencies are not installed, Vite can fail with errors like `Could not load .../go-go-os-frontend/.../node_modules/react`.
+- `workspace-links/*` are tracked git submodules inside the `wesen-os` repo.
+- `pnpm-workspace.yaml` includes the frontend packages from those submodules directly.
+- `go.work` includes the Go module repos from those submodules directly.
+
+Expected tracked layout inside `wesen-os` after running `pnpm run workspace:init-submodules`:
+
+```text
+wesen-os/
+  workspace-links/
+    go-go-os-frontend/
+    go-go-app-inventory/
+    go-go-app-sqlite/
+    go-go-app-arc-agi-3/
+    go-go-os-backend/
+    go-go-gepa/
+```
 
 ## One-Time Backend Embed Bootstrap
 
@@ -118,9 +133,13 @@ pnpm run launcher:binary:build
   - `pkg/launcherui/dist` is missing for `go:embed`;
   - run the "One-Time Backend Embed Bootstrap" step above.
 - `vite: not found` or missing `.../go-go-os-frontend/.../node_modules/react`:
-  - dependencies are not installed in one or both repos;
+  - submodules are not initialized yet;
+  - run `cd wesen-os && pnpm run workspace:init-submodules`
   - run `cd wesen-os && pnpm install`
-  - run `cd ../go-go-os-frontend && pnpm install`
+- missing `workspace-links/...` package path:
+  - the submodules were not initialized or checked out;
+  - run `cd wesen-os && pnpm run workspace:init-submodules`
+  - inspect `wesen-os/workspace-links/`
 - backend appears stuck at startup:
   - retry with ARC disabled:
   - `go run ./cmd/wesen-os-launcher wesen-os-launcher --arc-enabled=false --addr 127.0.0.1:<backend-port>`

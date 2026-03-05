@@ -2,7 +2,9 @@
   "name": "wesen-os-frontend",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "workspace-links/*/packages/*",
+    "workspace-links/*/apps/*"
   ],
   "scripts": {
     "dev": "npm run dev -w apps/os-launcher",
@@ -18,6 +20,7 @@
     "launcher:dev:stop": "bash ./scripts/launcher-dev-tmux.sh stop",
     "launcher:dev:status": "bash ./scripts/launcher-dev-tmux.sh status",
     "launcher:dev:attach": "bash ./scripts/launcher-dev-tmux.sh attach",
+    "workspace:init-submodules": "bash ./scripts/init-submodules.sh",
     "workspace:setup": "bash ./scripts/setup-workspace.sh",
     "workspace:test": "bash ./scripts/test-workspace.sh"
   },

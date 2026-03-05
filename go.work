@@ -1,0 +1,10 @@
+go 1.25.7
+
+use (
+	.
+	./workspace-links/go-go-app-arc-agi-3
+	./workspace-links/go-go-app-inventory
+	./workspace-links/go-go-app-sqlite
+	./workspace-links/go-go-gepa
+	./workspace-links/go-go-os-backend
+)
