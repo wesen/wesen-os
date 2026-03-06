@@ -1,11 +1,14 @@
 import { formatAppKey, parseAppKey, type LaunchableAppModule, type LauncherHostContext, type LaunchReason } from '@hypercard/desktop-os';
-import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import type { DesktopCommandHandler, DesktopContribution } from '@hypercard/engine/desktop-react';
 import { showToast } from '@hypercard/engine';
-import { ChatConversationWindow } from '@hypercard/chat-runtime';
+import { ChatConversationWindow, EventViewerWindow, TimelineDebugWindow } from '@hypercard/chat-runtime';
+import { useDispatch } from 'react-redux';
 
 const APP_ID = 'assistant';
 const COMMAND_CHAT_WITH_APP = 'apps-browser.chat-with-app';
+const EVENT_VIEW_INSTANCE_PREFIX = 'event-viewer~';
+const TIMELINE_DEBUG_INSTANCE_PREFIX = 'timeline-debug~';
 
 interface AssistantAppChatBootstrapResponse {
   conv_id: string;
@@ -77,6 +80,34 @@ function buildAssistantWindowPayload(input?: Partial<AssistantWindowState>): Ope
   };
 }
 
+function buildEventViewerWindowPayload(convId: string): OpenWindowPayload {
+  const shortId = convId.slice(0, 8) || 'chat';
+  return {
+    id: `window:assistant:event-viewer:${convId}`,
+    title: `Event Viewer (${shortId})`,
+    icon: '🧭',
+    bounds: { x: 220, y: 90, w: 720, h: 520 },
+    content: {
+      kind: 'app',
+      appKey: formatAppKey(APP_ID, `${EVENT_VIEW_INSTANCE_PREFIX}${convId}`),
+    },
+  };
+}
+
+function buildTimelineDebugWindowPayload(convId: string): OpenWindowPayload {
+  const shortId = convId.slice(0, 8) || 'chat';
+  return {
+    id: `window:assistant:timeline-debug:${convId}`,
+    title: `Timeline Debug (${shortId})`,
+    icon: '🧱',
+    bounds: { x: 260, y: 110, w: 760, h: 560 },
+    content: {
+      kind: 'app',
+      appKey: formatAppKey(APP_ID, `${TIMELINE_DEBUG_INSTANCE_PREFIX}${convId}`),
+    },
+  };
+}
+
 async function bootstrapAppChat(hostContext: LauncherHostContext, appId: string): Promise<AssistantAppChatBootstrapResponse> {
   const response = await fetch(`${hostContext.resolveApiBase(APP_ID)}/api/bootstrap/app-chat`, {
     method: 'POST',
@@ -119,6 +150,52 @@ function createAssistantCommandHandler(hostContext: LauncherHostContext): Deskto
   };
 }
 
+function AssistantChatWindow({
+  convId,
+  title,
+  placeholder,
+  windowId,
+}: {
+  convId: string;
+  title: string;
+  placeholder: string;
+  windowId: string;
+}) {
+  const dispatch = useDispatch();
+
+  return (
+    <ChatConversationWindow
+      convId={convId}
+      basePrefix="/api/apps/assistant"
+      title={title}
+      placeholder={placeholder}
+      windowId={windowId}
+      profilePolicy={{ kind: 'none' }}
+      starterSuggestions={[]}
+      headerActions={
+        <>
+          <button
+            type="button"
+            data-part="btn"
+            onClick={() => dispatch(openWindow(buildEventViewerWindowPayload(convId)))}
+            style={{ fontSize: 10, padding: '1px 6px' }}
+          >
+            🧭 Events
+          </button>
+          <button
+            type="button"
+            data-part="btn"
+            onClick={() => dispatch(openWindow(buildTimelineDebugWindowPayload(convId)))}
+            style={{ fontSize: 10, padding: '1px 6px' }}
+          >
+            🧱 Timeline
+          </button>
+        </>
+      }
+    />
+  );
+}
+
 export const assistantLauncherModule: LaunchableAppModule = {
   manifest: {
     id: APP_ID,
@@ -137,6 +214,15 @@ export const assistantLauncherModule: LaunchableAppModule = {
   renderWindow: ({ appKey, instanceId, windowId }) => {
     const parsed = parseAppKey(appKey);
     const decoded = decodeInstance(parsed.instanceId || instanceId);
+    const fallbackInstanceId = parsed.instanceId || instanceId;
+    if (fallbackInstanceId.startsWith(EVENT_VIEW_INSTANCE_PREFIX)) {
+      const convId = fallbackInstanceId.slice(EVENT_VIEW_INSTANCE_PREFIX.length);
+      return <EventViewerWindow conversationId={convId} />;
+    }
+    if (fallbackInstanceId.startsWith(TIMELINE_DEBUG_INSTANCE_PREFIX)) {
+      const convId = fallbackInstanceId.slice(TIMELINE_DEBUG_INSTANCE_PREFIX.length);
+      return <TimelineDebugWindow conversationId={convId} />;
+    }
     if (!decoded) {
       return <div style={{ padding: 12, fontFamily: 'monospace' }}>Invalid assistant window instance.</div>;
     }
@@ -148,14 +234,11 @@ export const assistantLauncherModule: LaunchableAppModule = {
       : 'Ask the assistant...';
 
     return (
-      <ChatConversationWindow
+      <AssistantChatWindow
         convId={decoded.convId}
-        basePrefix="/api/apps/assistant"
         title={title}
         placeholder={placeholder}
         windowId={windowId}
-        profilePolicy={{ kind: 'none' }}
-        starterSuggestions={[]}
       />
     );
   },
