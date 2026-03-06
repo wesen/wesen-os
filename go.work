@@ -11,3 +11,5 @@ use (
 	./workspace-links/go-go-gepa
 	./workspace-links/go-go-os-backend
 )
+
+replace github.com/go-go-golems/go-go-os-chat v0.0.0 => ../go-go-os-chat
