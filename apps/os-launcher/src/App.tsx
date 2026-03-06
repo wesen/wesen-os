@@ -35,7 +35,10 @@ export function App() {
     };
   }, [dispatch, store]);
 
-  const contributions = useMemo(() => buildLauncherContributions(launcherRegistry, { hostContext }), [hostContext]);
+  const contributions = useMemo(
+    () => buildLauncherContributions(launcherRegistry, { hostContext, folderIcon: false }),
+    [hostContext],
+  );
 
   const renderAppWindow = useMemo(
     () =>

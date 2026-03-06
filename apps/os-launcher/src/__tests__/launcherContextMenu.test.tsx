@@ -101,16 +101,21 @@ function fireContextMenu(target: Element): void {
   });
 }
 
+function fireDoubleClick(target: Element): void {
+  act(() => {
+    target.dispatchEvent(
+      new MouseEvent('dblclick', {
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  });
+}
+
 async function flushAsyncUi(): Promise<void> {
   await Promise.resolve();
   await Promise.resolve();
   await new Promise((resolve) => setTimeout(resolve, 0));
-}
-
-function getIconLabels(container: HTMLElement): string[] {
-  return Array.from(container.querySelectorAll('[data-part="windowing-icon-label"]'))
-    .map((node) => node.textContent?.trim() ?? '')
-    .filter((label): label is string => label.length > 0);
 }
 
 describe('launcher context menu behavior', () => {
@@ -174,58 +179,41 @@ describe('launcher context menu behavior', () => {
     expect(container.querySelector('[data-part="context-menu"]')).not.toBeNull();
   });
 
-  it('opens folder context menu actions and launches all member apps', async () => {
+  it('replaces the generic Applications folder with a Rich Widgets launcher icon', async () => {
     const { container, store } = await renderHost();
-    const folderIcon = container.querySelector('[aria-label="Applications"]');
-    expect(folderIcon).not.toBeNull();
+    expect(container.querySelector('[aria-label="Applications"]')).toBeNull();
 
+    const richWidgetsIcon = container.querySelector('[aria-label="Rich Widgets"]');
+    expect(richWidgetsIcon).not.toBeNull();
     const windowCountBefore = Object.keys(store.getState().windowing.windows).length;
 
-    fireContextMenu(folderIcon as Element);
-
-    const contextMenu = container.querySelector('[data-part="context-menu"]');
-    expect(contextMenu).not.toBeNull();
-    expect(contextMenu?.textContent).toContain('Open');
-    expect(contextMenu?.textContent).toContain('Open in New Window');
-    expect(contextMenu?.textContent).toContain('Launch All');
-    expect(contextMenu?.textContent).toContain('Sort Icons');
-
-    const launchAllAction = Array.from(contextMenu?.querySelectorAll('button') ?? []).find(
-      (button) => button.textContent?.trim() === 'Launch All'
-    );
-    expect(launchAllAction).not.toBeUndefined();
-
-    act(() => {
-      launchAllAction?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-    });
+    fireDoubleClick(richWidgetsIcon as Element);
 
     const windowCountAfter = Object.keys(store.getState().windowing.windows).length;
-    expect(windowCountAfter).toBeGreaterThanOrEqual(windowCountBefore + launcherModules.length);
+    expect(windowCountAfter).toBe(windowCountBefore + 1);
+    expect(container.querySelector('[data-part="windowing-window"] [aria-label="Log Viewer"]')).not.toBeNull();
+    expect(container.querySelector('[data-part="windowing-window"] [aria-label="MacWrite"]')).not.toBeNull();
   });
 
-  it('sorts launcher icons after folder Sort Icons action', async () => {
-    const { container } = await renderHost();
-    const folderIcon = container.querySelector('[aria-label="Applications"]');
-    expect(folderIcon).not.toBeNull();
+  it('opens rich widget windows from icons inside the Rich Widgets folder window', async () => {
+    const { container, store } = await renderHost();
+    const richWidgetsIcon = container.querySelector('[aria-label="Rich Widgets"]');
+    expect(richWidgetsIcon).not.toBeNull();
 
-    fireContextMenu(folderIcon as Element);
+    fireDoubleClick(richWidgetsIcon as Element);
 
-    const contextMenu = container.querySelector('[data-part="context-menu"]');
-    expect(contextMenu).not.toBeNull();
-    const sortIconsAction = Array.from(contextMenu?.querySelectorAll('button') ?? []).find(
-      (button) => button.textContent?.trim() === 'Sort Icons'
-    );
-    expect(sortIconsAction).not.toBeUndefined();
+    const windowCountBefore = Object.keys(store.getState().windowing.windows).length;
+    const logViewerIcon = container.querySelector('[data-part="windowing-window"] [aria-label="Log Viewer"]');
+    expect(logViewerIcon).not.toBeNull();
 
-    act(() => {
-      sortIconsAction?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-    });
+    fireDoubleClick(logViewerIcon as Element);
 
-    const iconLabels = getIconLabels(container);
-    expect(iconLabels.at(-1)).toBe('Applications');
-    const appLabels = iconLabels.slice(0, -1);
-    const sortedAppLabels = [...appLabels].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
-    expect(appLabels).toEqual(sortedAppLabels);
+    const windowCountAfter = Object.keys(store.getState().windowing.windows).length;
+    expect(windowCountAfter).toBe(windowCountBefore + 1);
+    const windowTitles = Array.from(
+      container.querySelectorAll('[data-part="windowing-window-title"]'),
+    ).map((node) => node.textContent?.trim() ?? '');
+    expect(windowTitles).toContain('Log Viewer');
   });
 
   it('opens context menu for inventory-folder window icons and routes Open', async () => {

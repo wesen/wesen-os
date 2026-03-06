@@ -5,6 +5,7 @@ import { arcPlayerLauncherModule } from '@hypercard/arc-agi-player/launcher';
 import { appsBrowserLauncherModule } from '@hypercard/apps-browser/launcher';
 import { hypercardToolsLauncherModule } from '@hypercard/hypercard-tools/launcher';
 import { inventoryLauncherModule } from '@hypercard/inventory/launcher';
+import { richWidgetsLauncherModule } from '@hypercard/rich-widgets/launcher';
 import { sqliteLauncherModule } from '@hypercard/sqlite/launcher';
 import { todoLauncherModule } from '@hypercard/todo/launcher';
 import { assistantLauncherModule } from './assistantModule';
@@ -23,4 +24,5 @@ export const launcherModules: LaunchableAppModule[] = [
   arcPlayerLauncherModule,
   appsBrowserLauncherModule,
   hypercardToolsLauncherModule,
+  richWidgetsLauncherModule,
 ].filter(isLaunchableAppModule);

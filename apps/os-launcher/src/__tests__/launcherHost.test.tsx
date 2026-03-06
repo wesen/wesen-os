@@ -39,7 +39,7 @@ describe('launcher host wiring', () => {
   it('routes icon open command to module launch window creation for every app', () => {
     const hostContext = createHostContext();
 
-    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+    const contributions = buildLauncherContributions(launcherRegistry, { hostContext, folderIcon: false });
     const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
     const appIds = launcherModules.map((module) => module.manifest.id);
 
@@ -53,7 +53,13 @@ describe('launcher host wiring', () => {
       const [payload] = hostContext.openWindow.mock.calls[index] as [
         { content: { kind: string; appKey?: string; card?: { stackId?: string } } },
       ];
-      if (appId === 'inventory' || appId === 'sqlite' || appId === 'apps-browser' || appId === 'arc-agi-player') {
+      if (
+        appId === 'inventory' ||
+        appId === 'sqlite' ||
+        appId === 'apps-browser' ||
+        appId === 'arc-agi-player' ||
+        appId === 'rich-widgets'
+      ) {
         expect(payload.content.kind).toBe('app');
         expect(payload.content.appKey).toMatch(new RegExp(`^${appId}:`));
       } else {
@@ -182,6 +188,7 @@ describe('launcher host wiring', () => {
       new URL('../../../../../go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/module.tsx', import.meta.url),
       new URL('../../../../../go-go-os-frontend/apps/apps-browser/src/launcher/module.tsx', import.meta.url),
       new URL('../../../../../go-go-os-frontend/apps/hypercard-tools/src/launcher/module.tsx', import.meta.url),
+      new URL('../../../../../go-go-os-frontend/packages/rich-widgets/src/launcher/modules.tsx', import.meta.url),
       new URL('../../../../../go-go-app-sqlite/apps/sqlite/src/launcher/module.tsx', import.meta.url),
     ];
     const moduleSources = moduleUrls
@@ -197,6 +204,7 @@ describe('launcher host wiring', () => {
       'ARC-AGI Module',
       'Apps Browser Module',
       'HyperCard Tools Module',
+      'Rich Widgets Module',
       'SQLite Module',
     ];
     for (const source of moduleSources) {
@@ -215,7 +223,8 @@ describe('launcher host wiring', () => {
         module.manifest.id === 'inventory' ||
         module.manifest.id === 'sqlite' ||
         module.manifest.id === 'apps-browser' ||
-        module.manifest.id === 'arc-agi-player'
+        module.manifest.id === 'arc-agi-player' ||
+        module.manifest.id === 'rich-widgets'
       ) {
         expect(payload.content.kind).toBe('app');
         const parsed = parseAppKey(payload.content.appKey ?? '');
@@ -229,7 +238,12 @@ describe('launcher host wiring', () => {
         }
       }
 
-      const renderInstanceId = module.manifest.id === 'inventory' ? 'chat-test-instance' : 'test-instance';
+      const renderInstanceId =
+        module.manifest.id === 'inventory'
+          ? 'chat-test-instance'
+          : module.manifest.id === 'rich-widgets'
+            ? 'folder'
+            : 'test-instance';
       const renderAppKey = formatAppKey(module.manifest.id, renderInstanceId);
       const parsed = parseAppKey(renderAppKey);
 
@@ -277,7 +291,7 @@ describe('launcher host wiring', () => {
 
   it('routes inventory chat-scoped debug and profile commands deterministically', () => {
     const hostContext = createHostContext();
-    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+    const contributions = buildLauncherContributions(launcherRegistry, { hostContext, folderIcon: false });
     const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
 
     const debugHandled = routeContributionCommand(
@@ -312,7 +326,7 @@ describe('launcher host wiring', () => {
 
   it('routes message context actions using conversation/message payload metadata', () => {
     const hostContext = createHostContext();
-    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+    const contributions = buildLauncherContributions(launcherRegistry, { hostContext, folderIcon: false });
     const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
 
     const invocation = {
@@ -355,7 +369,7 @@ describe('launcher host wiring', () => {
 
   it('routes apps-browser context commands to module windows', () => {
     const hostContext = createHostContext();
-    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+    const contributions = buildLauncherContributions(launcherRegistry, { hostContext, folderIcon: false });
     const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
 
     const openBrowserHandled = routeContributionCommand('apps-browser.open-browser', handlers, commandContext(), {
@@ -402,7 +416,7 @@ describe('launcher host wiring', () => {
 
   it('routes conversation-level actions through inventory chat command namespace', () => {
     const hostContext = createHostContext();
-    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+    const contributions = buildLauncherContributions(launcherRegistry, { hostContext, folderIcon: false });
     const handlers = contributions.flatMap((contribution) => contribution.commands ?? []);
 
     const openTimelineHandled = routeContributionCommand(
