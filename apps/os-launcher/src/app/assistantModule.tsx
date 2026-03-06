@@ -154,6 +154,8 @@ export const assistantLauncherModule: LaunchableAppModule = {
         title={title}
         placeholder={placeholder}
         windowId={windowId}
+        profilePolicy={{ kind: 'none' }}
+        starterSuggestions={[]}
       />
     );
   },
