@@ -17,9 +17,11 @@ import (
 	"time"
 
 	"github.com/go-go-golems/geppetto/pkg/events"
+	"github.com/go-go-golems/geppetto/pkg/inference/middlewarecfg"
 	gepprofiles "github.com/go-go-golems/geppetto/pkg/profiles"
 	"github.com/go-go-golems/geppetto/pkg/turns"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
+	profilechat "github.com/go-go-golems/go-go-os-chat/pkg/profilechat"
 	infruntime "github.com/go-go-golems/pinocchio/pkg/inference/runtime"
 	chatstore "github.com/go-go-golems/pinocchio/pkg/persistence/chatstore"
 	webchat "github.com/go-go-golems/pinocchio/pkg/webchat"
@@ -32,9 +34,10 @@ import (
 	inventorybackendmodule "github.com/go-go-golems/go-go-app-inventory/pkg/backendmodule"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorytools"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/pinoweb"
-	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
 	"github.com/go-go-golems/go-go-app-sqlite/pkg/sqliteapp"
+	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
 	arcagibackend "github.com/go-go-golems/wesen-os/pkg/arcagi"
+	assistantbackendmodule "github.com/go-go-golems/wesen-os/pkg/assistantbackendmodule"
 	gepabackend "github.com/go-go-golems/wesen-os/pkg/gepa"
 	"github.com/go-go-golems/wesen-os/pkg/launcherui"
 	sqlitebackend "github.com/go-go-golems/wesen-os/pkg/sqlite"
@@ -81,13 +84,17 @@ type integrationNoopSink struct{}
 func (integrationNoopSink) PublishEvent(events.Event) error { return nil }
 
 const integrationAppBasePath = "/api/apps/inventory"
+const integrationAssistantAppBasePath = "/api/apps/assistant"
 const integrationGepaAppBasePath = "/api/apps/gepa"
 const integrationArcAppBasePath = "/api/apps/arc-agi"
 const integrationSQLiteAppBasePath = "/api/apps/sqlite"
 const integrationOSDocsPath = "/api/os/docs"
 const integrationOSHelpPath = "/api/os/help"
 
-func integrationChatPath() string           { return integrationAppBasePath + "/chat" }
+func integrationChatPath() string { return integrationAppBasePath + "/chat" }
+func integrationAssistantProfilesPath() string {
+	return integrationAssistantAppBasePath + "/api/chat/profiles"
+}
 func integrationWSPath() string             { return integrationAppBasePath + "/ws" }
 func integrationTimelinePath() string       { return integrationAppBasePath + "/api/timeline" }
 func integrationProfilesPath() string       { return integrationAppBasePath + "/api/chat/profiles" }
@@ -221,6 +228,31 @@ func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat
 	)
 	require.NoError(t, err)
 
+	assistantComposer := profilechat.NewRuntimeComposer(parsed, profilechat.RuntimeComposerOptions{
+		RuntimeKey:   "assistant",
+		SystemPrompt: "You are a helpful OS assistant. Be concise, clear, and direct.",
+	}, nil, middlewarecfg.BuildDeps{}, nil)
+	assistantProfileRegistry, err := newInMemoryProfileService("assistant", &gepprofiles.Profile{
+		Slug:        gepprofiles.MustProfileSlug("assistant"),
+		DisplayName: "Assistant",
+		Description: "General-purpose OS assistant profile.",
+		Runtime: gepprofiles.RuntimeSpec{
+			SystemPrompt: "You are a helpful OS assistant. Be concise, clear, and direct.",
+		},
+	})
+	require.NoError(t, err)
+	assistantResolver := profilechat.NewStrictRequestResolver("assistant").WithProfileRegistry(
+		assistantProfileRegistry,
+		gepprofiles.MustRegistrySlug(profileRegistrySlug),
+	)
+	assistantSrv, err := webchat.NewServer(
+		context.Background(),
+		parsed,
+		nil,
+		webchat.WithRuntimeComposer(assistantComposer),
+	)
+	require.NoError(t, err)
+
 	profileRegistry, err := newInMemoryProfileService("inventory", &gepprofiles.Profile{
 		Slug:        gepprofiles.MustProfileSlug("inventory"),
 		DisplayName: "Inventory",
@@ -247,12 +279,19 @@ func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat
 	)
 
 	moduleRegistry, err := backendhost.NewModuleRegistry(
+		assistantbackendmodule.NewModule(assistantbackendmodule.Options{
+			Server:              assistantSrv,
+			RequestResolver:     assistantResolver,
+			ProfileRegistry:     assistantProfileRegistry,
+			DefaultRegistrySlug: gepprofiles.MustRegistrySlug(profileRegistrySlug),
+			WriteActor:          "wesen-os-launcher",
+			WriteSource:         "http-api",
+		}),
 		inventorybackendmodule.NewModule(inventorybackendmodule.Options{
 			Server:              webchatSrv,
 			RequestResolver:     resolver,
 			ProfileRegistry:     profileRegistry,
 			DefaultRegistrySlug: gepprofiles.MustRegistrySlug(profileRegistrySlug),
-			ExtensionSchemas:    inventoryExtensionSchemas(),
 			WriteActor:          "wesen-os-launcher",
 			WriteSource:         "http-api",
 			ConfirmMountPath:    "/confirm",
@@ -333,7 +372,6 @@ func TestWSHandler_EmitsHypercardLifecycleEvents(t *testing.T) {
 			RequestResolver:     resolver,
 			ProfileRegistry:     profileRegistry,
 			DefaultRegistrySlug: gepprofiles.MustRegistrySlug(profileRegistrySlug),
-			ExtensionSchemas:    inventoryExtensionSchemas(),
 			WriteActor:          "wesen-os-launcher",
 			WriteSource:         "http-api",
 			ConfirmMountPath:    "/confirm",
@@ -519,6 +557,51 @@ func TestOSAppsEndpoint_ListsInventoryModuleCapabilities(t *testing.T) {
 		}
 	}
 	require.True(t, inventoryFound, "expected inventory backend module in /api/os/apps payload")
+}
+
+func TestOSAppsEndpoint_ListsAssistantModuleCapabilities(t *testing.T) {
+	srv := newIntegrationServer(t)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/os/apps")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var payload struct {
+		Apps []map[string]any `json:"apps"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
+
+	assistantFound := false
+	for _, app := range payload.Apps {
+		if appID, _ := app["app_id"].(string); appID == assistantbackendmodule.AppID {
+			assistantFound = true
+			require.Equal(t, "Assistant", app["name"])
+			require.Equal(t, false, app["required"])
+			require.Equal(t, true, app["healthy"])
+			caps, ok := app["capabilities"].([]any)
+			require.True(t, ok)
+			require.Contains(t, caps, any("chat"))
+			require.Contains(t, caps, any("profiles"))
+		}
+	}
+	require.True(t, assistantFound, "expected assistant backend module in /api/os/apps payload")
+}
+
+func TestAssistantProfilesEndpoint_ListsAssistantProfile(t *testing.T) {
+	srv := newIntegrationServer(t)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + integrationAssistantProfilesPath())
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var items []map[string]any
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&items))
+	require.Len(t, items, 1)
+	require.Equal(t, "assistant", items[0]["slug"])
 }
 
 func TestInventoryModule_ReflectionEndpoint(t *testing.T) {

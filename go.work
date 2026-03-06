@@ -2,6 +2,9 @@ go 1.25.7
 
 use (
 	.
+	../geppetto
+	../go-go-os-chat
+	../pinocchio
 	./workspace-links/go-go-app-arc-agi-3
 	./workspace-links/go-go-app-inventory
 	./workspace-links/go-go-app-sqlite

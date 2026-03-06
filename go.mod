@@ -10,6 +10,7 @@ require (
 	github.com/go-go-golems/go-go-app-inventory v0.0.0-20260301235652-bf29c1fe8b1c
 	github.com/go-go-golems/go-go-app-sqlite v0.0.1
 	github.com/go-go-golems/go-go-gepa v0.0.1
+	github.com/go-go-golems/go-go-os-chat v0.0.0
 	github.com/go-go-golems/pinocchio v0.10.2
 	github.com/go-go-golems/plz-confirm v0.0.4
 	github.com/google/uuid v1.6.0

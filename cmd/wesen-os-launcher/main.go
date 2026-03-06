@@ -11,6 +11,7 @@ import (
 	"time"
 
 	clay "github.com/go-go-golems/clay/pkg"
+	"github.com/go-go-golems/geppetto/pkg/inference/middlewarecfg"
 	gepprofiles "github.com/go-go-golems/geppetto/pkg/profiles"
 	geppettosections "github.com/go-go-golems/geppetto/pkg/sections"
 	"github.com/go-go-golems/glazed/pkg/cli"
@@ -20,8 +21,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/help"
 	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
+	profilechat "github.com/go-go-golems/go-go-os-chat/pkg/profilechat"
 	webchat "github.com/go-go-golems/pinocchio/pkg/webchat"
-	webhttp "github.com/go-go-golems/pinocchio/pkg/webchat/http"
 	"github.com/pkg/errors"
 
 	wesendoc "github.com/go-go-golems/wesen-os/pkg/doc"
@@ -33,6 +34,7 @@ import (
 	"github.com/go-go-golems/go-go-app-inventory/pkg/pinoweb"
 	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
 	arcagibackend "github.com/go-go-golems/wesen-os/pkg/arcagi"
+	assistantbackendmodule "github.com/go-go-golems/wesen-os/pkg/assistantbackendmodule"
 	gepabackend "github.com/go-go-golems/wesen-os/pkg/gepa"
 	"github.com/go-go-golems/wesen-os/pkg/launcherui"
 	sqlitebackend "github.com/go-go-golems/wesen-os/pkg/sqlite"
@@ -248,6 +250,40 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 		srv.RegisterTool(name, factory)
 	}
 
+	assistantComposer := profilechat.NewRuntimeComposer(parsed, profilechat.RuntimeComposerOptions{
+		RuntimeKey:   "assistant",
+		SystemPrompt: "You are a helpful OS assistant. Be concise, clear, and direct.",
+	}, nil, middlewarecfg.BuildDeps{}, nil)
+	assistantProfileRegistry, err := newInMemoryProfileService(
+		"assistant",
+		&gepprofiles.Profile{
+			Slug:        gepprofiles.MustProfileSlug("assistant"),
+			DisplayName: "Assistant",
+			Description: "General-purpose OS assistant profile.",
+			Runtime: gepprofiles.RuntimeSpec{
+				SystemPrompt: "You are a helpful OS assistant. Be concise, clear, and direct.",
+			},
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "initialize assistant profile registry")
+	}
+	assistantRegistrySlug := gepprofiles.MustRegistrySlug(profileRegistrySlug)
+	assistantRequestResolver := profilechat.NewStrictRequestResolver("assistant").WithProfileRegistry(
+		assistantProfileRegistry,
+		assistantRegistrySlug,
+	)
+	assistantSrv, err := webchat.NewServer(
+		ctx,
+		parsed,
+		nil,
+		webchat.WithRuntimeComposer(assistantComposer),
+		webchat.WithDebugRoutesEnabled(os.Getenv("PINOCCHIO_WEBCHAT_DEBUG") == "1"),
+	)
+	if err != nil {
+		return errors.Wrap(err, "new assistant webchat server")
+	}
+
 	gepaModule, err := gepabackend.NewModule(gepabackend.ModuleConfig{
 		ScriptsRoots:       parseCSV(cfg.GEPAScriptsRoot),
 		EnableReflection:   true,
@@ -279,13 +315,20 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 	}
 
 	modules := []backendhost.AppBackendModule{
+		assistantbackendmodule.NewModule(assistantbackendmodule.Options{
+			Server:              assistantSrv,
+			RequestResolver:     assistantRequestResolver,
+			ProfileRegistry:     assistantProfileRegistry,
+			DefaultRegistrySlug: assistantRegistrySlug,
+			WriteActor:          "wesen-os-launcher",
+			WriteSource:         "http-api",
+		}),
 		inventorybackendmodule.NewModule(inventorybackendmodule.Options{
 			Server:                srv,
 			RequestResolver:       requestResolver,
 			ProfileRegistry:       profileRegistry,
 			DefaultRegistrySlug:   registrySlug,
 			MiddlewareDefinitions: composer.MiddlewareDefinitions(),
-			ExtensionSchemas:      inventoryExtensionSchemas(),
 			WriteActor:            "wesen-os-launcher",
 			WriteSource:           "http-api",
 			ConfirmMountPath:      "/confirm",
@@ -444,28 +487,6 @@ func parseCSV(raw string) []string {
 		out = append(out, trimmed)
 	}
 	return out
-}
-
-func inventoryExtensionSchemas() []webhttp.ExtensionSchemaDocument {
-	return []webhttp.ExtensionSchemaDocument{
-		{
-			Key: "inventory.starter_suggestions@v1",
-			Schema: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"items": map[string]any{
-						"type": "array",
-						"items": map[string]any{
-							"type": "string",
-						},
-						"default": []any{},
-					},
-				},
-				"required":             []any{"items"},
-				"additionalProperties": false,
-			},
-		},
-	}
 }
 
 func registerLegacyAliasNotFoundHandlers(mux *http.ServeMux) {
