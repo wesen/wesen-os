@@ -7,12 +7,14 @@ import { hypercardToolsLauncherModule } from '@hypercard/hypercard-tools/launche
 import { inventoryLauncherModule } from '@hypercard/inventory/launcher';
 import { sqliteLauncherModule } from '@hypercard/sqlite/launcher';
 import { todoLauncherModule } from '@hypercard/todo/launcher';
+import { assistantLauncherModule } from './assistantModule';
 
 function isLaunchableAppModule(module: LaunchableAppModule | null): module is LaunchableAppModule {
   return module !== null;
 }
 
 export const launcherModules: LaunchableAppModule[] = [
+  assistantLauncherModule,
   inventoryLauncherModule,
   sqliteLauncherModule,
   todoLauncherModule,

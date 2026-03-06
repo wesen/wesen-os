@@ -250,9 +250,11 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 		srv.RegisterTool(name, factory)
 	}
 
+	assistantContextStore := assistantbackendmodule.NewAppChatContextStore()
 	assistantComposer := profilechat.NewRuntimeComposer(parsed, profilechat.RuntimeComposerOptions{
-		RuntimeKey:   "assistant",
-		SystemPrompt: "You are a helpful OS assistant. Be concise, clear, and direct.",
+		RuntimeKey:      "assistant",
+		SystemPrompt:    "You are a helpful OS assistant. Be concise, clear, and direct.",
+		ContextProvider: assistantContextStore,
 	}, nil, middlewarecfg.BuildDeps{}, nil)
 	assistantProfileRegistry, err := newInMemoryProfileService(
 		"assistant",
@@ -313,16 +315,18 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 	if err != nil {
 		return errors.Wrap(err, "create sqlite backend module")
 	}
+	assistantModule := assistantbackendmodule.NewModule(assistantbackendmodule.Options{
+		Server:              assistantSrv,
+		RequestResolver:     assistantRequestResolver,
+		ProfileRegistry:     assistantProfileRegistry,
+		DefaultRegistrySlug: assistantRegistrySlug,
+		WriteActor:          "wesen-os-launcher",
+		WriteSource:         "http-api",
+		ContextStore:        assistantContextStore,
+	})
 
 	modules := []backendhost.AppBackendModule{
-		assistantbackendmodule.NewModule(assistantbackendmodule.Options{
-			Server:              assistantSrv,
-			RequestResolver:     assistantRequestResolver,
-			ProfileRegistry:     assistantProfileRegistry,
-			DefaultRegistrySlug: assistantRegistrySlug,
-			WriteActor:          "wesen-os-launcher",
-			WriteSource:         "http-api",
-		}),
+		assistantModule,
 		inventorybackendmodule.NewModule(inventorybackendmodule.Options{
 			Server:                srv,
 			RequestResolver:       requestResolver,
@@ -358,6 +362,7 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 	if err != nil {
 		return errors.Wrap(err, "create backend module registry")
 	}
+	assistantModule.SetModuleRegistry(moduleRegistry)
 	if err := backendhost.GuardNoLegacyAliases(parseCSV(cfg.LegacyAliases)); err != nil {
 		return errors.Wrap(err, "validate legacy route aliases")
 	}
