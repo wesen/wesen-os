@@ -48,7 +48,6 @@ export default defineConfig({
   },
   resolve: {
     dedupe: ['react', 'react-dom'],
-    preserveSymlinks: true,
     alias: {
       '@hypercard/arc-agi-player/launcher': hasArcAgiPlayerRepo
         ? path.resolve(linkedReposRoot, 'go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts')
