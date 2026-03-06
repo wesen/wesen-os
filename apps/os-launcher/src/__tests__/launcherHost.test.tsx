@@ -298,14 +298,14 @@ describe('launcher host wiring', () => {
       {
         ...commandContext(),
         dispatch: profileDispatch,
-        getState: () => ({ chatProfiles: { selectedRegistry: 'default' } }),
+        getState: () => ({ chatProfiles: {} }),
       },
     );
     expect(profileHandled).toBe(true);
     expect(profileDispatch).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'chatProfiles/setSelectedProfile',
-        payload: { profile: 'agent', registry: 'default', scopeKey: 'conv:conv-42' },
+        payload: { profile: 'agent', scopeKey: 'conv:conv-42' },
       }),
     );
   });
@@ -464,7 +464,7 @@ describe('launcher host wiring', () => {
     expect(profileDispatch).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'chatProfiles/setSelectedProfile',
-        payload: { profile: 'agent', registry: 'default', scopeKey: 'conv:conv-42' },
+        payload: { profile: 'agent', scopeKey: 'conv:conv-42' },
       }),
     );
   });

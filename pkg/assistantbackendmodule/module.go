@@ -49,7 +49,7 @@ func NewModule(opts Options) *Module {
 				DefaultRegistrySlug:             opts.DefaultRegistrySlug,
 				WriteActor:                      opts.WriteActor,
 				WriteSource:                     opts.WriteSource,
-				EnableCurrentProfileCookieRoute: true,
+				EnableCurrentProfileCookieRoute: false,
 			},
 		}),
 	}
