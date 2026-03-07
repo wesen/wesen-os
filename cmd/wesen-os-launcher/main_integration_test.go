@@ -1191,14 +1191,14 @@ func TestProfileAPI_InvalidRegistryAndLegacyCurrentProfileRoute(t *testing.T) {
 	legacyCurrentProfileResp, err := http.Post(
 		srv.URL+integrationCurrentProfilePath(),
 		"application/json",
-		strings.NewReader(`{"slug":"not a valid slug!"}`),
+		strings.NewReader(`{"profile":"not a valid slug!","registry":"default"}`),
 	)
 	require.NoError(t, err)
 	defer legacyCurrentProfileResp.Body.Close()
 	require.Equal(t, http.StatusNotFound, legacyCurrentProfileResp.StatusCode)
 }
 
-func TestChatAPI_UnknownRegistrySelector_IsIgnored(t *testing.T) {
+func TestChatAPI_UnknownRegistrySelector_ReturnsNotFound(t *testing.T) {
 	srv := newIntegrationServer(t)
 	defer srv.Close()
 
@@ -1210,10 +1210,10 @@ func TestChatAPI_UnknownRegistrySelector_IsIgnored(t *testing.T) {
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
-	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
 
-func TestChatAPI_LegacyRegistrySlugSelector_IsIgnored(t *testing.T) {
+func TestChatAPI_LegacyRegistrySlugSelector_ReturnsBadRequest(t *testing.T) {
 	srv := newIntegrationServer(t)
 	defer srv.Close()
 
@@ -1225,7 +1225,7 @@ func TestChatAPI_LegacyRegistrySlugSelector_IsIgnored(t *testing.T) {
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
-	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
 func TestConfirmRoutes_CoexistWithChatAndTimelineRoutes(t *testing.T) {
@@ -1462,9 +1462,7 @@ func TestProfileE2E_RuntimeSwitchKeepsPerTurnRuntimeTruth(t *testing.T) {
 		if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
 			return false
 		}
-		if v, ok := payload["current_runtime_key"].(string); ok && strings.TrimSpace(v) != "" {
-			currentRuntime = strings.TrimSpace(v)
-		} else if v, ok := payload["runtime_key"].(string); ok {
+		if v, ok := payload["resolved_runtime_key"].(string); ok && strings.TrimSpace(v) != "" {
 			currentRuntime = strings.TrimSpace(v)
 		}
 		return strings.HasPrefix(currentRuntime, "planner")
@@ -1858,10 +1856,7 @@ func mustConversationRuntimeKey(t *testing.T, srv *httptest.Server, convID strin
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	var payload map[string]any
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
-	runtimeKey, _ := payload["current_runtime_key"].(string)
-	if strings.TrimSpace(runtimeKey) == "" {
-		runtimeKey, _ = payload["runtime_key"].(string)
-	}
+	runtimeKey, _ := payload["resolved_runtime_key"].(string)
 	return strings.TrimSpace(runtimeKey)
 }
 
