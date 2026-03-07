@@ -1203,6 +1203,21 @@ func TestChatAPI_UnknownRegistrySelector_IsIgnored(t *testing.T) {
 	defer srv.Close()
 
 	reqBody := strings.NewReader(`{"prompt":"hello from unknown registry","conv_id":"conv-unknown-registry-1"}`)
+	req, err := http.NewRequest(http.MethodPost, srv.URL+integrationChatPath()+"?registry=missing", reqBody)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func TestChatAPI_LegacyRegistrySlugSelector_IsIgnored(t *testing.T) {
+	srv := newIntegrationServer(t)
+	defer srv.Close()
+
+	reqBody := strings.NewReader(`{"prompt":"hello from unknown registry","conv_id":"conv-unknown-registry-legacy-1"}`)
 	req, err := http.NewRequest(http.MethodPost, srv.URL+integrationChatPath()+"?registry_slug=missing", reqBody)
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
