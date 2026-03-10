@@ -6,6 +6,10 @@ interface PluginCardMeta {
   id: string;
   title: string;
   icon: string;
+  packId?: string;
+  sourceFile?: string;
+  source?: string;
+  handlerNames?: string[];
 }
 
 const OS_LAUNCHER_CARD_META: PluginCardMeta[] = [
@@ -14,6 +18,10 @@ const OS_LAUNCHER_CARD_META: PluginCardMeta[] = [
     id: card.id,
     title: card.title,
     icon: card.icon,
+    packId: card.packId,
+    sourceFile: card.sourceFile,
+    source: card.source,
+    handlerNames: card.handlerNames,
   })),
 ];
 
@@ -27,6 +35,16 @@ function toPluginCard(card: PluginCardMeta): CardDefinition {
       t: 'text',
       value: `Plugin card placeholder: ${card.id}`,
     },
+    meta: card.source
+      ? {
+          runtime: {
+            packId: card.packId,
+            sourceFile: card.sourceFile,
+            source: card.source,
+            handlerNames: card.handlerNames ?? [],
+          },
+        }
+      : undefined,
   };
 }
 

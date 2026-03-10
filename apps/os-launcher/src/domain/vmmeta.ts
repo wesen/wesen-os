@@ -8,5 +8,6 @@ export const KANBAN_VM_CARD_META = VM_PACK_METADATA.cards.map((card) => ({
   icon: card.icon,
   packId: card.packId,
   sourceFile: card.sourceFile,
+  source: card.source,
   handlerNames: [...card.handlerNames],
 }));

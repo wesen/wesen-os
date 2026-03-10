@@ -56,6 +56,10 @@ describe('runtimeDebugLauncherModule', () => {
       props: expect.objectContaining({
         ownerAppId: HYPERCARD_RUNTIME_DEBUG_APP_ID,
         instanceId: 'stacks',
+        stacks: expect.arrayContaining([
+          expect.objectContaining({ id: 'inventory' }),
+          expect.objectContaining({ id: 'os-launcher' }),
+        ]),
       }),
     }));
   });
