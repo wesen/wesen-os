@@ -1,0 +1,249 @@
+{
+  "packId": "kanban.v1",
+  "cards": [
+    {
+      "id": "kanbanBugTriage",
+      "packId": "kanban.v1",
+      "title": "Bug Triage",
+      "icon": "🐞",
+      "sourceFile": "src/domain/vm/cards/kanbanBugTriage.vm.js",
+      "source": "// @ts-check\n__card__({\n  id: 'kanbanBugTriage',\n  packId: 'kanban.v1',\n  title: 'Bug Triage',\n  icon: '🐞',\n});\n\n__doc__({\n  name: 'kanbanBugTriage',\n  summary: 'Bug triage demo board for kanban.v1.',\n  tags: ['demo', 'kanban', 'bugs'],\n  related: ['widgets.kanban.board'],\n});\n\ndoc`\n---\nsymbol: kanbanBugTriage\n---\nThis demo card keeps the same runtime contract as the other Kanban cards, but changes the seeded\ntasks and columns to represent a bug-triage workflow.\n`;\n\nconst bugTriageBoard = boardById('kanbanBugTriage');\n\ndefineCard(\n  bugTriageBoard.id,\n  ({ widgets }) =\u003e ({\n    render({ state }) {\n      const draft = boardDraft(state);\n      const filters = filterState(state);\n\n      return widgets.kanban.board({\n        columns: draft.columns,\n        tasks: draft.tasks,\n        editingTask: draft.editingTask,\n        filterTag: filters.filterTag || null,\n        filterPriority: filters.filterPriority || null,\n        searchQuery: filters.searchQuery,\n        collapsedCols: draft.collapsedCols,\n        onOpenTaskEditor: { handler: 'openTaskEditor' },\n        onCloseTaskEditor: { handler: 'closeTaskEditor' },\n        onSaveTask: { handler: 'saveTask' },\n        onDeleteTask: { handler: 'deleteTask' },\n        onMoveTask: { handler: 'moveTask' },\n        onSearchChange: { handler: 'search' },\n        onSetFilterTag: { handler: 'setFilterTag' },\n        onSetFilterPriority: { handler: 'setFilterPriority' },\n        onClearFilters: { handler: 'clearFilters' },\n        onToggleCollapsed: { handler: 'toggleCollapsed' },\n      });\n    },\n    handlers: {\n      openTaskEditor(context, args) {\n        const current = cloneEditingTask(asRecord(args).task) || {};\n        updateBoardCard(context, (draft) =\u003e ({\n          ...draft,\n          editingTask: current,\n        }));\n      },\n      closeTaskEditor(context) {\n        updateBoardCard(context, (draft) =\u003e ({\n          ...draft,\n          editingTask: null,\n        }));\n      },\n      saveTask(context, args) {\n        const draft = boardDraft(context.state);\n        const nextTask = sanitizeTask(asRecord(args).task, draft.columns);\n        const materializedTask = {\n          ...nextTask,\n          id: nextTask.id || nextTaskId(),\n        };\n        updateBoardCard(context, (current) =\u003e ({\n          ...current,\n          tasks: upsertTask(current.tasks, materializedTask),\n          editingTask: null,\n        }));\n        context.dispatch({ type: 'notify.show', payload: { message: 'Saved ' + materializedTask.title } });\n      },\n      deleteTask(context, args) {\n        const targetId = toText(asRecord(args).id);\n        updateBoardCard(context, (draft) =\u003e ({\n          ...draft,\n          tasks: draft.tasks.filter((task) =\u003e task.id !== targetId),\n          editingTask: draft.editingTask \u0026\u0026 draft.editingTask.id === targetId ? null : draft.editingTask,\n        }));\n        context.dispatch({ type: 'notify.show', payload: { message: 'Deleted task ' + targetId } });\n      },\n      moveTask(context, args) {\n        const payload = asRecord(args);\n        const targetId = toText(payload.id);\n        const nextColumnId = toText(payload.col);\n        updateBoardCard(context, (draft) =\u003e ({\n          ...draft,\n          tasks: draft.tasks.map((task) =\u003e (\n            task.id === targetId\n              ? { ...task, col: nextColumnId }\n              : task\n          )),\n        }));\n      },\n      search(context, args) {\n        patchFilters(context, { searchQuery: toText(asRecord(args).value) });\n      },\n      setFilterTag(context, args) {\n        const tag = asRecord(args).tag;\n        patchFilters(context, { filterTag: tag === null ? null : toText(tag, '') || null });\n      },\n      setFilterPriority(context, args) {\n        const priority = asRecord(args).priority;\n        patchFilters(context, { filterPriority: priority === null ? null : toText(priority, '') || null });\n      },\n      clearFilters(context) {\n        patchFilters(context, FILTER_DEFAULTS);\n      },\n      toggleCollapsed(context, args) {\n        const columnId = toText(asRecord(args).columnId);\n        updateBoardCard(context, (draft) =\u003e ({\n          ...draft,\n          collapsedCols: {\n            ...draft.collapsedCols,\n            [columnId]: !draft.collapsedCols[columnId],\n          },\n        }));\n      },\n    },\n  }),\n  'kanban.v1',\n);\n",
+      "handlerNames": [
+        "clearFilters",
+        "closeTaskEditor",
+        "deleteTask",
+        "moveTask",
+        "openTaskEditor",
+        "saveTask",
+        "search",
+        "setFilterPriority",
+        "setFilterTag",
+        "toggleCollapsed"
+      ]
+    },
+    {
+      "id": "kanbanPersonalPlanner",
+      "packId": "kanban.v1",
+      "title": "Personal Planner",
+      "icon": "🗓️",
+      "sourceFile": "src/domain/vm/cards/kanbanPersonalPlanner.vm.js",
+      "source": "// @ts-check\n__card__({\n  id: 'kanbanPersonalPlanner',\n  packId: 'kanban.v1',\n  title: 'Personal Planner',\n  icon: '🗓️',\n});\n\n__doc__({\n  name: 'kanbanPersonalPlanner',\n  summary: 'Personal planning demo board for kanban.v1.',\n  tags: ['demo', 'kanban', 'personal'],\n  related: ['widgets.kanban.board'],\n});\n\ndoc`\n---\nsymbol: kanbanPersonalPlanner\n---\nThis demo card models a smaller personal planning workflow and is useful for checking that the\nKanban host renderer handles low-cardinality boards cleanly.\n`;\n\nconst personalPlannerBoard = boardById('kanbanPersonalPlanner');\n\ndefineCard(\n  personalPlannerBoard.id,\n  ({ widgets }) =\u003e ({\n    render({ state }) {\n      const draft = boardDraft(state);\n      const filters = filterState(state);\n\n      return widgets.kanban.board({\n        columns: draft.columns,\n        tasks: draft.tasks,\n        editingTask: draft.editingTask,\n        filterTag: filters.filterTag || null,\n        filterPriority: filters.filterPriority || null,\n        searchQuery: filters.searchQuery,\n        collapsedCols: draft.collapsedCols,\n        onOpenTaskEditor: { handler: 'openTaskEditor' },\n        onCloseTaskEditor: { handler: 'closeTaskEditor' },\n        onSaveTask: { handler: 'saveTask' },\n        onDeleteTask: { handler: 'deleteTask' },\n        onMoveTask: { handler: 'moveTask' },\n        onSearchChange: { handler: 'search' },\n        onSetFilterTag: { handler: 'setFilterTag' },\n        onSetFilterPriority: { handler: 'setFilterPriority' },\n        onClearFilters: { handler: 'clearFilters' },\n        onToggleCollapsed: { handler: 'toggleCollapsed' },\n      });\n    },\n    handlers: {\n      openTaskEditor(context, args) {\n        const current = cloneEditingTask(asRecord(args).task) || {};\n        updateBoardCard(context, (draft) =\u003e ({\n          ...draft,\n          editingTask: current,\n        }));\n      },\n      closeTaskEditor(context) {\n        updateBoardCard(context, (draft) =\u003e ({\n          ...draft,\n          editingTask: null,\n        }));\n      },\n      saveTask(context, args) {\n        const draft = boardDraft(context.state);\n        const nextTask = sanitizeTask(asRecord(args).task, draft.columns);\n        const materializedTask = {\n          ...nextTask,\n          id: nextTask.id || nextTaskId(),\n        };\n        updateBoardCard(context, (current) =\u003e ({\n          ...current,\n          tasks: upsertTask(current.tasks, materializedTask),\n          editingTask: null,\n        }));\n        context.dispatch({ type: 'notify.show', payload: { message: 'Saved ' + materializedTask.title } });\n      },\n      deleteTask(context, args) {\n        const targetId = toText(asRecord(args).id);\n        updateBoardCard(context, (draft) =\u003e ({\n          ...draft,\n          tasks: draft.tasks.filter((task) =\u003e task.id !== targetId),\n          editingTask: draft.editingTask \u0026\u0026 draft.editingTask.id === targetId ? null : draft.editingTask,\n        }));\n        context.dispatch({ type: 'notify.show', payload: { message: 'Deleted task ' + targetId } });\n      },\n      moveTask(context, args) {\n        const payload = asRecord(args);\n        const targetId = toText(payload.id);\n        const nextColumnId = toText(payload.col);\n        updateBoardCard(context, (draft) =\u003e ({\n          ...draft,\n          tasks: draft.tasks.map((task) =\u003e (\n            task.id === targetId\n              ? { ...task, col: nextColumnId }\n              : task\n          )),\n        }));\n      },\n      search(context, args) {\n        patchFilters(context, { searchQuery: toText(asRecord(args).value) });\n      },\n      setFilterTag(context, args) {\n        const tag = asRecord(args).tag;\n        patchFilters(context, { filterTag: tag === null ? null : toText(tag, '') || null });\n      },\n      setFilterPriority(context, args) {\n        const priority = asRecord(args).priority;\n        patchFilters(context, { filterPriority: priority === null ? null : toText(priority, '') || null });\n      },\n      clearFilters(context) {\n        patchFilters(context, FILTER_DEFAULTS);\n      },\n      toggleCollapsed(context, args) {\n        const columnId = toText(asRecord(args).columnId);\n        updateBoardCard(context, (draft) =\u003e ({\n          ...draft,\n          collapsedCols: {\n            ...draft.collapsedCols,\n            [columnId]: !draft.collapsedCols[columnId],\n          },\n        }));\n      },\n    },\n  }),\n  'kanban.v1',\n);\n",
+      "handlerNames": [
+        "clearFilters",
+        "closeTaskEditor",
+        "deleteTask",
+        "moveTask",
+        "openTaskEditor",
+        "saveTask",
+        "search",
+        "setFilterPriority",
+        "setFilterTag",
+        "toggleCollapsed"
+      ]
+    },
+    {
+      "id": "kanbanSprintBoard",
+      "packId": "kanban.v1",
+      "title": "Sprint Board",
+      "icon": "🏁",
+      "sourceFile": "src/domain/vm/cards/kanbanSprintBoard.vm.js",
+      "source": "// @ts-check\n__card__({\n  id: 'kanbanSprintBoard',\n  packId: 'kanban.v1',\n  title: 'Sprint Board',\n  icon: '🏁',\n});\n\n__doc__({\n  name: 'kanbanSprintBoard',\n  summary: 'Sprint planning demo board for kanban.v1.',\n  tags: ['demo', 'kanban', 'sprint'],\n  related: ['widgets.kanban.board'],\n});\n\ndoc`\n---\nsymbol: kanbanSprintBoard\n---\nThis demo card shows a sprint-planning board with backlog, ready, doing, and done columns. It is\nthe primary smoke-test card for validating the kanban.v1 runtime pack inside os-launcher.\n`;\n\nconst sprintBoard = boardById('kanbanSprintBoard');\n\ndefineCard(\n  sprintBoard.id,\n  ({ widgets }) =\u003e ({\n    render({ state }) {\n      const draft = boardDraft(state);\n      const filters = filterState(state);\n\n      return widgets.kanban.board({\n        columns: draft.columns,\n        tasks: draft.tasks,\n        editingTask: draft.editingTask,\n        filterTag: filters.filterTag || null,\n        filterPriority: filters.filterPriority || null,\n        searchQuery: filters.searchQuery,\n        collapsedCols: draft.collapsedCols,\n        onOpenTaskEditor: { handler: 'openTaskEditor' },\n        onCloseTaskEditor: { handler: 'closeTaskEditor' },\n        onSaveTask: { handler: 'saveTask' },\n        onDeleteTask: { handler: 'deleteTask' },\n        onMoveTask: { handler: 'moveTask' },\n        onSearchChange: { handler: 'search' },\n        onSetFilterTag: { handler: 'setFilterTag' },\n        onSetFilterPriority: { handler: 'setFilterPriority' },\n        onClearFilters: { handler: 'clearFilters' },\n        onToggleCollapsed: { handler: 'toggleCollapsed' },\n      });\n    },\n    handlers: {\n      openTaskEditor(context, args) {\n        const current = cloneEditingTask(asRecord(args).task) || {};\n        updateBoardCard(context, (draft) =\u003e ({\n          ...draft,\n          editingTask: current,\n        }));\n      },\n      closeTaskEditor(context) {\n        updateBoardCard(context, (draft) =\u003e ({\n          ...draft,\n          editingTask: null,\n        }));\n      },\n      saveTask(context, args) {\n        const draft = boardDraft(context.state);\n        const nextTask = sanitizeTask(asRecord(args).task, draft.columns);\n        const materializedTask = {\n          ...nextTask,\n          id: nextTask.id || nextTaskId(),\n        };\n        updateBoardCard(context, (current) =\u003e ({\n          ...current,\n          tasks: upsertTask(current.tasks, materializedTask),\n          editingTask: null,\n        }));\n        context.dispatch({ type: 'notify.show', payload: { message: 'Saved ' + materializedTask.title } });\n      },\n      deleteTask(context, args) {\n        const targetId = toText(asRecord(args).id);\n        updateBoardCard(context, (draft) =\u003e ({\n          ...draft,\n          tasks: draft.tasks.filter((task) =\u003e task.id !== targetId),\n          editingTask: draft.editingTask \u0026\u0026 draft.editingTask.id === targetId ? null : draft.editingTask,\n        }));\n        context.dispatch({ type: 'notify.show', payload: { message: 'Deleted task ' + targetId } });\n      },\n      moveTask(context, args) {\n        const payload = asRecord(args);\n        const targetId = toText(payload.id);\n        const nextColumnId = toText(payload.col);\n        updateBoardCard(context, (draft) =\u003e ({\n          ...draft,\n          tasks: draft.tasks.map((task) =\u003e (\n            task.id === targetId\n              ? { ...task, col: nextColumnId }\n              : task\n          )),\n        }));\n      },\n      search(context, args) {\n        patchFilters(context, { searchQuery: toText(asRecord(args).value) });\n      },\n      setFilterTag(context, args) {\n        const tag = asRecord(args).tag;\n        patchFilters(context, { filterTag: tag === null ? null : toText(tag, '') || null });\n      },\n      setFilterPriority(context, args) {\n        const priority = asRecord(args).priority;\n        patchFilters(context, { filterPriority: priority === null ? null : toText(priority, '') || null });\n      },\n      clearFilters(context) {\n        patchFilters(context, FILTER_DEFAULTS);\n      },\n      toggleCollapsed(context, args) {\n        const columnId = toText(asRecord(args).columnId);\n        updateBoardCard(context, (draft) =\u003e ({\n          ...draft,\n          collapsedCols: {\n            ...draft.collapsedCols,\n            [columnId]: !draft.collapsedCols[columnId],\n          },\n        }));\n      },\n    },\n  }),\n  'kanban.v1',\n);\n",
+      "handlerNames": [
+        "clearFilters",
+        "closeTaskEditor",
+        "deleteTask",
+        "moveTask",
+        "openTaskEditor",
+        "saveTask",
+        "search",
+        "setFilterPriority",
+        "setFilterTag",
+        "toggleCollapsed"
+      ]
+    }
+  ],
+  "docs": {
+    "files": [
+      {
+        "package": {
+          "name": "kanban.v1",
+          "title": "Kanban Runtime Pack",
+          "category": "runtime-pack",
+          "version": "1",
+          "description": "Kanban board runtime pack for HyperCard VM-authored cards.",
+          "prose": "The Kanban runtime pack exposes a single structured root node, kanban.board, through the\nwidgets.kanban.board(...) helper. The VM remains responsible for semantic state, handlers, and\naction dispatch. The host remains responsible for rendering, drag/drop behavior, and modal UI.",
+          "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js"
+        },
+        "symbols": [
+          {
+            "name": "widgets.kanban.board",
+            "summary": "Create a Kanban runtime tree consumable by the kanban.v1 host renderer.",
+            "concepts": [
+              "runtime-pack",
+              "structured-ui"
+            ],
+            "returns": {},
+            "tags": [
+              "dsl",
+              "kanban",
+              "runtime-pack"
+            ],
+            "prose": "Use widgets.kanban.board({...}) from a VM card render function to describe the board state and\nthe event handler bindings. The payload must stay declarative: tasks, columns, filters,\ncollapsed-column state, and handler descriptors. Do not construct host components directly.",
+            "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
+            "line": 19
+          }
+        ],
+        "file_path": "src/domain/vm/docs/kanban-pack.docs.vm.js"
+      },
+      {
+        "symbols": [
+          {
+            "name": "kanbanBugTriage",
+            "summary": "Bug triage demo board for kanban.v1.",
+            "returns": {},
+            "related": [
+              "widgets.kanban.board"
+            ],
+            "tags": [
+              "demo",
+              "kanban",
+              "bugs"
+            ],
+            "prose": "This demo card keeps the same runtime contract as the other Kanban cards, but changes the seeded\ntasks and columns to represent a bug-triage workflow.",
+            "source_file": "src/domain/vm/cards/kanbanBugTriage.vm.js",
+            "line": 9
+          }
+        ],
+        "file_path": "src/domain/vm/cards/kanbanBugTriage.vm.js"
+      },
+      {
+        "symbols": [
+          {
+            "name": "kanbanPersonalPlanner",
+            "summary": "Personal planning demo board for kanban.v1.",
+            "returns": {},
+            "related": [
+              "widgets.kanban.board"
+            ],
+            "tags": [
+              "demo",
+              "kanban",
+              "personal"
+            ],
+            "prose": "This demo card models a smaller personal planning workflow and is useful for checking that the\nKanban host renderer handles low-cardinality boards cleanly.",
+            "source_file": "src/domain/vm/cards/kanbanPersonalPlanner.vm.js",
+            "line": 9
+          }
+        ],
+        "file_path": "src/domain/vm/cards/kanbanPersonalPlanner.vm.js"
+      },
+      {
+        "symbols": [
+          {
+            "name": "kanbanSprintBoard",
+            "summary": "Sprint planning demo board for kanban.v1.",
+            "returns": {},
+            "related": [
+              "widgets.kanban.board"
+            ],
+            "tags": [
+              "demo",
+              "kanban",
+              "sprint"
+            ],
+            "prose": "This demo card shows a sprint-planning board with backlog, ready, doing, and done columns. It is\nthe primary smoke-test card for validating the kanban.v1 runtime pack inside os-launcher.",
+            "source_file": "src/domain/vm/cards/kanbanSprintBoard.vm.js",
+            "line": 9
+          }
+        ],
+        "file_path": "src/domain/vm/cards/kanbanSprintBoard.vm.js"
+      }
+    ],
+    "by_package": {
+      "kanban.v1": {
+        "name": "kanban.v1",
+        "title": "Kanban Runtime Pack",
+        "category": "runtime-pack",
+        "version": "1",
+        "description": "Kanban board runtime pack for HyperCard VM-authored cards.",
+        "prose": "The Kanban runtime pack exposes a single structured root node, kanban.board, through the\nwidgets.kanban.board(...) helper. The VM remains responsible for semantic state, handlers, and\naction dispatch. The host remains responsible for rendering, drag/drop behavior, and modal UI.",
+        "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js"
+      }
+    },
+    "by_symbol": {
+      "kanbanBugTriage": {
+        "name": "kanbanBugTriage",
+        "summary": "Bug triage demo board for kanban.v1.",
+        "returns": {},
+        "related": [
+          "widgets.kanban.board"
+        ],
+        "tags": [
+          "demo",
+          "kanban",
+          "bugs"
+        ],
+        "prose": "This demo card keeps the same runtime contract as the other Kanban cards, but changes the seeded\ntasks and columns to represent a bug-triage workflow.",
+        "source_file": "src/domain/vm/cards/kanbanBugTriage.vm.js",
+        "line": 9
+      },
+      "kanbanPersonalPlanner": {
+        "name": "kanbanPersonalPlanner",
+        "summary": "Personal planning demo board for kanban.v1.",
+        "returns": {},
+        "related": [
+          "widgets.kanban.board"
+        ],
+        "tags": [
+          "demo",
+          "kanban",
+          "personal"
+        ],
+        "prose": "This demo card models a smaller personal planning workflow and is useful for checking that the\nKanban host renderer handles low-cardinality boards cleanly.",
+        "source_file": "src/domain/vm/cards/kanbanPersonalPlanner.vm.js",
+        "line": 9
+      },
+      "kanbanSprintBoard": {
+        "name": "kanbanSprintBoard",
+        "summary": "Sprint planning demo board for kanban.v1.",
+        "returns": {},
+        "related": [
+          "widgets.kanban.board"
+        ],
+        "tags": [
+          "demo",
+          "kanban",
+          "sprint"
+        ],
+        "prose": "This demo card shows a sprint-planning board with backlog, ready, doing, and done columns. It is\nthe primary smoke-test card for validating the kanban.v1 runtime pack inside os-launcher.",
+        "source_file": "src/domain/vm/cards/kanbanSprintBoard.vm.js",
+        "line": 9
+      },
+      "widgets.kanban.board": {
+        "name": "widgets.kanban.board",
+        "summary": "Create a Kanban runtime tree consumable by the kanban.v1 host renderer.",
+        "concepts": [
+          "runtime-pack",
+          "structured-ui"
+        ],
+        "returns": {},
+        "tags": [
+          "dsl",
+          "kanban",
+          "runtime-pack"
+        ],
+        "prose": "Use widgets.kanban.board({...}) from a VM card render function to describe the board state and\nthe event handler bindings. The payload must stay declarative: tasks, columns, filters,\ncollapsed-column state, and handler descriptors. Do not construct host components directly.",
+        "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
+        "line": 19
+      }
+    },
+    "by_concept": {
+      "runtime-pack": [
+        "widgets.kanban.board"
+      ],
+      "structured-ui": [
+        "widgets.kanban.board"
+      ]
+    }
+  }
+}

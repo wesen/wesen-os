@@ -4,9 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "vmmeta:generate": "go run ../../workspace-links/go-go-os-backend/cmd/go-go-os-backend vmmeta generate --pack-id kanban.v1 --cards-dir src/domain/vm/cards --docs-dir src/domain/vm/docs --output-json src/domain/generated/kanban.vmmeta.json --output-ts src/domain/generated/kanbanVmmeta.generated.ts",
+    "predev": "npm run vmmeta:generate",
     "dev": "vite",
+    "prebuild": "npm run vmmeta:generate",
     "build": "vite build",
+    "pretypecheck": "npm run vmmeta:generate",
     "typecheck": "node ../../node_modules/typescript/bin/tsc --noEmit -p tsconfig.json",
+    "pretest": "npm run vmmeta:generate",
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview"

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { QuickJSCardRuntimeService, validateRuntimeTree } from '@hypercard/hypercard-runtime';
 import { OS_LAUNCHER_PLUGIN_BUNDLE } from './pluginBundle';
+import { KANBAN_VM_CARD_META, OS_LAUNCHER_VM_PACK_METADATA } from './vmmeta';
 
 describe('os-launcher kanban runtime cards', () => {
   const services: QuickJSCardRuntimeService[] = [];
@@ -19,12 +20,12 @@ describe('os-launcher kanban runtime cards', () => {
     services.push(service);
 
     const bundle = await service.loadStackBundle('os-launcher', 'os-launcher@kanban', OS_LAUNCHER_PLUGIN_BUNDLE);
+    expect(OS_LAUNCHER_VM_PACK_METADATA.packId).toBe('kanban.v1');
     expect(bundle.cards).toEqual(expect.arrayContaining([
       'home',
-      'kanbanSprintBoard',
-      'kanbanBugTriage',
-      'kanbanPersonalPlanner',
+      ...KANBAN_VM_CARD_META.map((card) => card.id),
     ]));
+    expect(KANBAN_VM_CARD_META.map((card) => card.handlerNames.length)).toEqual([10, 10, 10]);
 
     const rawTree = service.renderCard('os-launcher@kanban', 'kanbanSprintBoard', {
       draft: {

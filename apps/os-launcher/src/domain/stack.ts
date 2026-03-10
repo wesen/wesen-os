@@ -1,5 +1,6 @@
 import type { CardDefinition, CardStackDefinition } from '@hypercard/engine';
 import { OS_LAUNCHER_PLUGIN_BUNDLE } from './pluginBundle';
+import { KANBAN_VM_CARD_META } from './vmmeta';
 
 interface PluginCardMeta {
   id: string;
@@ -9,9 +10,11 @@ interface PluginCardMeta {
 
 const OS_LAUNCHER_CARD_META: PluginCardMeta[] = [
   { id: 'home', title: 'Launcher Home', icon: '🖥️' },
-  { id: 'kanbanSprintBoard', title: 'Sprint Board', icon: '🏁' },
-  { id: 'kanbanBugTriage', title: 'Bug Triage', icon: '🐞' },
-  { id: 'kanbanPersonalPlanner', title: 'Personal Planner', icon: '🗓️' },
+  ...KANBAN_VM_CARD_META.map((card) => ({
+    id: card.id,
+    title: card.title,
+    icon: card.icon,
+  })),
 ];
 
 function toPluginCard(card: PluginCardMeta): CardDefinition {
