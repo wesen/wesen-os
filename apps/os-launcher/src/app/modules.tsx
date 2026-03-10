@@ -10,7 +10,10 @@ import { sqliteLauncherModule } from '@hypercard/sqlite/launcher';
 import { todoLauncherModule } from '@hypercard/todo/launcher';
 import { assistantLauncherModule } from './assistantModule';
 import { kanbanVmLauncherModule } from './kanbanVmModule';
+import { registerAppsBrowserDocs } from './registerAppsBrowserDocs';
 import { runtimeDebugLauncherModule } from './runtimeDebugModule';
+
+registerAppsBrowserDocs();
 
 function isLaunchableAppModule(module: LaunchableAppModule | null): module is LaunchableAppModule {
   return module !== null;
