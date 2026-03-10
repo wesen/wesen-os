@@ -15,7 +15,7 @@ describe('os-launcher kanban runtime cards', () => {
     services.length = 0;
   });
 
-  it('loads kanban demo cards and emits kanban.v1 trees plus semantic actions', async () => {
+  it('loads kanban demo cards and emits structured kanban.v1 shell trees plus semantic actions', async () => {
     const service = new QuickJSCardRuntimeService();
     services.push(service);
 
@@ -25,7 +25,7 @@ describe('os-launcher kanban runtime cards', () => {
       'home',
       ...KANBAN_VM_CARD_META.map((card) => card.id),
     ]));
-    expect(KANBAN_VM_CARD_META.map((card) => card.handlerNames.length)).toEqual([10, 10, 10]);
+    expect(KANBAN_VM_CARD_META).toHaveLength(5);
 
     const rawTree = service.renderCard('os-launcher@kanban', 'kanbanSprintBoard', {
       draft: {
@@ -36,7 +36,8 @@ describe('os-launcher kanban runtime cards', () => {
             col: 'todo',
             title: 'Ship os-launcher shortcut',
             desc: 'Open this through PluginCardSessionHost',
-            tags: ['feature'],
+            type: 'feature',
+            labels: ['backend'],
             priority: 'high',
           },
         ],
@@ -44,14 +45,15 @@ describe('os-launcher kanban runtime cards', () => {
         collapsedCols: {},
       },
       filters: {
-        filterTag: null,
+        filterType: null,
         filterPriority: null,
         searchQuery: '',
       },
     });
     const tree = validateRuntimeTree('kanban.v1', rawTree);
-    expect(tree.kind).toBe('kanban.board');
-    expect(tree.props.tasks).toHaveLength(1);
+    expect(tree.kind).toBe('kanban.shell');
+    expect(tree.props.board.props.tasks).toHaveLength(1);
+    expect(tree.props.taxonomy.props.issueTypes.length).toBeGreaterThan(0);
 
     const moveActions = service.eventCard(
       'os-launcher@kanban',
@@ -67,7 +69,8 @@ describe('os-launcher kanban runtime cards', () => {
               col: 'todo',
               title: 'Ship os-launcher shortcut',
               desc: 'Open this through PluginCardSessionHost',
-              tags: ['feature'],
+              type: 'feature',
+              labels: ['backend'],
               priority: 'high',
             },
           ],
@@ -75,7 +78,7 @@ describe('os-launcher kanban runtime cards', () => {
           collapsedCols: {},
         },
         filters: {
-          filterTag: null,
+          filterType: null,
           filterPriority: null,
           searchQuery: '',
         },
@@ -92,7 +95,8 @@ describe('os-launcher kanban runtime cards', () => {
               col: 'done',
               title: 'Ship os-launcher shortcut',
               desc: 'Open this through PluginCardSessionHost',
-              tags: ['feature'],
+              type: 'feature',
+              labels: ['backend'],
               priority: 'high',
             },
           ],
