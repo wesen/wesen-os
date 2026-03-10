@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { QuickJSCardRuntimeService, validateRuntimeTree } from '@hypercard/hypercard-runtime';
+import { QuickJSCardRuntimeService, validateRuntimeSurfaceTree } from '@hypercard/hypercard-runtime';
 import { OS_LAUNCHER_PLUGIN_BUNDLE } from './pluginBundle';
 import { KANBAN_VM_CARD_META, OS_LAUNCHER_VM_PACK_METADATA } from './vmmeta';
 
@@ -50,7 +50,7 @@ describe('os-launcher kanban runtime cards', () => {
         searchQuery: '',
       },
     });
-    const tree = validateRuntimeTree('kanban.v1', rawTree);
+    const tree = validateRuntimeSurfaceTree('kanban.v1', rawTree);
     expect(tree.kind).toBe('kanban.page');
     const boardNode = tree.children.find((child) => child.kind === 'kanban.board');
     const taxonomyNode = tree.children.find((child) => child.kind === 'kanban.taxonomy');
