@@ -36,6 +36,18 @@ const KANBAN_DEMO_CARDS: KanbanDemoCardMeta[] = [
     icon: '🗓️',
     description: 'Focused on personal planning and smoke-testing the VM card path.',
   },
+  {
+    cardId: 'kanbanIncidentCommand',
+    title: 'Incident Command',
+    icon: '🚨',
+    description: 'Focused on custom incident taxonomy and command-center status metrics.',
+  },
+  {
+    cardId: 'kanbanReleaseTrain',
+    title: 'Release Train',
+    icon: '🚆',
+    description: 'Focused on release gates, blocker tracking, and a filter-free shell layout.',
+  },
 ];
 
 function nextInstanceId(): string {
@@ -82,15 +94,13 @@ function createKanbanVmCardAdapter(): WindowContentAdapter {
     id: 'kanban-vm.card-window',
     canRender: (window) =>
       window.content.kind === 'card'
-      && window.content.card?.stackId === STACK.id
-      && String(window.content.card?.cardSessionId ?? '').startsWith(CARD_SESSION_PREFIX),
+      && window.content.card?.stackId === STACK.id,
     render: (window) => {
       const cardRef = window.content.card;
       if (
         window.content.kind !== 'card'
         || !cardRef
         || cardRef.stackId !== STACK.id
-        || !String(cardRef.cardSessionId ?? '').startsWith(CARD_SESSION_PREFIX)
       ) {
         return null;
       }

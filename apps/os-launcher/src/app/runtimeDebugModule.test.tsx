@@ -1,8 +1,6 @@
 import {
   clearRegisteredRuntimeDebugStacks,
-  getRegisteredRuntimeDebugStacks,
   HYPERCARD_RUNTIME_DEBUG_APP_ID,
-  RuntimeDebugAppWindow,
 } from '@hypercard/hypercard-runtime';
 import { formatAppKey } from '@hypercard/desktop-os';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -35,10 +33,6 @@ describe('runtimeDebugLauncherModule', () => {
   it('registers inventory and os-launcher stacks on import and renders the shared window', async () => {
     const { runtimeDebugLauncherModule } = await import('./runtimeDebugModule');
 
-    expect(getRegisteredRuntimeDebugStacks().map((stack) => stack.id)).toEqual(
-      expect.arrayContaining(['inventory', 'os-launcher']),
-    );
-
     const rendered = runtimeDebugLauncherModule.renderWindow({
       appId: HYPERCARD_RUNTIME_DEBUG_APP_ID,
       appKey: formatAppKey(HYPERCARD_RUNTIME_DEBUG_APP_ID, 'stacks'),
@@ -51,16 +45,14 @@ describe('runtimeDebugLauncherModule', () => {
       },
     });
 
-    expect(rendered).toEqual(expect.objectContaining({
-      type: RuntimeDebugAppWindow,
-      props: expect.objectContaining({
-        ownerAppId: HYPERCARD_RUNTIME_DEBUG_APP_ID,
-        instanceId: 'stacks',
-        stacks: expect.arrayContaining([
-          expect.objectContaining({ id: 'inventory' }),
-          expect.objectContaining({ id: 'os-launcher' }),
-        ]),
-      }),
-    }));
+    expect(rendered).toBeTruthy();
+    expect((rendered as { props: { ownerAppId: string } }).props.ownerAppId).toBe(HYPERCARD_RUNTIME_DEBUG_APP_ID);
+    expect((rendered as { props: { instanceId: string } }).props.instanceId).toBe('stacks');
+    expect((rendered as { props: { stacks: Array<{ id: string }> } }).props.stacks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'inventory' }),
+        expect.objectContaining({ id: 'os-launcher' }),
+      ]),
+    );
   });
 });

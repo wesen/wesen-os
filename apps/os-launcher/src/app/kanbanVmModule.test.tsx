@@ -68,7 +68,7 @@ describe('kanbanVmLauncherModule', async () => {
     expect(markup).toContain('Personal Planner');
   });
 
-  it('claims os-launcher kanban runtime card windows only', () => {
+  it('claims os-launcher stack card windows', () => {
     const contributions = kanbanVmLauncherModule.createContributions?.() ?? [];
     const adapter = contributions.flatMap((item) => item.windowContentAdapters ?? [])[0];
     expect(adapter).toBeDefined();
@@ -93,7 +93,7 @@ describe('kanbanVmLauncherModule', async () => {
       content: {
         kind: 'card',
         card: {
-          stackId: 'os-launcher',
+          stackId: 'inventory',
           cardId: 'home',
           cardSessionId: 'different-session',
         },
