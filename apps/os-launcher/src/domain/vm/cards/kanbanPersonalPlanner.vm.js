@@ -2,23 +2,23 @@
 __card__({
   id: 'kanbanPersonalPlanner',
   packId: 'kanban.v1',
-  title: 'Personal Planner',
-  icon: '🗓️',
+  title: 'Focus Inbox',
+  icon: '🎯',
 });
 
 __doc__({
   name: 'kanbanPersonalPlanner',
-  summary: 'Compact personal planning board using the same structured Kanban shell.',
+  summary: 'Single-lane focus inbox demo using the compositional kanban.v1 page DSL.',
   tags: ['demo', 'kanban', 'personal'],
-  related: ['widgets.kanban.shell', 'widgets.kanban.header', 'widgets.kanban.status'],
+  related: ['widgets.kanban.page', 'widgets.kanban.header', 'widgets.kanban.highlights'],
 });
 
 doc`
 ---
 symbol: kanbanPersonalPlanner
 ---
-This demo card turns the filter bar off and uses a tighter status summary, which makes it a good
-example of changing shell composition without changing the underlying board renderer.
+This demo card is intentionally minimal: one lane, no filter bar, and only a small focus-oriented
+highlight strip above the board.
 `;
 
 const personalPlannerBoard = boardById('kanbanPersonalPlanner');
@@ -27,13 +27,15 @@ defineCard(
   personalPlannerBoard.id,
   ({ widgets }) => ({
     render({ state }) {
-      const draft = boardDraft(state);
-      return renderKanbanShell(widgets, personalPlannerBoard, state, {
+      return renderKanbanPage(widgets, personalPlannerBoard, state, {
         showFilters: false,
+        highlightItems: [
+          { id: 'energy', label: 'Energy', value: 'High', caption: 'Good time for deep work', tone: 'success' },
+          { id: 'streak', label: 'Streak', value: '3 days', caption: 'Inbox under five cards', tone: 'accent', trend: [2, 3, 4, 4, 3, 5] },
+        ],
         statusMetrics: [
-          { label: 'today', value: draft.tasks.filter((task) => task.col === 'today').length },
-          { label: 'waiting', value: draft.tasks.filter((task) => task.col === 'waiting').length },
-          { label: 'done', value: draft.tasks.filter((task) => task.col === 'done').length },
+          { label: 'captured', value: boardDraft(state).tasks.length },
+          { label: 'mode', value: 'single-lane' },
         ],
       });
     },

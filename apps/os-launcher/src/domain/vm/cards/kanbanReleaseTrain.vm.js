@@ -2,23 +2,23 @@
 __card__({
   id: 'kanbanReleaseTrain',
   packId: 'kanban.v1',
-  title: 'Release Train',
-  icon: '🚆',
+  title: 'Release Cutline',
+  icon: '🚀',
 });
 
 __doc__({
   name: 'kanbanReleaseTrain',
-  summary: 'Release-readiness board with custom launch/risk taxonomy and a different shell tone.',
+  summary: 'Two-lane release cutline board with launch highlights and custom release taxonomy.',
   tags: ['demo', 'kanban', 'release'],
-  related: ['widgets.kanban.shell', 'widgets.kanban.header', 'widgets.kanban.taxonomy'],
+  related: ['widgets.kanban.page', 'widgets.kanban.highlights', 'widgets.kanban.taxonomy'],
 });
 
 doc`
 ---
 symbol: kanbanReleaseTrain
 ---
-This demo card uses the same host widgets but a different vocabulary: launch, risk, and QA
-instead of the default task taxonomy. It also hides the filter bar to keep the release view terse.
+This demo card is intentionally narrow: just two lanes, no filters, and a small launch cutline
+summary that makes the board feel very different from the sprint or incident examples.
 `;
 
 const releaseTrainBoard = boardById('kanbanReleaseTrain');
@@ -28,10 +28,14 @@ defineCard(
   ({ widgets }) => ({
     render({ state }) {
       const draft = boardDraft(state);
-      return renderKanbanShell(widgets, releaseTrainBoard, state, {
+      return renderKanbanPage(widgets, releaseTrainBoard, state, {
         showFilters: false,
-        title: 'Release Train / Q2',
+        title: 'Release Cutline / Q2',
         subtitle: 'Launch gates, blockers, and rollout checks.',
+        highlightItems: [
+          { id: 'readiness', label: 'Readiness', value: '82%', caption: 'Across platform gates', tone: 'success', progress: 0.82 },
+          { id: 'blockers', label: 'Blockers', value: draft.tasks.filter((task) => task.priority === 'blocker').length, caption: 'Holding the cut', tone: 'danger' },
+        ],
         statusMetrics: [
           { label: 'gates', value: draft.tasks.filter((task) => task.col === 'gated').length },
           { label: 'shipping', value: draft.tasks.filter((task) => task.col === 'shipping').length },

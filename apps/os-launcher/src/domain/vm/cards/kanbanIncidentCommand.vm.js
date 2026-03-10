@@ -8,17 +8,17 @@ __card__({
 
 __doc__({
   name: 'kanbanIncidentCommand',
-  summary: 'Incident command board showing custom taxonomy and custom status metrics.',
+  summary: 'Three-lane incident command surface with telemetry highlights and custom status metrics.',
   tags: ['demo', 'kanban', 'incident'],
-  related: ['widgets.kanban.shell', 'widgets.kanban.taxonomy', 'widgets.kanban.status'],
+  related: ['widgets.kanban.page', 'widgets.kanban.highlights', 'widgets.kanban.status'],
 });
 
 doc`
 ---
 symbol: kanbanIncidentCommand
 ---
-This demo card shows why the taxonomy descriptor matters: the board is not using bug/feature
-enums at all. It models outage, regression, and investigation work with SEV priorities.
+This demo card shows the command-center end of the spectrum: telemetry highlights above a denser
+three-lane board, still authored entirely with semantic Kanban primitives.
 `;
 
 const incidentCommandBoard = boardById('kanbanIncidentCommand');
@@ -28,9 +28,14 @@ defineCard(
   ({ widgets }) => ({
     render({ state }) {
       const draft = boardDraft(state);
-      return renderKanbanShell(widgets, incidentCommandBoard, state, {
+      return renderKanbanPage(widgets, incidentCommandBoard, state, {
         emptyColumnMessage: 'No incidents here',
         dropHintMessage: 'Move incident',
+        highlightItems: [
+          { id: 'sev1', label: 'SEV-1', value: draft.tasks.filter((task) => task.priority === 'sev1').length, caption: 'Customer-visible outage', tone: 'danger', trend: [0, 1, 1, 2, 1, 1] },
+          { id: 'mitigation', label: 'Mitigation', value: '74%', caption: 'Rollback progressing', tone: 'warning', progress: 0.74 },
+          { id: 'latency', label: 'Latency', value: '182ms', caption: 'API p95', tone: 'accent', trend: [120, 140, 160, 210, 190, 182] },
+        ],
         statusMetrics: [
           { label: 'open', value: draft.tasks.filter((task) => task.col !== 'resolved').length },
           { label: 'sev1', value: draft.tasks.filter((task) => task.priority === 'sev1').length },

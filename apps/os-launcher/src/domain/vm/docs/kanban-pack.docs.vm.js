@@ -11,23 +11,25 @@ doc`
 ---
 package: kanban.v1
 ---
-The Kanban runtime pack exposes a structured shell contract instead of a single board root. A VM
-card composes widgets.kanban.shell({...}) from taxonomy, header, optional filters, board, and
-optional status nodes. The VM remains responsible for semantic state and handler wiring. The host
-remains responsible for rendering, drag/drop behavior, and modal UI.
+The Kanban runtime pack exposes a compositional page contract. A VM card composes
+widgets.kanban.page(...) from smaller semantic widgets such as taxonomy, header, optional
+highlights, optional filters, board, and optional status nodes. The VM remains responsible for
+semantic state and handler wiring. The host remains responsible for rendering, drag/drop behavior,
+and modal UI.
 `;
 
-__doc__('widgets.kanban.shell', {
-  summary: 'Compose the root shell for a Kanban runtime tree.',
+__doc__('widgets.kanban.page', {
+  summary: 'Compose the root page for a Kanban runtime tree.',
   tags: ['dsl', 'kanban', 'runtime-pack'],
 });
 
 doc`
 ---
-symbol: widgets.kanban.shell
+symbol: widgets.kanban.page
 ---
-Use widgets.kanban.shell({...}) as the root return value from a kanban.v1 card render function.
-The shell accepts nested taxonomy, header, optional filters, board, and optional status nodes.
+Use widgets.kanban.page(...) as the root return value from a kanban.v1 card render function.
+Pass child nodes in a component-like style: taxonomy, header, optional highlights, optional
+filters, board, and optional status nodes.
 `;
 
 __doc__('widgets.kanban.taxonomy', {
@@ -52,8 +54,21 @@ doc`
 ---
 symbol: widgets.kanban.header
 ---
-Use widgets.kanban.header({...}) to configure shell title text, search query, and the primary
+Use widgets.kanban.header({...}) to configure page title text, search query, and the primary
 action button. Typical cards wire the primary action back to openTaskEditor.
+`;
+
+__doc__('widgets.kanban.highlights', {
+  summary: 'Describe a row of summary cards with metrics, captions, progress, or sparklines.',
+  tags: ['dsl', 'kanban', 'summary'],
+});
+
+doc`
+---
+symbol: widgets.kanban.highlights
+---
+Use widgets.kanban.highlights({...}) to render summary cards above the board. This is the main
+mechanism for making Kanban pages feel different without escaping the semantic DSL.
 `;
 
 __doc__('widgets.kanban.filters', {
@@ -66,7 +81,7 @@ doc`
 symbol: widgets.kanban.filters
 ---
 Use widgets.kanban.filters({...}) when the board should expose issue-type and priority filters. If
-the card omits this node, the host shell will not render the filter bar.
+the card omits this node, the host page will not render the filter bar.
 `;
 
 __doc__('widgets.kanban.board', {
@@ -91,6 +106,6 @@ doc`
 ---
 symbol: widgets.kanban.status
 ---
-Use widgets.kanban.status({...}) when the shell should render explicit footer metrics. Cards may
+Use widgets.kanban.status({...}) when the page should render explicit footer metrics. Cards may
 omit this node entirely, or provide custom metrics that match their own domain vocabulary.
 `;

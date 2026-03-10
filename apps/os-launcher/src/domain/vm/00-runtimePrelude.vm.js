@@ -66,33 +66,36 @@ const RELEASE_TAXONOMY = {
 const KANBAN_BOARDS = [
   {
     id: 'kanbanSprintBoard',
-    title: 'Sprint Board',
+    title: 'Sprint Radar',
     icon: '🏁',
-    subtitle: 'Planner for backlog, ready, doing, and done work.',
-    primaryActionLabel: '+ New Task',
+    subtitle: 'Five-lane delivery board with an idea queue and visible review pressure.',
+    primaryActionLabel: '+ Slice',
     taxonomy: DEFAULT_KANBAN_TAXONOMY,
     columns: [
+      { id: 'ideas', title: 'Ideas', icon: '💡' },
       { id: 'backlog', title: 'Backlog', icon: '📝' },
       { id: 'ready', title: 'Ready', icon: '🟡' },
       { id: 'doing', title: 'Doing', icon: '⚙️' },
       { id: 'done', title: 'Done', icon: '✅' },
     ],
     tasks: [
+      { id: 'sprint-0', col: 'ideas', title: 'Explore debugger source jumpbacks', desc: 'Could become the follow-up after moving Stacks & Cards.', type: 'feature', labels: ['frontend'], priority: 'low' },
       { id: 'sprint-1', col: 'backlog', title: 'Document runtime pack registration split', desc: 'Break the app-level registration work into reviewable phases.', type: 'task', labels: ['docs'], priority: 'medium' },
       { id: 'sprint-2', col: 'ready', title: 'Wire kanban authoring examples', desc: 'Add inventory prompt examples and artifact fixtures.', type: 'feature', labels: ['backend'], priority: 'high' },
       { id: 'sprint-3', col: 'doing', title: 'Validate VM session list behavior', desc: 'Open demo cards through PluginCardSessionHost and verify they appear as runtime sessions.', type: 'bug', labels: ['urgent'], priority: 'high' },
-      { id: 'sprint-4', col: 'done', title: 'Extract KanbanBoardView', desc: 'Reuse the host-rendered board view from the pack renderer.', type: 'task', labels: ['frontend'], priority: 'low' },
+      { id: 'sprint-4', col: 'doing', title: 'Tighten pack validator around page children', desc: 'Reject invalid node mixes before render.', type: 'task', labels: ['backend'], priority: 'medium' },
+      { id: 'sprint-5', col: 'done', title: 'Extract KanbanBoardView', desc: 'Reuse the host-rendered board view from the pack renderer.', type: 'task', labels: ['frontend'], priority: 'low' },
     ],
   },
   {
     id: 'kanbanBugTriage',
-    title: 'Bug Triage',
+    title: 'Bug Triage Desk',
     icon: '🐞',
-    subtitle: 'Issue-type driven triage with custom incident taxonomy.',
-    primaryActionLabel: '+ Report Incident',
+    subtitle: 'Hot-issue desk with visible regression pressure.',
+    primaryActionLabel: '+ Intake',
     taxonomy: INCIDENT_TAXONOMY,
     columns: [
-      { id: 'new', title: 'New', icon: '📥' },
+      { id: 'new', title: 'Inbox', icon: '📥' },
       { id: 'triage', title: 'Triage', icon: '🔎' },
       { id: 'fixing', title: 'Fixing', icon: '🛠️' },
       { id: 'verified', title: 'Verified', icon: '🧪' },
@@ -106,22 +109,19 @@ const KANBAN_BOARDS = [
   },
   {
     id: 'kanbanPersonalPlanner',
-    title: 'Personal Planner',
-    icon: '🗓️',
-    subtitle: 'Low-friction personal plan with a compact shell.',
+    title: 'Focus Inbox',
+    icon: '🎯',
+    subtitle: 'Single-lane personal capture board for the next few hours.',
     primaryActionLabel: '+ Capture',
     taxonomy: DEFAULT_KANBAN_TAXONOMY,
     columns: [
-      { id: 'today', title: 'Today', icon: '☀️' },
-      { id: 'next', title: 'Next', icon: '➡️' },
-      { id: 'waiting', title: 'Waiting', icon: '⏳' },
-      { id: 'done', title: 'Done', icon: '🌙' },
+      { id: 'focus', title: 'Today', icon: '🎯' },
     ],
     tasks: [
-      { id: 'personal-1', col: 'today', title: 'Smoke test Kanban VM demos', desc: 'Open each board and verify the actions mutate local runtime state.', type: 'task', labels: ['urgent'], priority: 'high' },
-      { id: 'personal-2', col: 'today', title: 'Prototype kanban card payload', desc: 'Try a real card in inventory chat and verify projection.', type: 'feature', labels: ['backend'], priority: 'high' },
-      { id: 'personal-3', col: 'next', title: 'Draft APP-16 implementation slices', desc: 'Capture the external pack registration end state for later.', type: 'task', labels: ['docs'], priority: 'medium' },
-      { id: 'personal-4', col: 'waiting', title: 'Decide final package naming', desc: 'Review whether kanban-pack is the right public package name.', type: 'task', labels: ['design'], priority: 'low' },
+      { id: 'personal-1', col: 'focus', title: 'Smoke test Kanban VM demos', desc: 'Open each board and verify the actions mutate local runtime state.', type: 'task', labels: ['urgent'], priority: 'high' },
+      { id: 'personal-2', col: 'focus', title: 'Prototype kanban card payload', desc: 'Try a real card in inventory chat and verify projection.', type: 'feature', labels: ['backend'], priority: 'high' },
+      { id: 'personal-3', col: 'focus', title: 'Draft APP-16 implementation slices', desc: 'Capture the external pack registration end state for later.', type: 'task', labels: ['docs'], priority: 'medium' },
+      { id: 'personal-4', col: 'focus', title: 'Decide final package naming', desc: 'Review whether kanban-pack is the right public package name.', type: 'task', labels: ['design'], priority: 'low' },
     ],
   },
   {
@@ -134,33 +134,30 @@ const KANBAN_BOARDS = [
     columns: [
       { id: 'detected', title: 'Detected', icon: '📟' },
       { id: 'mitigating', title: 'Mitigating', icon: '🧯' },
-      { id: 'recovering', title: 'Recovering', icon: '🩹' },
       { id: 'resolved', title: 'Resolved', icon: '✅' },
     ],
     tasks: [
       { id: 'incident-1', col: 'detected', title: 'Auth tokens failing refresh', desc: 'Users are being logged out every 30 minutes.', type: 'outage', labels: ['auth', 'customer'], priority: 'sev1' },
       { id: 'incident-2', col: 'mitigating', title: 'DB pool saturation', desc: 'Connection queue stays above the safe threshold.', type: 'investigation', labels: ['db'], priority: 'sev2' },
-      { id: 'incident-3', col: 'recovering', title: 'Webhook retries duplicated', desc: 'Backlog is draining but needs monitoring.', type: 'regression', labels: ['api'], priority: 'sev2' },
+      { id: 'incident-3', col: 'resolved', title: 'Webhook retries duplicated', desc: 'Backlog is draining but needs monitoring.', type: 'regression', labels: ['api'], priority: 'sev2' },
     ],
   },
   {
     id: 'kanbanReleaseTrain',
-    title: 'Release Train',
-    icon: '🚆',
-    subtitle: 'Release readiness board with custom launch/risk taxonomy.',
+    title: 'Release Cutline',
+    icon: '🚀',
+    subtitle: 'Two-lane release board: blocked or ready to ship.',
     primaryActionLabel: '+ Add Gate',
     taxonomy: RELEASE_TAXONOMY,
     columns: [
-      { id: 'planned', title: 'Planned', icon: '🗺️' },
-      { id: 'gated', title: 'Gated', icon: '🚧' },
+      { id: 'gated', title: 'Launch Gates', icon: '🚧' },
       { id: 'shipping', title: 'Shipping', icon: '📦' },
-      { id: 'landed', title: 'Landed', icon: '🎉' },
     ],
     tasks: [
-      { id: 'release-1', col: 'planned', title: 'Finalize changelog copy', desc: 'Needs final pass from product marketing.', type: 'launch', labels: ['web'], priority: 'watch' },
+      { id: 'release-1', col: 'gated', title: 'Finalize changelog copy', desc: 'Needs final pass from product marketing.', type: 'launch', labels: ['web'], priority: 'watch' },
       { id: 'release-2', col: 'gated', title: 'Android subscription fallback', desc: 'Must be verified before opening the rollout.', type: 'risk', labels: ['android'], priority: 'blocker' },
       { id: 'release-3', col: 'shipping', title: 'iOS testflight verification', desc: 'Smoke tests are running against the candidate.', type: 'qa', labels: ['ios'], priority: 'watch' },
-      { id: 'release-4', col: 'landed', title: 'Ops rollback checklist approved', desc: '', type: 'launch', labels: ['ops'], priority: 'stable' },
+      { id: 'release-4', col: 'shipping', title: 'Ops rollback checklist approved', desc: '', type: 'launch', labels: ['ops'], priority: 'stable' },
     ],
   },
 ];
@@ -357,7 +354,7 @@ function defaultStatusMetrics(board, draft, filters) {
   ];
 }
 
-function renderKanbanShell(widgets, board, state, options = {}) {
+function renderKanbanPage(widgets, board, state, options = {}) {
   const draft = boardDraft(state);
   const filters = filterState(state);
   const defaultSeedTask = {
@@ -367,9 +364,9 @@ function renderKanbanShell(widgets, board, state, options = {}) {
     priority: defaultPriority(board),
   };
 
-  const shell = {
-    taxonomy: widgets.kanban.taxonomy(cloneTaxonomy(board.taxonomy)),
-    header: widgets.kanban.header({
+  const children = [
+    widgets.kanban.taxonomy(cloneTaxonomy(board.taxonomy)),
+    widgets.kanban.header({
       title: toText(options.title, board.title),
       subtitle: toText(options.subtitle, board.subtitle || ''),
       primaryActionLabel: toText(options.primaryActionLabel, board.primaryActionLabel || '+ New'),
@@ -377,7 +374,30 @@ function renderKanbanShell(widgets, board, state, options = {}) {
       onPrimaryAction: { handler: 'openTaskEditor', args: { task: defaultSeedTask } },
       onSearchChange: { handler: 'search' },
     }),
-    board: widgets.kanban.board({
+  ];
+
+  if (Array.isArray(options.highlightItems) && options.highlightItems.length > 0) {
+    children.push(
+      widgets.kanban.highlights({
+        items: options.highlightItems,
+      })
+    );
+  }
+
+  if (options.showFilters !== false) {
+    children.push(
+      widgets.kanban.filters({
+        filterType: filters.filterType || null,
+        filterPriority: filters.filterPriority || null,
+        onSetFilterType: { handler: 'setFilterType' },
+        onSetFilterPriority: { handler: 'setFilterPriority' },
+        onClearFilters: { handler: 'clearFilters' },
+      })
+    );
+  }
+
+  children.push(
+    widgets.kanban.board({
       columns: draft.columns,
       tasks: draft.tasks,
       editingTask: draft.editingTask,
@@ -390,28 +410,20 @@ function renderKanbanShell(widgets, board, state, options = {}) {
       onDeleteTask: { handler: 'deleteTask' },
       onMoveTask: { handler: 'moveTask' },
       onToggleCollapsed: { handler: 'toggleCollapsed' },
-    }),
-  };
-
-  if (options.showFilters !== false) {
-    shell.filters = widgets.kanban.filters({
-      filterType: filters.filterType || null,
-      filterPriority: filters.filterPriority || null,
-      onSetFilterType: { handler: 'setFilterType' },
-      onSetFilterPriority: { handler: 'setFilterPriority' },
-      onClearFilters: { handler: 'clearFilters' },
-    });
-  }
+    })
+  );
 
   if (options.showStatus !== false) {
-    shell.status = widgets.kanban.status({
-      metrics: Array.isArray(options.statusMetrics)
-        ? options.statusMetrics
-        : defaultStatusMetrics(board, draft, filters),
-    });
+    children.push(
+      widgets.kanban.status({
+        metrics: Array.isArray(options.statusMetrics)
+          ? options.statusMetrics
+          : defaultStatusMetrics(board, draft, filters),
+      })
+    );
   }
 
-  return widgets.kanban.shell(shell);
+  return widgets.kanban.page(children);
 }
 
 function kanbanCardHandlers(board) {

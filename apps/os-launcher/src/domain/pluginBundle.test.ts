@@ -15,7 +15,7 @@ describe('os-launcher kanban runtime cards', () => {
     services.length = 0;
   });
 
-  it('loads kanban demo cards and emits structured kanban.v1 shell trees plus semantic actions', async () => {
+  it('loads kanban demo cards and emits structured kanban.v1 page trees plus semantic actions', async () => {
     const service = new QuickJSCardRuntimeService();
     services.push(service);
 
@@ -51,9 +51,11 @@ describe('os-launcher kanban runtime cards', () => {
       },
     });
     const tree = validateRuntimeTree('kanban.v1', rawTree);
-    expect(tree.kind).toBe('kanban.shell');
-    expect(tree.props.board.props.tasks).toHaveLength(1);
-    expect(tree.props.taxonomy.props.issueTypes.length).toBeGreaterThan(0);
+    expect(tree.kind).toBe('kanban.page');
+    const boardNode = tree.children.find((child) => child.kind === 'kanban.board');
+    const taxonomyNode = tree.children.find((child) => child.kind === 'kanban.taxonomy');
+    expect(boardNode?.props.tasks).toHaveLength(1);
+    expect(taxonomyNode?.props.issueTypes.length).toBeGreaterThan(0);
 
     const moveActions = service.eventCard(
       'os-launcher@kanban',
