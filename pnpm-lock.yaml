@@ -1089,6 +1089,9 @@ importers:
       '@hypercard/engine':
         specifier: workspace:*
         version: link:../engine
+      '@hypercard/rich-widgets':
+        specifier: workspace:*
+        version: link:../rich-widgets
       '@jitl/quickjs-ffi-types':
         specifier: ^0.31.0
         version: 0.31.0
