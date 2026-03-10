@@ -9,6 +9,7 @@ import { richWidgetsLauncherModule } from '@hypercard/rich-widgets/launcher';
 import { sqliteLauncherModule } from '@hypercard/sqlite/launcher';
 import { todoLauncherModule } from '@hypercard/todo/launcher';
 import { assistantLauncherModule } from './assistantModule';
+import { kanbanVmLauncherModule } from './kanbanVmModule';
 
 function isLaunchableAppModule(module: LaunchableAppModule | null): module is LaunchableAppModule {
   return module !== null;
@@ -24,5 +25,6 @@ export const launcherModules: LaunchableAppModule[] = [
   arcPlayerLauncherModule,
   appsBrowserLauncherModule,
   hypercardToolsLauncherModule,
+  kanbanVmLauncherModule,
   richWidgetsLauncherModule,
 ].filter(isLaunchableAppModule);

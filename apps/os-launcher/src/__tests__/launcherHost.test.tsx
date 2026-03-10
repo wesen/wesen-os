@@ -58,6 +58,7 @@ describe('launcher host wiring', () => {
         appId === 'sqlite' ||
         appId === 'apps-browser' ||
         appId === 'arc-agi-player' ||
+        appId === 'kanban-vm' ||
         appId === 'rich-widgets'
       ) {
         expect(payload.content.kind).toBe('app');
@@ -188,6 +189,7 @@ describe('launcher host wiring', () => {
       new URL('../../../../../go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/module.tsx', import.meta.url),
       new URL('../../../../../go-go-os-frontend/apps/apps-browser/src/launcher/module.tsx', import.meta.url),
       new URL('../../../../../go-go-os-frontend/apps/hypercard-tools/src/launcher/module.tsx', import.meta.url),
+      new URL('../app/kanbanVmModule.tsx', import.meta.url),
       new URL('../../../../../go-go-os-frontend/packages/rich-widgets/src/launcher/modules.tsx', import.meta.url),
       new URL('../../../../../go-go-app-sqlite/apps/sqlite/src/launcher/module.tsx', import.meta.url),
     ];
@@ -204,6 +206,7 @@ describe('launcher host wiring', () => {
       'ARC-AGI Module',
       'Apps Browser Module',
       'HyperCard Tools Module',
+      'Kanban VM Module',
       'Rich Widgets Module',
       'SQLite Module',
     ];
@@ -224,6 +227,7 @@ describe('launcher host wiring', () => {
         module.manifest.id === 'sqlite' ||
         module.manifest.id === 'apps-browser' ||
         module.manifest.id === 'arc-agi-player' ||
+        module.manifest.id === 'kanban-vm' ||
         module.manifest.id === 'rich-widgets'
       ) {
         expect(payload.content.kind).toBe('app');
