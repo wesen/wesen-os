@@ -1,5 +1,5 @@
 import runtimePrelude from './vm/00-runtimePrelude.vm.js?raw';
-import homeCard from './vm/10-home.vm.js?raw';
+import homeSurface from './vm/10-home.vm.js?raw';
 import kanbanPackDocs from './vm/docs/kanban-pack.docs.vm.js?raw';
 import kanbanBugTriage from './vm/cards/kanbanBugTriage.vm.js?raw';
 import kanbanIncidentCommand from './vm/cards/kanbanIncidentCommand.vm.js?raw';
@@ -13,7 +13,7 @@ const OS_LAUNCHER_BUNDLE_PRELUDE = [
 ];
 
 const OS_LAUNCHER_BUNDLE_DOCS = [
-  homeCard,
+  homeSurface,
   kanbanPackDocs,
 ];
 
