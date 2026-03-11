@@ -19,8 +19,9 @@ describe('os-launcher kanban runtime cards', () => {
     const service = new QuickJSRuntimeService();
     services.push(service);
 
-    const bundle = await service.loadRuntimeBundle('os-launcher', 'os-launcher@kanban', OS_LAUNCHER_PLUGIN_BUNDLE);
+    const bundle = await service.loadRuntimeBundle('os-launcher', 'os-launcher@kanban', ['ui', 'kanban'], OS_LAUNCHER_PLUGIN_BUNDLE);
     expect(OS_LAUNCHER_VM_PACK_METADATA.packId).toBe('kanban.v1');
+    expect(bundle.packageIds).toEqual(['ui', 'kanban']);
     expect(bundle.surfaces).toEqual(expect.arrayContaining([
       'home',
       ...KANBAN_VM_CARD_META.map((card) => card.id),

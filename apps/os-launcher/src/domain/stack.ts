@@ -54,6 +54,7 @@ export const STACK: CardStackDefinition = {
   icon: '🖥️',
   homeCard: 'home',
   plugin: {
+    packageIds: ['ui', 'kanban'],
     bundleCode: OS_LAUNCHER_PLUGIN_BUNDLE,
     capabilities: {
       system: ['nav.go', 'nav.back', 'notify.show'],

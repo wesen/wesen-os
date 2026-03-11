@@ -3,6 +3,7 @@ defineRuntimeBundle(({ ui }) => {
   return {
     id: 'os-launcher',
     title: 'go-go-os Launcher',
+    packageIds: ["ui", "kanban"],
     initialSessionState: FILTER_DEFAULTS,
     initialSurfaceState: Object.fromEntries(KANBAN_BOARDS.map((board) => [board.id, initialBoardState(board)])),
     surfaces: {
