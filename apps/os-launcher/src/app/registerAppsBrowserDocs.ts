@@ -1,6 +1,6 @@
 import {
-  createVmmetaCardDocsMount,
-  createVmmetaPackDocsMount,
+  createVmmetaSurfaceDocsMount,
+  createVmmetaSurfaceTypeDocsMount,
   docsRegistry,
 } from '@hypercard/apps-browser';
 import { INVENTORY_VM_PACK_METADATA } from '@hypercard/inventory';
@@ -13,9 +13,9 @@ export function registerAppsBrowserDocs() {
     return;
   }
 
-  docsRegistry.register(createVmmetaPackDocsMount(OS_LAUNCHER_VM_PACK_METADATA));
-  docsRegistry.register(createVmmetaCardDocsMount('os-launcher', OS_LAUNCHER_VM_PACK_METADATA));
-  docsRegistry.register(createVmmetaPackDocsMount(INVENTORY_VM_PACK_METADATA));
-  docsRegistry.register(createVmmetaCardDocsMount('inventory', INVENTORY_VM_PACK_METADATA));
+  docsRegistry.register(createVmmetaSurfaceTypeDocsMount(OS_LAUNCHER_VM_PACK_METADATA));
+  docsRegistry.register(createVmmetaSurfaceDocsMount('os-launcher', OS_LAUNCHER_VM_PACK_METADATA));
+  docsRegistry.register(createVmmetaSurfaceTypeDocsMount(INVENTORY_VM_PACK_METADATA));
+  docsRegistry.register(createVmmetaSurfaceDocsMount('inventory', INVENTORY_VM_PACK_METADATA));
   registered = true;
 }
