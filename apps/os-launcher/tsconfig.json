@@ -11,6 +11,12 @@
     "baseUrl": ".",
     "outDir": "dist",
     "paths": {
+      "@hypercard/repl": [
+        "../../workspace-links/go-go-os-frontend/packages/repl/src/index.ts"
+      ],
+      "@hypercard/repl/*": [
+        "../../workspace-links/go-go-os-frontend/packages/repl/src/*"
+      ],
       "@hypercard/arc-agi-player/launcher": [
         "../../workspace-links/go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts",
         "./src/app/shims/arcAgiPlayerLauncher.ts"

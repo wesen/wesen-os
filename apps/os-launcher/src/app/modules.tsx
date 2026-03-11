@@ -9,6 +9,7 @@ import { richWidgetsLauncherModule } from '@hypercard/rich-widgets/launcher';
 import { sqliteLauncherModule } from '@hypercard/sqlite/launcher';
 import { todoLauncherModule } from '@hypercard/todo/launcher';
 import { assistantLauncherModule } from './assistantModule';
+import { hypercardReplLauncherModule } from './hypercardReplModule';
 import { kanbanVmLauncherModule } from './kanbanVmModule';
 import { registerAppsBrowserDocs } from './registerAppsBrowserDocs';
 import { runtimeDebugLauncherModule } from './runtimeDebugModule';
@@ -21,6 +22,7 @@ function isLaunchableAppModule(module: LaunchableAppModule | null): module is La
 
 export const launcherModules: LaunchableAppModule[] = [
   assistantLauncherModule,
+  hypercardReplLauncherModule,
   inventoryLauncherModule,
   sqliteLauncherModule,
   todoLauncherModule,
