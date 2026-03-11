@@ -19,7 +19,7 @@ function commandContext(): DesktopCommandContext {
     dispatch: () => undefined,
     getState: () => ({}),
     focusedWindowId: null,
-    openCardWindow: () => undefined,
+    openSurfaceWindow: () => undefined,
     closeWindow: () => undefined,
   };
 }
@@ -51,24 +51,16 @@ describe('launcher host wiring', () => {
     expect(hostContext.openWindow).toHaveBeenCalledTimes(appIds.length);
     for (const [index, appId] of appIds.entries()) {
       const [payload] = hostContext.openWindow.mock.calls[index] as [
-        { content: { kind: string; appKey?: string; card?: { stackId?: string } } },
+        { content: { kind: string; appKey?: string; surface?: { bundleId?: string } } },
       ];
-      if (
-        appId === 'inventory' ||
-        appId === 'sqlite' ||
-        appId === 'apps-browser' ||
-        appId === 'arc-agi-player' ||
-        appId === 'kanban-vm' ||
-        appId === 'hypercard-runtime-debug' ||
-        appId === 'rich-widgets'
-      ) {
+      if (payload.content.kind === 'app') {
         expect(payload.content.kind).toBe('app');
         expect(payload.content.appKey).toMatch(new RegExp(`^${appId}:`));
       } else {
-        expect(payload.content.kind).toBe('card');
-        expect(payload.content.card?.stackId).toBeTruthy();
+        expect(payload.content.kind).toBe('surface');
+        expect(payload.content.surface?.bundleId).toBeTruthy();
         if (appId === 'hypercard-tools') {
-          expect(payload.content.card?.stackId).toBe('hypercardToolsUiDslDemo');
+          expect(payload.content.surface?.bundleId).toBe('hypercardToolsUiDslDemo');
         }
       }
     }
@@ -225,24 +217,16 @@ describe('launcher host wiring', () => {
       const ctx = createHostContext();
       const payload = module.buildLaunchWindow(ctx, 'icon');
       expect(payload.id).toContain(module.manifest.id);
-      if (
-        module.manifest.id === 'inventory' ||
-        module.manifest.id === 'sqlite' ||
-        module.manifest.id === 'apps-browser' ||
-        module.manifest.id === 'arc-agi-player' ||
-        module.manifest.id === 'kanban-vm' ||
-        module.manifest.id === 'hypercard-runtime-debug' ||
-        module.manifest.id === 'rich-widgets'
-      ) {
+      if (payload.content.kind === 'app') {
         expect(payload.content.kind).toBe('app');
         const parsed = parseAppKey(payload.content.appKey ?? '');
         expect(parsed).not.toBeNull();
         expect(parsed?.appId).toBe(module.manifest.id);
       } else {
-        expect(payload.content.kind).toBe('card');
-        expect(payload.content.card?.stackId).toBeTruthy();
+        expect(payload.content.kind).toBe('surface');
+        expect(payload.content.surface?.bundleId).toBeTruthy();
         if (module.manifest.id === 'hypercard-tools') {
-          expect(payload.content.card?.stackId).toBe('hypercardToolsUiDslDemo');
+          expect(payload.content.surface?.bundleId).toBe('hypercardToolsUiDslDemo');
         }
       }
 
@@ -510,10 +494,10 @@ describe('launcher host wiring', () => {
 
   it('removes legacy standalone desktop shell boot wiring from app roots', () => {
     const appRootSources = [
-      readFileSync(new URL('../../../../../go-go-app-inventory/apps/inventory/src/App.tsx', import.meta.url), 'utf8'),
-      readFileSync(new URL('../../../../../go-go-os-frontend/apps/todo/src/App.tsx', import.meta.url), 'utf8'),
-      readFileSync(new URL('../../../../../go-go-os-frontend/apps/crm/src/App.tsx', import.meta.url), 'utf8'),
-      readFileSync(new URL('../../../../../go-go-os-frontend/apps/book-tracker-debug/src/App.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../workspace-links/go-go-app-inventory/apps/inventory/src/App.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../workspace-links/go-go-os-frontend/apps/todo/src/App.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../workspace-links/go-go-os-frontend/apps/crm/src/App.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../workspace-links/go-go-os-frontend/apps/book-tracker-debug/src/App.tsx', import.meta.url), 'utf8'),
     ];
 
     for (const source of appRootSources) {

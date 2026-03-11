@@ -68,7 +68,7 @@ describe('kanbanVmLauncherModule', async () => {
     expect(markup).toContain('Personal Planner');
   });
 
-  it('claims os-launcher stack card windows', () => {
+  it('claims os-launcher bundle card windows', () => {
     const contributions = kanbanVmLauncherModule.createContributions?.() ?? [];
     const adapter = contributions.flatMap((item) => item.windowContentAdapters ?? [])[0];
     expect(adapter).toBeDefined();
@@ -78,11 +78,11 @@ describe('kanbanVmLauncherModule', async () => {
       title: 'Sprint Board',
       bounds: { x: 0, y: 0, w: 100, h: 100 },
       content: {
-        kind: 'card',
-        card: {
-          stackId: 'os-launcher',
-          cardId: 'kanbanSprintBoard',
-          cardSessionId: 'os-launcher-kanban:kanbanSprintBoard:1',
+        kind: 'surface',
+        surface: {
+          bundleId: 'os-launcher',
+          surfaceId: 'kanbanSprintBoard',
+          surfaceSessionId: 'os-launcher-kanban:kanbanSprintBoard:1',
         },
       },
     };
@@ -91,11 +91,11 @@ describe('kanbanVmLauncherModule', async () => {
       title: 'Other',
       bounds: { x: 0, y: 0, w: 100, h: 100 },
       content: {
-        kind: 'card',
-        card: {
-          stackId: 'inventory',
-          cardId: 'home',
-          cardSessionId: 'different-session',
+        kind: 'surface',
+        surface: {
+          bundleId: 'inventory',
+          surfaceId: 'home',
+          surfaceSessionId: 'different-session',
         },
       },
     };

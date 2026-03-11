@@ -50,5 +50,5 @@ export function App() {
     [hostContext],
   );
 
-  return <DesktopShell stack={STACK} contributions={contributions} renderAppWindow={renderAppWindow} />;
+  return <DesktopShell bundle={STACK} contributions={contributions} renderAppWindow={renderAppWindow} />;
 }

@@ -101,7 +101,7 @@ describe('assistantLauncherModule', async () => {
         dispatch: hostContext.dispatch,
         getState: hostContext.getState,
         focusedWindowId: null,
-        openCardWindow: () => undefined,
+        openSurfaceWindow: () => undefined,
         closeWindow: hostContext.closeWindow,
       },
       {

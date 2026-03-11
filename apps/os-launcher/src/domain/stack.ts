@@ -1,4 +1,4 @@
-import type { CardDefinition, CardStackDefinition } from '@hypercard/engine';
+import type { RuntimeSurfaceMeta, RuntimeBundleDefinition } from '@hypercard/engine';
 import { OS_LAUNCHER_PLUGIN_BUNDLE } from './pluginBundle';
 import { KANBAN_VM_CARD_META } from './vmmeta';
 
@@ -25,7 +25,7 @@ const OS_LAUNCHER_CARD_META: PluginCardMeta[] = [
   })),
 ];
 
-function toPluginCard(card: PluginCardMeta): CardDefinition {
+function toPluginCard(card: PluginCardMeta): RuntimeSurfaceMeta {
   return {
     id: card.id,
     type: 'plugin',
@@ -48,11 +48,11 @@ function toPluginCard(card: PluginCardMeta): CardDefinition {
   };
 }
 
-export const STACK: CardStackDefinition = {
+export const STACK: RuntimeBundleDefinition = {
   id: 'os-launcher',
   name: 'go-go-os Launcher',
   icon: '🖥️',
-  homeCard: 'home',
+  homeSurface: 'home',
   plugin: {
     packageIds: ['ui', 'kanban'],
     bundleCode: OS_LAUNCHER_PLUGIN_BUNDLE,
@@ -60,5 +60,5 @@ export const STACK: CardStackDefinition = {
       system: ['nav.go', 'nav.back', 'notify.show'],
     },
   },
-  cards: Object.fromEntries(OS_LAUNCHER_CARD_META.map((card) => [card.id, toPluginCard(card)])),
+  surfaces: Object.fromEntries(OS_LAUNCHER_CARD_META.map((card) => [card.id, toPluginCard(card)])),
 };

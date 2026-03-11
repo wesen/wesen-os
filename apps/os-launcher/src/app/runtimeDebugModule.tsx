@@ -1,4 +1,4 @@
-import type { CardStackDefinition } from '@hypercard/engine';
+import type { RuntimeBundleDefinition } from '@hypercard/engine';
 import type { LaunchableAppModule, LaunchReason } from '@hypercard/desktop-os';
 import {
   buildRuntimeDebugWindowPayload,
@@ -10,7 +10,7 @@ import { inventoryStack } from '@hypercard/inventory/launcher';
 import type { ReactNode } from 'react';
 import { STACK } from '../domain/stack';
 
-const RUNTIME_DEBUG_STACKS: CardStackDefinition[] = [inventoryStack, STACK];
+const RUNTIME_DEBUG_STACKS: RuntimeBundleDefinition[] = [inventoryStack, STACK];
 
 registerRuntimeDebugStacks(RUNTIME_DEBUG_STACKS);
 
@@ -35,7 +35,7 @@ export const runtimeDebugLauncherModule: LaunchableAppModule = {
     <RuntimeDebugAppWindow
       ownerAppId={HYPERCARD_RUNTIME_DEBUG_APP_ID}
       instanceId={instanceId}
-      stacks={RUNTIME_DEBUG_STACKS}
+      bundles={RUNTIME_DEBUG_STACKS}
     />
   ),
 };
