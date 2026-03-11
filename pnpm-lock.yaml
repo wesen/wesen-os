@@ -77,6 +77,9 @@ importers:
       '@hypercard/inventory':
         specifier: workspace:*
         version: link:../../workspace-links/go-go-app-inventory/apps/inventory
+      '@hypercard/kanban-runtime':
+        specifier: workspace:*
+        version: link:../../workspace-links/go-go-os-frontend/packages/kanban-runtime
       '@hypercard/rich-widgets':
         specifier: workspace:*
         version: link:../../workspace-links/go-go-os-frontend/packages/rich-widgets
@@ -577,6 +580,9 @@ importers:
       '@hypercard/hypercard-runtime':
         specifier: workspace:*
         version: link:../../../go-go-os-frontend/packages/hypercard-runtime
+      '@hypercard/kanban-runtime':
+        specifier: workspace:*
+        version: link:../../../go-go-os-frontend/packages/kanban-runtime
       '@reduxjs/toolkit':
         specifier: ^2.5.0
         version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
@@ -1089,9 +1095,6 @@ importers:
       '@hypercard/engine':
         specifier: workspace:*
         version: link:../engine
-      '@hypercard/rich-widgets':
-        specifier: workspace:*
-        version: link:../rich-widgets
       '@jitl/quickjs-ffi-types':
         specifier: ^0.31.0
         version: 0.31.0
@@ -1119,6 +1122,37 @@ importers:
       quickjs-emscripten-core:
         specifier: ^0.31.0
         version: 0.31.0
+      react-redux:
+        specifier: ^9.0.0
+        version: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.14)
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.2.4
+        version: 19.2.4(react@19.2.4)
+
+  workspace-links/go-go-os-frontend/packages/kanban-runtime:
+    dependencies:
+      '@hypercard/engine':
+        specifier: workspace:*
+        version: link:../engine
+      '@hypercard/hypercard-runtime':
+        specifier: workspace:*
+        version: link:../hypercard-runtime
+      '@hypercard/rich-widgets':
+        specifier: workspace:*
+        version: link:../rich-widgets
+      '@reduxjs/toolkit':
+        specifier: ^2.0.0
+        version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
       react-redux:
         specifier: ^9.0.0
         version: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)

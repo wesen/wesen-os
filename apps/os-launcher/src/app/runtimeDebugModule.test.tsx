@@ -5,6 +5,22 @@ import {
 import { formatAppKey } from '@hypercard/desktop-os';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('@hypercard/inventory/launcher', () => ({
+  inventoryStack: {
+    id: 'inventory',
+    title: 'Shop Inventory',
+    homeSurface: 'home',
+    surfaces: {
+      home: {
+        id: 'home',
+        title: 'Home',
+        icon: '📦',
+        type: 'surface',
+      },
+    },
+  },
+}));
+
 describe('runtimeDebugLauncherModule', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -48,7 +64,7 @@ describe('runtimeDebugLauncherModule', () => {
     expect(rendered).toBeTruthy();
     expect((rendered as { props: { ownerAppId: string } }).props.ownerAppId).toBe(HYPERCARD_RUNTIME_DEBUG_APP_ID);
     expect((rendered as { props: { instanceId: string } }).props.instanceId).toBe('stacks');
-    expect((rendered as { props: { stacks: Array<{ id: string }> } }).props.stacks).toEqual(
+    expect((rendered as { props: { bundles: Array<{ id: string }> } }).props.bundles).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: 'inventory' }),
         expect.objectContaining({ id: 'os-launcher' }),

@@ -34,6 +34,7 @@
     "@hypercard/desktop-os": "workspace:*",
     "@hypercard/engine": "workspace:*",
     "@hypercard/hypercard-runtime": "workspace:*",
+    "@hypercard/kanban-runtime": "workspace:*",
     "@hypercard/hypercard-tools": "workspace:*",
     "@hypercard/inventory": "workspace:*",
     "@hypercard/rich-widgets": "workspace:*",
