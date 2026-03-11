@@ -9,7 +9,7 @@ import { MacRepl, type TerminalLine } from '@hypercard/repl';
 const APP_ID = 'js-repl';
 const CONSOLE_INSTANCE_ID = 'console';
 
-const JS_SESSION_BROKER = createJsSessionBroker();
+export const JS_SESSION_BROKER = createJsSessionBroker();
 
 registerJsSessionDebugSource({
   id: APP_ID,
@@ -29,7 +29,7 @@ const INITIAL_LINES: TerminalLine[] = [
   { type: 'system', text: '' },
 ];
 
-function buildConsoleWindowPayload(_reason: LaunchReason) {
+export function buildJsReplConsoleWindowPayload(_reason?: LaunchReason) {
   return {
     id: `window:${APP_ID}:${CONSOLE_INSTANCE_ID}`,
     title: 'JavaScript REPL',
@@ -61,6 +61,6 @@ export const jsReplLauncherModule: LaunchableAppModule = {
     launch: { mode: 'window' },
     desktop: { order: 91 },
   },
-  buildLaunchWindow: (_ctx, reason) => buildConsoleWindowPayload(reason),
+  buildLaunchWindow: (_ctx, reason) => buildJsReplConsoleWindowPayload(reason),
   renderWindow: () => <JsReplConsoleWindow />,
 };

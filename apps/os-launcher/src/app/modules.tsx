@@ -14,6 +14,7 @@ import { jsReplLauncherModule } from './jsReplModule';
 import { kanbanVmLauncherModule } from './kanbanVmModule';
 import { registerAppsBrowserDocs } from './registerAppsBrowserDocs';
 import { runtimeDebugLauncherModule } from './runtimeDebugModule';
+import { taskManagerLauncherModule } from './taskManagerModule';
 
 registerAppsBrowserDocs();
 
@@ -35,5 +36,6 @@ export const launcherModules: LaunchableAppModule[] = [
   hypercardToolsLauncherModule,
   kanbanVmLauncherModule,
   runtimeDebugLauncherModule,
+  taskManagerLauncherModule,
   richWidgetsLauncherModule,
 ].filter(isLaunchableAppModule);
