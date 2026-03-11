@@ -1,11 +1,11 @@
 // @ts-check
-defineStackBundle(({ ui }) => {
+defineRuntimeBundle(({ ui }) => {
   return {
     id: 'os-launcher',
     title: 'go-go-os Launcher',
     initialSessionState: FILTER_DEFAULTS,
-    initialCardState: Object.fromEntries(KANBAN_BOARDS.map((board) => [board.id, initialBoardState(board)])),
-    cards: {
+    initialSurfaceState: Object.fromEntries(KANBAN_BOARDS.map((board) => [board.id, initialBoardState(board)])),
+    surfaces: {
       home: {
         render() {
           return ui.panel([

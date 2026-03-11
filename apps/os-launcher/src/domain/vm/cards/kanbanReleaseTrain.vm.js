@@ -23,7 +23,7 @@ summary that makes the board feel very different from the sprint or incident exa
 
 const releaseTrainBoard = boardById('kanbanReleaseTrain');
 
-defineCard(
+defineRuntimeSurface(
   releaseTrainBoard.id,
   ({ widgets }) => ({
     render({ state }) {
