@@ -97,7 +97,7 @@ describe('launcher host wiring', () => {
     expect(content).not.toBeNull();
   });
 
-  it('renders hypercard-tools editor window for encoded runtime card refs', () => {
+  it('renders hypercard-tools editor window for encoded runtime surface refs', () => {
     const render = createRenderAppWindow({
       registry: launcherRegistry,
       hostContext: {

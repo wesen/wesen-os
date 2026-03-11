@@ -3,7 +3,7 @@ import { QuickJSRuntimeService, validateRuntimeSurfaceTree } from '@hypercard/hy
 import { OS_LAUNCHER_PLUGIN_BUNDLE } from './pluginBundle';
 import { KANBAN_VM_CARD_META, OS_LAUNCHER_VM_PACK_METADATA } from './vmmeta';
 
-describe('os-launcher kanban runtime cards', () => {
+describe('os-launcher kanban runtime surfaces', () => {
   const services: QuickJSRuntimeService[] = [];
 
   afterEach(() => {
@@ -15,7 +15,7 @@ describe('os-launcher kanban runtime cards', () => {
     services.length = 0;
   });
 
-  it('loads kanban demo cards and emits structured kanban.v1 page trees plus semantic actions', async () => {
+  it('loads kanban demo surfaces and emits structured kanban.v1 page trees plus semantic actions', async () => {
     const service = new QuickJSRuntimeService();
     services.push(service);
 
