@@ -1,7 +1,7 @@
 import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
 import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
 import type { DesktopContribution, WindowContentAdapter } from '@hypercard/engine/desktop-react';
-import { PluginCardSessionHost } from '@hypercard/hypercard-runtime';
+import { RuntimeSurfaceSessionHost } from '@hypercard/hypercard-runtime';
 import type { ReactNode } from 'react';
 import { useDispatch } from 'react-redux';
 import { STACK } from '../domain/stack';
@@ -104,7 +104,7 @@ function createKanbanVmCardAdapter(): WindowContentAdapter {
       ) {
         return null;
       }
-      return <PluginCardSessionHost windowId={window.id} sessionId={cardRef.cardSessionId} stack={STACK} />;
+      return <RuntimeSurfaceSessionHost windowId={window.id} sessionId={cardRef.cardSessionId} stack={STACK} />;
     },
   };
 }

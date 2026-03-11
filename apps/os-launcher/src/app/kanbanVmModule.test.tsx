@@ -4,8 +4,8 @@ import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockPluginCardSessionHost, mockDispatch } = vi.hoisted(() => ({
-  mockPluginCardSessionHost: vi.fn(
+const { mockRuntimeSurfaceSessionHost, mockDispatch } = vi.hoisted(() => ({
+  mockRuntimeSurfaceSessionHost: vi.fn(
     (props: { sessionId: string }) => ({ type: 'plugin-card-session-host', props }) as unknown as ReactElement,
   ),
   mockDispatch: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock('@hypercard/hypercard-runtime', async () => {
   const actual = await vi.importActual<typeof import('@hypercard/hypercard-runtime')>('@hypercard/hypercard-runtime');
   return {
     ...actual,
-    PluginCardSessionHost: mockPluginCardSessionHost,
+    RuntimeSurfaceSessionHost: mockRuntimeSurfaceSessionHost,
   };
 });
 
@@ -105,7 +105,7 @@ describe('kanbanVmLauncherModule', async () => {
 
     const rendered = adapter?.render(matchingWindow as never) as ReactElement;
     expect(rendered).toEqual(expect.objectContaining({
-      type: mockPluginCardSessionHost,
+      type: mockRuntimeSurfaceSessionHost,
       props: expect.objectContaining({
         sessionId: 'os-launcher-kanban:kanbanSprintBoard:1',
         windowId: 'window:kanban-vm:kanbanSprintBoard:1',
