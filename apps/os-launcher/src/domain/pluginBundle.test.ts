@@ -1,10 +1,24 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { QuickJSRuntimeService, validateRuntimeSurfaceTree } from '@hypercard/hypercard-runtime';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  QuickJSRuntimeService,
+  validateRuntimeSurfaceTree,
+  registerBuiltInHypercardRuntime,
+  resetBuiltInHypercardRuntimeRegistrationForTest,
+  clearRuntimePackages,
+  clearRuntimeSurfaceTypes,
+} from '@hypercard/hypercard-runtime';
 import { OS_LAUNCHER_PLUGIN_BUNDLE } from './pluginBundle';
 import { KANBAN_VM_CARD_META, OS_LAUNCHER_VM_PACK_METADATA } from './vmmeta';
 
 describe('os-launcher kanban runtime surfaces', () => {
   const services: QuickJSRuntimeService[] = [];
+
+  beforeEach(() => {
+    clearRuntimePackages();
+    clearRuntimeSurfaceTypes();
+    resetBuiltInHypercardRuntimeRegistrationForTest();
+    registerBuiltInHypercardRuntime();
+  });
 
   afterEach(() => {
     for (const service of services) {

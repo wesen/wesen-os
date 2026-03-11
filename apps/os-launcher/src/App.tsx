@@ -1,10 +1,13 @@
 import { buildLauncherContributions, createRenderAppWindow, type LauncherHostContext } from '@hypercard/desktop-os';
 import { closeWindow as closeWindowAction, openWindow as openWindowAction } from '@hypercard/engine/desktop-core';
 import { DesktopShell } from '@hypercard/engine/desktop-react';
+import { registerBuiltInHypercardRuntime } from '@hypercard/hypercard-runtime';
 import { useMemo } from 'react';
 import { useDispatch, useStore } from 'react-redux';
 import { launcherRegistry } from './app/registry';
 import { STACK } from './domain/stack';
+
+registerBuiltInHypercardRuntime();
 
 function UnknownAppWindow({ appKey }: { appKey: string }) {
   return (
