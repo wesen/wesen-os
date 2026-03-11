@@ -13,6 +13,7 @@ import {
   createHypercardReplDriver,
   createRuntimeBroker,
   dispatchRuntimeAction,
+  getAttachedRuntimeSession,
   registerRuntimeSession,
   renderRuntimeSurfaceTree,
   resolveCapabilityPolicy,
@@ -95,6 +96,10 @@ const REPL_INITIAL_LINES: TerminalLine[] = [
   { type: 'system', text: 'Or: open-surface lowStock demo-1' },
   { type: 'system', text: '' },
 ];
+
+function resolveRuntimeSessionHandle(sessionId: string) {
+  return RUNTIME_BROKER.getSession(sessionId) ?? getAttachedRuntimeSession(sessionId)?.handle ?? null;
+}
 
 function encodeSurfaceInstanceId(payload: ReplSurfaceWindowPayload): string {
   return [
@@ -196,7 +201,7 @@ function HypercardReplSurfaceWindow({
   const dispatch = useDispatch();
   const store = useStore();
   const stack = STACKS_BY_ID.get(payload.stackId);
-  const session = RUNTIME_BROKER.getSession(payload.sessionId);
+  const session = resolveRuntimeSessionHandle(payload.sessionId);
   const runtimeSession = useSelector((state) => selectRuntimeSession(state as never, payload.sessionId));
   const sessionState = useSelector((state) => selectRuntimeSessionState(state as never, payload.sessionId));
   const surfaceState = useSelector((state) => selectRuntimeSurfaceState(state as never, payload.sessionId, payload.surfaceId));
@@ -276,6 +281,10 @@ function HypercardReplSurfaceWindow({
           surfaceState: selectRuntimeSurfaceState(store.getState() as never, payload.sessionId, payload.surfaceId),
         },
       );
+      if (!session.writable) {
+        dispatch(showToast(`Runtime session ${payload.sessionId} is attached read-only`));
+        return;
+      }
       const actions = session.eventSurface(payload.surfaceId, handler, args, latestState);
       actions.forEach((action) =>
         dispatchRuntimeAction(action, {
