@@ -71,7 +71,7 @@ export const VM_PACK_METADATA = {
               "kanban",
               "runtime-pack"
             ],
-            "prose": "Use widgets.kanban.page(...) as the root return value from a kanban.v1 card render function.\nPass child nodes in a component-like style: taxonomy, header, optional highlights, optional\nfilters, board, and optional status nodes.",
+            "prose": "Use widgets.kanban.page(...) as the root return value from a kanban.v1 runtime surface render function.\nPass child nodes in a component-like style: taxonomy, header, optional highlights, optional\nfilters, board, and optional status nodes.",
             "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
             "line": 21
           },
@@ -435,7 +435,7 @@ export const VM_PACK_METADATA = {
           "kanban",
           "runtime-pack"
         ],
-        "prose": "Use widgets.kanban.page(...) as the root return value from a kanban.v1 card render function.\nPass child nodes in a component-like style: taxonomy, header, optional highlights, optional\nfilters, board, and optional status nodes.",
+        "prose": "Use widgets.kanban.page(...) as the root return value from a kanban.v1 runtime surface render function.\nPass child nodes in a component-like style: taxonomy, header, optional highlights, optional\nfilters, board, and optional status nodes.",
         "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
         "line": 21
       },

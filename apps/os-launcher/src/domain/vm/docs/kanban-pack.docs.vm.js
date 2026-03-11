@@ -27,7 +27,7 @@ doc`
 ---
 symbol: widgets.kanban.page
 ---
-Use widgets.kanban.page(...) as the root return value from a kanban.v1 card render function.
+Use widgets.kanban.page(...) as the root return value from a kanban.v1 runtime surface render function.
 Pass child nodes in a component-like style: taxonomy, header, optional highlights, optional
 filters, board, and optional status nodes.
 `;
