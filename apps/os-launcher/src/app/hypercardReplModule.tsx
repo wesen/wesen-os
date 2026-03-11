@@ -21,11 +21,13 @@ import {
   selectRuntimeSessionState,
   selectRuntimeSurfaceState,
 } from '@hypercard/hypercard-runtime';
+import { INVENTORY_VM_PACK_METADATA } from '@hypercard/inventory';
 import { inventoryStack } from '@hypercard/inventory/launcher';
 import { MacRepl, type ReplEffect, type TerminalLine } from '@hypercard/repl';
 import { useCallback, useEffect, useMemo } from 'react';
 import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { STACK } from '../domain/stack';
+import { OS_LAUNCHER_VM_PACK_METADATA } from '../domain/vmmeta';
 
 const APP_ID = 'hypercard-repl';
 const CONSOLE_INSTANCE_ID = 'console';
@@ -75,6 +77,12 @@ const HYPERCARD_REPL_DRIVER = createHypercardReplDriver({
         stackId: entry.stack.id,
         packageIds: entry.stack.plugin?.packageIds ?? [],
         bundleCode: entry.stack.plugin?.bundleCode ?? '',
+        docsMetadata:
+          entry.key === 'inventory'
+            ? INVENTORY_VM_PACK_METADATA
+            : entry.key === 'os-launcher'
+              ? OS_LAUNCHER_VM_PACK_METADATA
+              : undefined,
       },
     ]),
   ),
