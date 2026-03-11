@@ -7,13 +7,26 @@ import kanbanPersonalPlanner from './vm/cards/kanbanPersonalPlanner.vm.js?raw';
 import kanbanReleaseTrain from './vm/cards/kanbanReleaseTrain.vm.js?raw';
 import kanbanSprintBoard from './vm/cards/kanbanSprintBoard.vm.js?raw';
 
-export const OS_LAUNCHER_PLUGIN_BUNDLE = [
+// Bundle-local helpers stay here; shared DSL APIs now come from runtime packages.
+const OS_LAUNCHER_BUNDLE_PRELUDE = [
   runtimePrelude,
+];
+
+const OS_LAUNCHER_BUNDLE_DOCS = [
   homeCard,
   kanbanPackDocs,
+];
+
+const OS_LAUNCHER_BUNDLE_SURFACES = [
   kanbanSprintBoard,
   kanbanBugTriage,
   kanbanPersonalPlanner,
   kanbanIncidentCommand,
   kanbanReleaseTrain,
+];
+
+export const OS_LAUNCHER_PLUGIN_BUNDLE = [
+  ...OS_LAUNCHER_BUNDLE_PRELUDE,
+  ...OS_LAUNCHER_BUNDLE_DOCS,
+  ...OS_LAUNCHER_BUNDLE_SURFACES,
 ].join('\n\n');

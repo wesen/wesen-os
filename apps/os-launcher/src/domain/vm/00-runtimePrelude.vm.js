@@ -1,4 +1,5 @@
 // @ts-check
+// Bundle-local Kanban demo helpers. Public DSL APIs belong to runtime packages (`ui`, `kanban`).
 const FILTER_DEFAULTS = {
   filterType: null,
   filterPriority: null,
