@@ -1,16 +1,13 @@
 import { buildLauncherContributions, createRenderAppWindow, type LauncherHostContext } from '@hypercard/desktop-os';
 import { closeWindow as closeWindowAction, openWindow as openWindowAction } from '@hypercard/engine/desktop-core';
 import { DesktopShell } from '@hypercard/engine/desktop-react';
-import { KANBAN_RUNTIME_PACKAGE, KANBAN_V1_RUNTIME_SURFACE_TYPE } from '@hypercard/kanban-runtime';
-import { registerBuiltInHypercardRuntime, registerRuntimePackage, registerRuntimeSurfaceType } from '@hypercard/hypercard-runtime';
 import { useMemo } from 'react';
 import { useDispatch, useStore } from 'react-redux';
+import { registerRuntimePackages } from './app/registerRuntimePackages';
 import { launcherRegistry } from './app/registry';
 import { STACK } from './domain/stack';
 
-registerBuiltInHypercardRuntime();
-registerRuntimePackage(KANBAN_RUNTIME_PACKAGE);
-registerRuntimeSurfaceType(KANBAN_V1_RUNTIME_SURFACE_TYPE);
+registerRuntimePackages();
 
 function UnknownAppWindow({ appKey }: { appKey: string }) {
   return (

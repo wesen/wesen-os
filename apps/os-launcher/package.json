@@ -37,6 +37,7 @@
     "@hypercard/kanban-runtime": "workspace:*",
     "@hypercard/hypercard-tools": "workspace:*",
     "@hypercard/inventory": "workspace:*",
+    "@hypercard/ui-runtime": "workspace:*",
     "@hypercard/rich-widgets": "workspace:*",
     "@hypercard/todo": "workspace:*",
     "@jitl/quickjs-ffi-types": "^0.31.0",

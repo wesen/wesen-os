@@ -3,8 +3,15 @@ import { docsRegistry } from '@hypercard/apps-browser';
 import { registerAppsBrowserDocs } from './registerAppsBrowserDocs';
 
 describe('registerAppsBrowserDocs integration', () => {
-  it('mounts kanban surface-type docs from the external package metadata and os-launcher surface docs from vmmeta', async () => {
+  it('mounts external surface-type docs and runtime surface docs from their owning metadata sources', async () => {
     registerAppsBrowserDocs();
+
+    const uiSurfaceTypeResolved = docsRegistry.resolve('/docs/objects/surface-type/ui.card.v1/overview');
+    expect(uiSurfaceTypeResolved).not.toBeNull();
+
+    const uiSurfaceTypeDoc = await uiSurfaceTypeResolved?.mount.read(uiSurfaceTypeResolved?.subpath ?? []);
+    expect(uiSurfaceTypeDoc?.title).toBe('UI Runtime Surface Type');
+    expect(uiSurfaceTypeDoc?.content).toContain('structured UI DSL');
 
     const surfaceTypeResolved = docsRegistry.resolve('/docs/objects/surface-type/kanban.v1/overview');
     expect(surfaceTypeResolved).not.toBeNull();

@@ -2,14 +2,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   QuickJSRuntimeService,
   validateRuntimeSurfaceTree,
-  registerBuiltInHypercardRuntime,
-  registerRuntimePackage,
-  registerRuntimeSurfaceType,
-  resetBuiltInHypercardRuntimeRegistrationForTest,
   clearRuntimePackages,
   clearRuntimeSurfaceTypes,
+  registerRuntimePackage,
+  registerRuntimeSurfaceType,
 } from '@hypercard/hypercard-runtime';
 import { KANBAN_RUNTIME_PACKAGE, KANBAN_V1_RUNTIME_SURFACE_TYPE } from '@hypercard/kanban-runtime';
+import { UI_CARD_V1_RUNTIME_SURFACE_TYPE, UI_RUNTIME_PACKAGE } from '@hypercard/ui-runtime';
 import { OS_LAUNCHER_PLUGIN_BUNDLE } from './pluginBundle';
 import { KANBAN_VM_CARD_META, OS_LAUNCHER_VM_PACK_METADATA } from './vmmeta';
 
@@ -19,8 +18,8 @@ describe('os-launcher kanban runtime surfaces', () => {
   beforeEach(() => {
     clearRuntimePackages();
     clearRuntimeSurfaceTypes();
-    resetBuiltInHypercardRuntimeRegistrationForTest();
-    registerBuiltInHypercardRuntime();
+    registerRuntimePackage(UI_RUNTIME_PACKAGE);
+    registerRuntimeSurfaceType(UI_CARD_V1_RUNTIME_SURFACE_TYPE);
     registerRuntimePackage(KANBAN_RUNTIME_PACKAGE);
     registerRuntimeSurfaceType(KANBAN_V1_RUNTIME_SURFACE_TYPE);
   });

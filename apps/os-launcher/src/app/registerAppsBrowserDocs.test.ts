@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { KANBAN_RUNTIME_DOCS_METADATA } from '@hypercard/kanban-runtime';
 import { INVENTORY_VM_PACK_METADATA } from '@hypercard/inventory';
+import { UI_RUNTIME_DOCS_METADATA } from '@hypercard/ui-runtime';
 import { OS_LAUNCHER_VM_PACK_METADATA } from '../domain/vmmeta';
 
 const register = vi.fn();
@@ -27,7 +28,7 @@ describe('registerAppsBrowserDocs', () => {
     registerAppsBrowserDocs();
 
     expect(createVmmetaSurfaceTypeDocsMount).toHaveBeenCalledWith(KANBAN_RUNTIME_DOCS_METADATA);
-    expect(createVmmetaSurfaceTypeDocsMount).toHaveBeenCalledWith(INVENTORY_VM_PACK_METADATA);
+    expect(createVmmetaSurfaceTypeDocsMount).toHaveBeenCalledWith(UI_RUNTIME_DOCS_METADATA);
     expect(createVmmetaSurfaceDocsMount).toHaveBeenCalledWith('os-launcher', OS_LAUNCHER_VM_PACK_METADATA);
     expect(createVmmetaSurfaceDocsMount).toHaveBeenCalledWith('inventory', INVENTORY_VM_PACK_METADATA);
     expect(register).toHaveBeenCalledTimes(4);
