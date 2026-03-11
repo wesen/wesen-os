@@ -1,11 +1,21 @@
 import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
-import { createJsReplDriver, createJsSessionBroker } from '@hypercard/hypercard-runtime';
+import {
+  createJsReplDriver,
+  createJsSessionBroker,
+  registerJsSessionDebugSource,
+} from '@hypercard/hypercard-runtime';
 import { MacRepl, type TerminalLine } from '@hypercard/repl';
 
 const APP_ID = 'js-repl';
 const CONSOLE_INSTANCE_ID = 'console';
 
 const JS_SESSION_BROKER = createJsSessionBroker();
+
+registerJsSessionDebugSource({
+  id: APP_ID,
+  title: 'JavaScript REPL',
+  broker: JS_SESSION_BROKER,
+});
 
 const JS_REPL_DRIVER = createJsReplDriver({
   broker: JS_SESSION_BROKER,
