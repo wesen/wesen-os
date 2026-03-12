@@ -31,9 +31,12 @@ function TaskManagerProviders({ instanceId }: { instanceId: string }) {
         sourceId: RUNTIME_TASK_SOURCE_ID,
         sourceTitle: 'Runtime Sessions',
         getState: () => store.getState() as never,
-        dispatch,
+        dispatch: (action) => dispatch(action as never),
         bundles: TASK_MANAGER_BUNDLES,
         ownerAppId: HYPERCARD_RUNTIME_DEBUG_APP_ID,
+        focusJsConsole: (sessionId) => {
+          dispatch(openWindow(buildJsReplConsoleWindowPayload(undefined, { attachSessionId: sessionId })) as never);
+        },
         subscribe: store.subscribe,
       }),
     [dispatch, store],

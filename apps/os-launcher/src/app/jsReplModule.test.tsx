@@ -2,7 +2,10 @@ import { formatAppKey } from '@hypercard/desktop-os';
 import { describe, expect, it } from 'vitest';
 
 describe('jsReplLauncherModule', async () => {
-  const { jsReplLauncherModule } = await import('./jsReplModule');
+  const {
+    buildJsReplConsoleWindowPayload,
+    jsReplLauncherModule,
+  } = await import('./jsReplModule');
 
   it('builds the console launcher window payload', () => {
     const payload = jsReplLauncherModule.buildLaunchWindow(
@@ -37,5 +40,16 @@ describe('jsReplLauncherModule', async () => {
 
     expect(rendered).toBeTruthy();
     expect((rendered as { type?: { name?: string } }).type?.name).toBe('JsReplConsoleWindow');
+  });
+
+  it('builds an attached-console payload for a runtime session', () => {
+    const payload = buildJsReplConsoleWindowPayload('icon', {
+      attachSessionId: 'inventory@live',
+    });
+
+    expect(payload.content.kind).toBe('app');
+    expect(payload.content.appKey).toBe(formatAppKey('js-repl', 'attached~inventory%40live'));
+    expect(payload.title).toBe('JavaScript REPL · inventory@live');
+    expect(payload.dedupeKey).toBe('js-repl:attached:inventory@live');
   });
 });
