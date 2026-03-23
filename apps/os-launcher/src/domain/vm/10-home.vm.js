@@ -8,6 +8,7 @@ defineRuntimeBundle(({ ui }) => {
     initialSurfaceState: Object.fromEntries(KANBAN_BOARDS.map((board) => [board.id, initialBoardState(board)])),
     surfaces: {
       home: {
+        packId: 'ui.card.v1',
         render() {
           return ui.panel([
             ui.text('go-go-os Launcher'),
