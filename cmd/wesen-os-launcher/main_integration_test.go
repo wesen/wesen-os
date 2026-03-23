@@ -16,9 +16,9 @@ import (
 	"testing/fstest"
 	"time"
 
+	gepprofiles "github.com/go-go-golems/geppetto/pkg/engineprofiles"
 	"github.com/go-go-golems/geppetto/pkg/events"
 	"github.com/go-go-golems/geppetto/pkg/inference/middlewarecfg"
-	gepprofiles "github.com/go-go-golems/geppetto/pkg/profiles"
 	"github.com/go-go-golems/geppetto/pkg/turns"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	profilechat "github.com/go-go-golems/go-go-os-chat/pkg/profilechat"
@@ -32,7 +32,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	inventorybackendmodule "github.com/go-go-golems/go-go-app-inventory/pkg/backendmodule"
-	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorytools"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/pinoweb"
 	"github.com/go-go-golems/go-go-app-sqlite/pkg/sqliteapp"
 	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
@@ -184,7 +183,7 @@ func newIntegrationServer(t *testing.T) *httptest.Server {
 func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat.RouterOption) *httptest.Server {
 	t.Helper()
 
-	parsed := values.New()
+	parsed, launcherBootstrap := newIntegrationLauncherBootstrap(t)
 	staticFS := fstest.MapFS{
 		"static/index.html": {Data: []byte("<html><body>inventory</body></html>")},
 	}
@@ -197,10 +196,6 @@ func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat
 		if req.ResolvedProfileRuntime != nil && strings.TrimSpace(req.ResolvedProfileRuntime.SystemPrompt) != "" {
 			systemPrompt = strings.TrimSpace(req.ResolvedProfileRuntime.SystemPrompt)
 		}
-		allowedTools := append([]string(nil), inventorytools.InventoryToolNames...)
-		if req.ResolvedProfileRuntime != nil && len(req.ResolvedProfileRuntime.Tools) > 0 {
-			allowedTools = append([]string(nil), req.ResolvedProfileRuntime.Tools...)
-		}
 		versionedRuntimeKey := fmt.Sprintf("%s@v%d", runtimeKey, req.ProfileVersion)
 		return infruntime.ComposedRuntime{
 			Engine:             integrationNoopEngine{},
@@ -208,7 +203,6 @@ func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat
 			RuntimeKey:         versionedRuntimeKey,
 			RuntimeFingerprint: "fp-" + versionedRuntimeKey + "-" + systemPrompt,
 			SeedSystemPrompt:   systemPrompt,
-			AllowedTools:       allowedTools,
 		}, nil
 	})
 
@@ -231,18 +225,11 @@ func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat
 		RuntimeKey:   "assistant",
 		SystemPrompt: "You are a helpful OS assistant. Be concise, clear, and direct.",
 	}, nil, middlewarecfg.BuildDeps{}, nil)
-	assistantProfileRegistry, err := newInMemoryProfileService("assistant", &gepprofiles.Profile{
-		Slug:        gepprofiles.MustProfileSlug("assistant"),
-		DisplayName: "Assistant",
-		Description: "General-purpose OS assistant profile.",
-		Runtime: gepprofiles.RuntimeSpec{
-			SystemPrompt: "You are a helpful OS assistant. Be concise, clear, and direct.",
-		},
-	})
-	require.NoError(t, err)
 	assistantResolver := profilechat.NewStrictRequestResolver("assistant").WithProfileRegistry(
-		assistantProfileRegistry,
-		gepprofiles.MustRegistrySlug(profileRegistrySlug),
+		launcherBootstrap.ProfileRegistry,
+		launcherBootstrap.DefaultRegistrySlug,
+	).WithBaseInferenceSettings(launcherBootstrap.BaseInferenceSettings).WithDefaultProfileSelection(
+		gepprofiles.MustEngineProfileSlug("assistant"),
 	)
 	assistantSrv, err := webchat.NewServer(
 		context.Background(),
@@ -252,43 +239,25 @@ func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat
 	)
 	require.NoError(t, err)
 
-	profileRegistry, err := newInMemoryProfileService("inventory", &gepprofiles.Profile{
-		Slug:        gepprofiles.MustProfileSlug("inventory"),
-		DisplayName: "Inventory",
-		Description: "Tool-first inventory assistant profile.",
-		Runtime: gepprofiles.RuntimeSpec{
-			SystemPrompt: "You are an inventory assistant. Be concise, accurate, and tool-first.",
-			Middlewares:  inventoryRuntimeMiddlewares(),
-			Tools:        append([]string(nil), inventorytools.InventoryToolNames...),
-		},
-	}, &gepprofiles.Profile{
-		Slug:        gepprofiles.MustProfileSlug("analyst"),
-		DisplayName: "Analyst",
-		Description: "Analysis-focused profile for inventory reporting.",
-		Runtime: gepprofiles.RuntimeSpec{
-			SystemPrompt: "You are an inventory analyst. Explain results with concise evidence.",
-			Middlewares:  inventoryRuntimeMiddlewares(),
-			Tools:        append([]string(nil), inventorytools.InventoryToolNames...),
-		},
-	})
-	require.NoError(t, err)
 	resolver := pinoweb.NewStrictRequestResolver("inventory").WithProfileRegistry(
-		profileRegistry,
-		gepprofiles.MustRegistrySlug(profileRegistrySlug),
+		launcherBootstrap.ProfileRegistry,
+		launcherBootstrap.DefaultRegistrySlug,
+	).WithBaseInferenceSettings(launcherBootstrap.BaseInferenceSettings).WithDefaultProfileSelection(
+		gepprofiles.MustEngineProfileSlug("inventory"),
 	)
 
 	moduleRegistry, err := backendhost.NewModuleRegistry(
 		assistantbackendmodule.NewModule(assistantbackendmodule.Options{
 			Server:              assistantSrv,
 			RequestResolver:     assistantResolver,
-			ProfileRegistry:     assistantProfileRegistry,
-			DefaultRegistrySlug: gepprofiles.MustRegistrySlug(profileRegistrySlug),
+			ProfileRegistry:     launcherBootstrap.ProfileRegistry,
+			DefaultRegistrySlug: launcherBootstrap.DefaultRegistrySlug,
 		}),
 		inventorybackendmodule.NewModule(inventorybackendmodule.Options{
 			Server:              webchatSrv,
 			RequestResolver:     resolver,
-			ProfileRegistry:     profileRegistry,
-			DefaultRegistrySlug: gepprofiles.MustRegistrySlug(profileRegistrySlug),
+			ProfileRegistry:     launcherBootstrap.ProfileRegistry,
+			DefaultRegistrySlug: launcherBootstrap.DefaultRegistrySlug,
 			ConfirmMountPath:    "/confirm",
 		}),
 		newIntegrationSQLiteModule(t),
@@ -347,26 +316,20 @@ func TestWSHandler_EmitsHypercardLifecycleEvents(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	profileRegistry, err := newInMemoryProfileService("inventory", &gepprofiles.Profile{
-		Slug:        gepprofiles.MustProfileSlug("inventory"),
-		DisplayName: "Inventory",
-		Runtime: gepprofiles.RuntimeSpec{
-			SystemPrompt: "You are an inventory assistant.",
-			Tools:        append([]string(nil), inventorytools.InventoryToolNames...),
-		},
-	})
-	require.NoError(t, err)
+	_, launcherBootstrap := newIntegrationLauncherBootstrap(t)
 	resolver := pinoweb.NewStrictRequestResolver("inventory").WithProfileRegistry(
-		profileRegistry,
-		gepprofiles.MustRegistrySlug(profileRegistrySlug),
+		launcherBootstrap.ProfileRegistry,
+		launcherBootstrap.DefaultRegistrySlug,
+	).WithBaseInferenceSettings(launcherBootstrap.BaseInferenceSettings).WithDefaultProfileSelection(
+		gepprofiles.MustEngineProfileSlug("inventory"),
 	)
 
 	moduleRegistry, err := backendhost.NewModuleRegistry(
 		inventorybackendmodule.NewModule(inventorybackendmodule.Options{
 			Server:              webchatSrv,
 			RequestResolver:     resolver,
-			ProfileRegistry:     profileRegistry,
-			DefaultRegistrySlug: gepprofiles.MustRegistrySlug(profileRegistrySlug),
+			ProfileRegistry:     launcherBootstrap.ProfileRegistry,
+			DefaultRegistrySlug: launcherBootstrap.DefaultRegistrySlug,
 			ConfirmMountPath:    "/confirm",
 		}),
 		newIntegrationSQLiteModule(t),
@@ -593,8 +556,8 @@ func TestAssistantProfilesEndpoint_ListsAssistantProfile(t *testing.T) {
 
 	var items []map[string]any
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&items))
-	require.Len(t, items, 1)
-	require.Equal(t, "assistant", items[0]["slug"])
+	require.NotEmpty(t, items)
+	require.True(t, hasProfileSlug(items, "assistant"), "expected assistant profile in list")
 }
 
 func TestInventoryModule_ReflectionEndpoint(t *testing.T) {
@@ -1054,9 +1017,12 @@ func TestLegacyAliasRoutes_AreNotMounted(t *testing.T) {
 }
 
 func TestChatHandler_PassesProfileDefaultMiddlewaresToRuntimeComposer(t *testing.T) {
-	captured := make(chan infruntime.ConversationRuntimeRequest, 1)
+	captured := make(chan infruntime.ConversationRuntimeRequest, 4)
 	runtimeComposer := infruntime.RuntimeBuilderFunc(func(_ context.Context, req infruntime.ConversationRuntimeRequest) (infruntime.ComposedRuntime, error) {
-		captured <- req
+		select {
+		case captured <- req:
+		default:
+		}
 		return infruntime.ComposedRuntime{
 			Engine:             integrationNoopEngine{},
 			Sink:               integrationNoopSink{},
@@ -1100,8 +1066,8 @@ func TestProfileAPI_ReadRoutesAreMounted(t *testing.T) {
 	require.GreaterOrEqual(t, len(listed), 2)
 	assertProfileListItemContract(t, listed[0])
 	assertProfileListItemContract(t, listed[1])
-	require.Equal(t, "analyst", listed[0]["slug"])
-	require.Equal(t, "inventory", listed[1]["slug"])
+	require.True(t, hasProfileSlug(listed, "analyst"), "expected analyst profile in list")
+	require.True(t, hasProfileSlug(listed, "inventory"), "expected inventory profile in list")
 
 	getResp, err := http.Get(srv.URL + integrationProfilePath("analyst"))
 	require.NoError(t, err)
