@@ -395,6 +395,99 @@ All launcher flags with defaults. Run `wesen-os-launcher wesen-os-launcher --hel
 | `--turns-db` | (empty) | SQLite DB path for turn snapshots |
 | `--timeline-inmem-max-entities` | `1000` | In-memory entity cap when no timeline DB configured |
 
+### Profile Bootstrap And Runtime Policy
+
+The launcher no longer defines its own built-in profile registry in Go. Profile data now comes from Pinocchio-style engine-profile registries, and the launcher resolves them before it starts the inventory and assistant chat modules.
+
+The bootstrap flow lives in [`cmd/wesen-os-launcher/profile_bootstrap.go`](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/cmd/wesen-os-launcher/profile_bootstrap.go). It resolves two different kinds of state:
+
+- hidden base inference settings:
+  - API type
+  - engine/model
+  - API keys
+  - other Geppetto AI settings
+- profile selection and registry sources:
+  - selected engine-profile slug
+  - profile registry file/database locations
+  - loaded registry chain
+
+The launcher follows Pinocchio precedence rules:
+
+1. `--profile-registries`
+2. `PINOCCHIO_PROFILE_REGISTRIES`
+3. `profile-settings.profile-registries` from config
+4. `${XDG_CONFIG_HOME:-~/.config}/pinocchio/profiles.yaml` if present
+
+Selected profile precedence:
+
+1. `--profile`
+2. `PINOCCHIO_PROFILE`
+3. `profile-settings.profile` from config
+4. launcher/app fallback selection
+
+The last step is important. Inventory and assistant share the same loaded registry stack, but they do not use the same fallback slug:
+
+- inventory falls back to `inventory`
+- assistant falls back to `assistant`
+
+That app-level fallback is configured at the request-resolver boundary, not by mutating the registry.
+
+### Runtime Extension Contract
+
+Engine profiles are engine-only by default. App-owned runtime policy is carried in the Pinocchio extension key:
+
+- `pinocchio.webchat_runtime@v1`
+
+The checked-in sample file used by launcher tests is:
+
+- [`cmd/wesen-os-launcher/testdata/pinocchio/profiles.yaml`](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/cmd/wesen-os-launcher/testdata/pinocchio/profiles.yaml)
+
+Its runtime payload looks like this:
+
+```yaml
+extensions:
+  pinocchio.webchat_runtime@v1:
+    system_prompt: You are an inventory assistant. Be concise, accurate, and tool-first.
+    middlewares:
+      - name: inventory_artifact_policy
+        id: artifact-policy
+      - name: inventory_suggestions_policy
+        id: suggestions-policy
+    tools:
+      - inventory_search_items
+      - inventory_get_item
+      - inventory_low_stock
+      - inventory_report
+      - inventory_update_qty
+      - inventory_record_sale
+```
+
+Semantics:
+
+- `system_prompt`:
+  - app-owned prompt seed for that selected profile
+- `middlewares`:
+  - Pinocchio middleware instances to build and attach
+- `tools`:
+  - tool names the runtime should expose upstream
+
+These fields are not part of engine configuration. They are decoded by the shared request resolver and consumed by the runtime composer after inference settings have already been resolved.
+
+### Fallback Defaults vs Authoritative Profile Data
+
+The launcher still keeps minimal code-owned fallback values in [`cmd/wesen-os-launcher/main.go`](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/cmd/wesen-os-launcher/main.go):
+
+- inventory fallback system prompt
+- inventory fallback tool allowlist
+- assistant fallback system prompt
+
+Those are safety defaults for profiles that omit the runtime extension. When `pinocchio.webchat_runtime@v1` is present on the selected profile, the profile runtime data is authoritative and overrides those fallback values.
+
+In practical terms:
+
+- if operators provide a complete Pinocchio profile file, that file defines runtime truth
+- if they provide an engine-only profile with no runtime extension, the launcher still has safe defaults and the app remains usable
+
 ## API Endpoint Reference
 
 ### Platform Endpoints

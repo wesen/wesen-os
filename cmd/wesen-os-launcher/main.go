@@ -183,6 +183,8 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 	}()
 
 	composer := pinoweb.NewRuntimeComposer(parsed, pinoweb.RuntimeComposerOptions{
+		// These values are launcher-owned fallbacks. When the selected engine profile
+		// carries pinocchio.webchat_runtime@v1, the resolved runtime policy overrides them.
 		RuntimeKey:   "inventory",
 		SystemPrompt: "You are an inventory assistant. Be concise, accurate, and tool-first.",
 		AllowedTools: append([]string(nil), inventorytools.InventoryToolNames...),
@@ -215,6 +217,8 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 
 	assistantContextStore := assistantbackendmodule.NewAppChatContextStore()
 	assistantComposer := profilechat.NewRuntimeComposer(parsed, profilechat.RuntimeComposerOptions{
+		// Assistant also keeps a minimal code-owned fallback for profiles that omit the
+		// Pinocchio runtime extension; profile runtime data remains authoritative when present.
 		RuntimeKey:      "assistant",
 		SystemPrompt:    "You are a helpful OS assistant. Be concise, clear, and direct.",
 		ContextProvider: assistantContextStore,
