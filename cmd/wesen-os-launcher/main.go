@@ -320,8 +320,6 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 		RequestResolver:     assistantRequestResolver,
 		ProfileRegistry:     assistantProfileRegistry,
 		DefaultRegistrySlug: assistantRegistrySlug,
-		WriteActor:          "wesen-os-launcher",
-		WriteSource:         "http-api",
 		ContextStore:        assistantContextStore,
 	})
 
@@ -333,8 +331,6 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 			ProfileRegistry:       profileRegistry,
 			DefaultRegistrySlug:   registrySlug,
 			MiddlewareDefinitions: composer.MiddlewareDefinitions(),
-			WriteActor:            "wesen-os-launcher",
-			WriteSource:           "http-api",
 			ConfirmMountPath:      "/confirm",
 		}),
 		sqliteModule,
