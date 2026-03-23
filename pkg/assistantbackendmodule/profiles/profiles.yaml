@@ -1,0 +1,11 @@
+slug: assistant
+display_name: Assistant
+description: Assistant-owned chat profile surface.
+profiles:
+  assistant:
+    slug: assistant
+    display_name: Assistant
+    description: General-purpose OS assistant profile.
+    extensions:
+      pinocchio.webchat_runtime@v1:
+        system_prompt: You are a helpful OS assistant. Be concise, clear, and direct.

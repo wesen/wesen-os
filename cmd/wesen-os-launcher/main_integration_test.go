@@ -91,9 +91,13 @@ const integrationOSDocsPath = "/api/os/docs"
 const integrationOSHelpPath = "/api/os/help"
 
 func integrationChatPath() string { return integrationAppBasePath + "/chat" }
+func integrationAssistantChatPath() string {
+	return integrationAssistantAppBasePath + "/chat"
+}
 func integrationAssistantProfilesPath() string {
 	return integrationAssistantAppBasePath + "/api/chat/profiles"
 }
+func integrationAssistantWSPath() string   { return integrationAssistantAppBasePath + "/ws" }
 func integrationWSPath() string            { return integrationAppBasePath + "/ws" }
 func integrationTimelinePath() string      { return integrationAppBasePath + "/api/timeline" }
 func integrationProfilesPath() string      { return integrationAppBasePath + "/api/chat/profiles" }
@@ -180,10 +184,52 @@ func newIntegrationServer(t *testing.T) *httptest.Server {
 	return newIntegrationServerWithRouterOptions(t)
 }
 
+func newIntegrationInventoryProfileSurface(t *testing.T, bootstrap *launcherProfileBootstrap) (gepprofiles.Registry, gepprofiles.RegistrySlug, gepprofiles.EngineProfileSlug) {
+	t.Helper()
+	builtinRegistry, err := inventorybackendmodule.LoadBuiltinProfileRegistry()
+	require.NoError(t, err)
+	defaultProfileSlug := inventorybackendmodule.DefaultProfileSlug()
+	if bootstrap != nil && !bootstrap.SelectedProfileSlug.IsZero() && bootstrap.SelectedProfileSlug != gepprofiles.MustEngineProfileSlug("assistant") {
+		for _, visibleSlug := range inventorybackendmodule.VisibleProfileSlugs() {
+			if visibleSlug == bootstrap.SelectedProfileSlug {
+				defaultProfileSlug = bootstrap.SelectedProfileSlug
+				break
+			}
+		}
+	}
+	registry, registrySlug, err := newAppProfileSurface(context.Background(), appProfileSurfaceConfig{
+		AppID:              inventorybackendmodule.AppID,
+		VisibleRegistry:    builtinRegistry,
+		DefaultProfileSlug: defaultProfileSlug,
+		VisibleProfiles:    inventorybackendmodule.VisibleProfileSlugs(),
+		FallbackRegistry:   bootstrap.ProfileRegistry,
+	})
+	require.NoError(t, err)
+	return registry, registrySlug, defaultProfileSlug
+}
+
+func newIntegrationAssistantProfileSurface(t *testing.T, bootstrap *launcherProfileBootstrap) (gepprofiles.Registry, gepprofiles.RegistrySlug, gepprofiles.EngineProfileSlug) {
+	t.Helper()
+	builtinRegistry, err := assistantbackendmodule.LoadBuiltinProfileRegistry()
+	require.NoError(t, err)
+	defaultProfileSlug := assistantbackendmodule.DefaultProfileSlug()
+	registry, registrySlug, err := newAppProfileSurface(context.Background(), appProfileSurfaceConfig{
+		AppID:              assistantbackendmodule.AppID,
+		VisibleRegistry:    builtinRegistry,
+		DefaultProfileSlug: defaultProfileSlug,
+		VisibleProfiles:    assistantbackendmodule.VisibleProfileSlugs(),
+		FallbackRegistry:   bootstrap.ProfileRegistry,
+	})
+	require.NoError(t, err)
+	return registry, registrySlug, defaultProfileSlug
+}
+
 func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat.RouterOption) *httptest.Server {
 	t.Helper()
 
 	parsed, launcherBootstrap := newIntegrationLauncherBootstrap(t)
+	inventoryProfileRegistry, inventoryDefaultRegistrySlug, inventoryDefaultProfileSlug := newIntegrationInventoryProfileSurface(t, launcherBootstrap)
+	assistantProfileRegistry, assistantDefaultRegistrySlug, assistantDefaultProfileSlug := newIntegrationAssistantProfileSurface(t, launcherBootstrap)
 	staticFS := fstest.MapFS{
 		"static/index.html": {Data: []byte("<html><body>inventory</body></html>")},
 	}
@@ -226,11 +272,9 @@ func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat
 		SystemPrompt: "You are a helpful OS assistant. Be concise, clear, and direct.",
 	}, nil, middlewarecfg.BuildDeps{}, nil)
 	assistantResolver := profilechat.NewStrictRequestResolver("assistant").WithProfileRegistry(
-		launcherBootstrap.ProfileRegistry,
-		launcherBootstrap.DefaultRegistrySlug,
-	).WithBaseInferenceSettings(launcherBootstrap.BaseInferenceSettings).WithDefaultProfileSelection(
-		gepprofiles.MustEngineProfileSlug("assistant"),
-	)
+		assistantProfileRegistry,
+		assistantDefaultRegistrySlug,
+	).WithBaseInferenceSettings(launcherBootstrap.BaseInferenceSettings).WithDefaultProfileSelection(assistantDefaultProfileSlug)
 	assistantSrv, err := webchat.NewServer(
 		context.Background(),
 		parsed,
@@ -240,24 +284,22 @@ func newIntegrationServerWithRouterOptions(t *testing.T, extraOptions ...webchat
 	require.NoError(t, err)
 
 	resolver := pinoweb.NewStrictRequestResolver("inventory").WithProfileRegistry(
-		launcherBootstrap.ProfileRegistry,
-		launcherBootstrap.DefaultRegistrySlug,
-	).WithBaseInferenceSettings(launcherBootstrap.BaseInferenceSettings).WithDefaultProfileSelection(
-		gepprofiles.MustEngineProfileSlug("inventory"),
-	)
+		inventoryProfileRegistry,
+		inventoryDefaultRegistrySlug,
+	).WithBaseInferenceSettings(launcherBootstrap.BaseInferenceSettings).WithDefaultProfileSelection(inventoryDefaultProfileSlug)
 
 	moduleRegistry, err := backendhost.NewModuleRegistry(
 		assistantbackendmodule.NewModule(assistantbackendmodule.Options{
 			Server:              assistantSrv,
 			RequestResolver:     assistantResolver,
-			ProfileRegistry:     launcherBootstrap.ProfileRegistry,
-			DefaultRegistrySlug: launcherBootstrap.DefaultRegistrySlug,
+			ProfileRegistry:     assistantProfileRegistry,
+			DefaultRegistrySlug: assistantDefaultRegistrySlug,
 		}),
 		inventorybackendmodule.NewModule(inventorybackendmodule.Options{
 			Server:              webchatSrv,
 			RequestResolver:     resolver,
-			ProfileRegistry:     launcherBootstrap.ProfileRegistry,
-			DefaultRegistrySlug: launcherBootstrap.DefaultRegistrySlug,
+			ProfileRegistry:     inventoryProfileRegistry,
+			DefaultRegistrySlug: inventoryDefaultRegistrySlug,
 			ConfirmMountPath:    "/confirm",
 		}),
 		newIntegrationSQLiteModule(t),
@@ -317,19 +359,18 @@ func TestWSHandler_EmitsHypercardLifecycleEvents(t *testing.T) {
 	require.NoError(t, err)
 
 	_, launcherBootstrap := newIntegrationLauncherBootstrap(t)
+	inventoryProfileRegistry, inventoryDefaultRegistrySlug, inventoryDefaultProfileSlug := newIntegrationInventoryProfileSurface(t, launcherBootstrap)
 	resolver := pinoweb.NewStrictRequestResolver("inventory").WithProfileRegistry(
-		launcherBootstrap.ProfileRegistry,
-		launcherBootstrap.DefaultRegistrySlug,
-	).WithBaseInferenceSettings(launcherBootstrap.BaseInferenceSettings).WithDefaultProfileSelection(
-		gepprofiles.MustEngineProfileSlug("inventory"),
-	)
+		inventoryProfileRegistry,
+		inventoryDefaultRegistrySlug,
+	).WithBaseInferenceSettings(launcherBootstrap.BaseInferenceSettings).WithDefaultProfileSelection(inventoryDefaultProfileSlug)
 
 	moduleRegistry, err := backendhost.NewModuleRegistry(
 		inventorybackendmodule.NewModule(inventorybackendmodule.Options{
 			Server:              webchatSrv,
 			RequestResolver:     resolver,
-			ProfileRegistry:     launcherBootstrap.ProfileRegistry,
-			DefaultRegistrySlug: launcherBootstrap.DefaultRegistrySlug,
+			ProfileRegistry:     inventoryProfileRegistry,
+			DefaultRegistrySlug: inventoryDefaultRegistrySlug,
 			ConfirmMountPath:    "/confirm",
 		}),
 		newIntegrationSQLiteModule(t),
@@ -556,8 +597,9 @@ func TestAssistantProfilesEndpoint_ListsAssistantProfile(t *testing.T) {
 
 	var items []map[string]any
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&items))
-	require.NotEmpty(t, items)
+	require.Len(t, items, 1)
 	require.True(t, hasProfileSlug(items, "assistant"), "expected assistant profile in list")
+	require.False(t, hasProfileSlug(items, "inventory"), "did not expect inventory profile in assistant list")
 }
 
 func TestInventoryModule_ReflectionEndpoint(t *testing.T) {
@@ -1063,11 +1105,14 @@ func TestProfileAPI_ReadRoutesAreMounted(t *testing.T) {
 
 	var listed []map[string]any
 	require.NoError(t, json.NewDecoder(listResp.Body).Decode(&listed))
-	require.GreaterOrEqual(t, len(listed), 2)
+	require.Len(t, listed, 4)
 	assertProfileListItemContract(t, listed[0])
 	assertProfileListItemContract(t, listed[1])
+	require.True(t, hasProfileSlug(listed, "default"), "expected default profile in list")
 	require.True(t, hasProfileSlug(listed, "analyst"), "expected analyst profile in list")
 	require.True(t, hasProfileSlug(listed, "inventory"), "expected inventory profile in list")
+	require.True(t, hasProfileSlug(listed, "assistant"), "expected assistant profile in list")
+	require.False(t, hasProfileSlug(listed, "planner"), "did not expect planner profile in inventory list")
 
 	getResp, err := http.Get(srv.URL + integrationProfilePath("analyst"))
 	require.NoError(t, err)
@@ -1188,6 +1233,56 @@ func TestProfileE2E_ExplicitProfileSelection_RuntimeKeyReflectsSelection(t *test
 	require.NoError(t, err)
 	require.Equal(t, "ws.hello", integrationSemEventType(helloFrame))
 	require.Equal(t, "analyst@v0", integrationSemRuntimeKey(helloFrame))
+}
+
+func TestProfileE2E_DefaultProfileSelection_IsAppSpecific(t *testing.T) {
+	srv := newIntegrationServer(t)
+	defer srv.Close()
+
+	const inventoryConvID = "conv-profile-default-inventory"
+	inventoryResp, err := http.Post(
+		srv.URL+integrationChatPath(),
+		"application/json",
+		strings.NewReader(`{"prompt":"inventory default","conv_id":"`+inventoryConvID+`"}`),
+	)
+	require.NoError(t, err)
+	defer inventoryResp.Body.Close()
+	require.Equal(t, http.StatusOK, inventoryResp.StatusCode)
+
+	inventoryWSURL := "ws" + strings.TrimPrefix(srv.URL, "http") + integrationWSPath() + "?conv_id=" + inventoryConvID
+	inventoryConn, _, err := websocket.DefaultDialer.Dial(inventoryWSURL, nil)
+	require.NoError(t, err)
+	require.NoError(t, inventoryConn.SetReadDeadline(time.Now().Add(2*time.Second)))
+	_, inventoryHelloFrame, err := inventoryConn.ReadMessage()
+	require.NoError(t, err)
+	require.Equal(t, "ws.hello", integrationSemEventType(inventoryHelloFrame))
+	require.Equal(t, "inventory@v0", integrationSemRuntimeKey(inventoryHelloFrame))
+	_ = inventoryConn.Close()
+
+	assistantResp, err := http.Get(srv.URL + integrationAssistantProfilesPath())
+	require.NoError(t, err)
+	defer assistantResp.Body.Close()
+	require.Equal(t, http.StatusOK, assistantResp.StatusCode)
+
+	var assistantProfiles []map[string]any
+	require.NoError(t, json.NewDecoder(assistantResp.Body).Decode(&assistantProfiles))
+	assistantItem := findProfileListItem(assistantProfiles, "assistant")
+	require.NotNil(t, assistantItem)
+	require.Equal(t, true, assistantItem["is_default"])
+}
+
+func TestInventoryChat_RejectsForeignProfileSelection(t *testing.T) {
+	srv := newIntegrationServer(t)
+	defer srv.Close()
+
+	resp, err := http.Post(
+		srv.URL+integrationChatPath(),
+		"application/json",
+		strings.NewReader(`{"prompt":"planner should be hidden","conv_id":"conv-foreign-profile-1","profile":"planner"}`),
+	)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
 
 func TestProfileE2E_ExplicitProfileChange_RebuildsInFlightConversationRuntime(t *testing.T) {
@@ -1338,6 +1433,17 @@ func hasProfileSlug(items []map[string]any, slug string) bool {
 		}
 	}
 	return false
+}
+
+func findProfileListItem(items []map[string]any, slug string) map[string]any {
+	want := strings.TrimSpace(slug)
+	for _, item := range items {
+		got, _ := item["slug"].(string)
+		if strings.TrimSpace(got) == want {
+			return item
+		}
+	}
+	return nil
 }
 
 func assertProfileListItemContract(t *testing.T, item map[string]any) {

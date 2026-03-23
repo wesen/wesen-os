@@ -181,6 +181,43 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 			launcherBootstrap.Close()
 		}
 	}()
+	inventoryBuiltinRegistry, err := inventorybackendmodule.LoadBuiltinProfileRegistry()
+	if err != nil {
+		return errors.Wrap(err, "load inventory builtin profile registry")
+	}
+	inventoryDefaultProfileSlug := inventorybackendmodule.DefaultProfileSlug()
+	if !launcherBootstrap.SelectedProfileSlug.IsZero() && launcherBootstrap.SelectedProfileSlug != gepprofiles.MustEngineProfileSlug("assistant") {
+		for _, visibleSlug := range inventorybackendmodule.VisibleProfileSlugs() {
+			if visibleSlug == launcherBootstrap.SelectedProfileSlug {
+				inventoryDefaultProfileSlug = launcherBootstrap.SelectedProfileSlug
+				break
+			}
+		}
+	}
+	inventoryProfileRegistry, inventoryDefaultRegistrySlug, err := newAppProfileSurface(ctx, appProfileSurfaceConfig{
+		AppID:              inventorybackendmodule.AppID,
+		VisibleRegistry:    inventoryBuiltinRegistry,
+		DefaultProfileSlug: inventoryDefaultProfileSlug,
+		VisibleProfiles:    inventorybackendmodule.VisibleProfileSlugs(),
+		FallbackRegistry:   launcherBootstrap.ProfileRegistry,
+	})
+	if err != nil {
+		return errors.Wrap(err, "build inventory profile surface")
+	}
+	assistantBuiltinRegistry, err := assistantbackendmodule.LoadBuiltinProfileRegistry()
+	if err != nil {
+		return errors.Wrap(err, "load assistant builtin profile registry")
+	}
+	assistantProfileRegistry, assistantDefaultRegistrySlug, err := newAppProfileSurface(ctx, appProfileSurfaceConfig{
+		AppID:              assistantbackendmodule.AppID,
+		VisibleRegistry:    assistantBuiltinRegistry,
+		DefaultProfileSlug: assistantbackendmodule.DefaultProfileSlug(),
+		VisibleProfiles:    assistantbackendmodule.VisibleProfileSlugs(),
+		FallbackRegistry:   launcherBootstrap.ProfileRegistry,
+	})
+	if err != nil {
+		return errors.Wrap(err, "build assistant profile surface")
+	}
 
 	composer := pinoweb.NewRuntimeComposer(parsed, pinoweb.RuntimeComposerOptions{
 		// These values are launcher-owned fallbacks. When the selected engine profile
@@ -191,13 +228,9 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 	})
 	pinoweb.RegisterInventoryHypercardExtensions()
 	requestResolver := pinoweb.NewStrictRequestResolver("inventory").WithProfileRegistry(
-		launcherBootstrap.ProfileRegistry,
-		launcherBootstrap.DefaultRegistrySlug,
+		inventoryProfileRegistry,
+		inventoryDefaultRegistrySlug,
 	).WithBaseInferenceSettings(launcherBootstrap.BaseInferenceSettings)
-	inventoryDefaultProfileSlug := gepprofiles.MustEngineProfileSlug("inventory")
-	if !launcherBootstrap.SelectedProfileSlug.IsZero() && launcherBootstrap.SelectedProfileSlug != gepprofiles.MustEngineProfileSlug("assistant") {
-		inventoryDefaultProfileSlug = launcherBootstrap.SelectedProfileSlug
-	}
 	requestResolver = requestResolver.WithDefaultProfileSelection(inventoryDefaultProfileSlug)
 
 	srv, err := webchat.NewServer(
@@ -224,10 +257,10 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 		ContextProvider: assistantContextStore,
 	}, nil, middlewarecfg.BuildDeps{}, nil)
 	assistantRequestResolver := profilechat.NewStrictRequestResolver("assistant").WithProfileRegistry(
-		launcherBootstrap.ProfileRegistry,
-		launcherBootstrap.DefaultRegistrySlug,
+		assistantProfileRegistry,
+		assistantDefaultRegistrySlug,
 	).WithBaseInferenceSettings(launcherBootstrap.BaseInferenceSettings).WithDefaultProfileSelection(
-		gepprofiles.MustEngineProfileSlug("assistant"),
+		assistantbackendmodule.DefaultProfileSlug(),
 	)
 	assistantSrv, err := webchat.NewServer(
 		ctx,
@@ -272,8 +305,8 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 	assistantModule := assistantbackendmodule.NewModule(assistantbackendmodule.Options{
 		Server:              assistantSrv,
 		RequestResolver:     assistantRequestResolver,
-		ProfileRegistry:     launcherBootstrap.ProfileRegistry,
-		DefaultRegistrySlug: launcherBootstrap.DefaultRegistrySlug,
+		ProfileRegistry:     assistantProfileRegistry,
+		DefaultRegistrySlug: assistantDefaultRegistrySlug,
 		ContextStore:        assistantContextStore,
 	})
 
@@ -282,8 +315,8 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 		inventorybackendmodule.NewModule(inventorybackendmodule.Options{
 			Server:                srv,
 			RequestResolver:       requestResolver,
-			ProfileRegistry:       launcherBootstrap.ProfileRegistry,
-			DefaultRegistrySlug:   launcherBootstrap.DefaultRegistrySlug,
+			ProfileRegistry:       inventoryProfileRegistry,
+			DefaultRegistrySlug:   inventoryDefaultRegistrySlug,
 			MiddlewareDefinitions: composer.MiddlewareDefinitions(),
 			ConfirmMountPath:      "/confirm",
 		}),
