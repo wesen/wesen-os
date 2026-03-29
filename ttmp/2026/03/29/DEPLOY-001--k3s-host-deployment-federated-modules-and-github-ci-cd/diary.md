@@ -63,6 +63,56 @@ That keeps the deliverables next to the rest of the `wesen-os` ticket work.
   - first federated remote
   - remote asset hosting and runtime registry
 
+## 2026-03-29: Task 1, Host Build Surface Audit
+
+I started the implementation program with the narrowest possible slice that still de-risks the rest of the work: identify exactly how the current launcher is built, where the frontend assets land, how they become embedded in the Go binary, and what existing smoke/build scripts can be reused in a future Docker image.
+
+### Files reviewed directly
+
+- `package.json`
+- `scripts/build-wesen-os-launcher.sh`
+- `scripts/launcher-ui-sync.sh`
+- `scripts/smoke-wesen-os-launcher.sh`
+- `cmd/wesen-os-launcher/main.go`
+- `pkg/launcherui/handler.go`
+- `pkg/launcherui/dist/.embedkeep`
+- `apps/os-launcher/package.json`
+- `apps/os-launcher/vite.config.ts`
+- `apps/os-launcher/tsconfig.published.json`
+
+### Key findings
+
+- The current launcher already has a stable three-step packaging chain:
+  - build the React frontend
+  - sync `apps/os-launcher/dist` into `pkg/launcherui/dist`
+  - build the Go binary
+- The Go binary serves the embedded SPA through `pkg/launcherui.Handler()`.
+- `pkg/launcherui/handler.go` uses `//go:embed all:dist`, so any production image that builds the binary must ensure `pkg/launcherui/dist` is populated before `go build`.
+- `cmd/wesen-os-launcher/main.go` mounts the embedded SPA at `/` and wires the backend modules in the same binary. That strongly suggests the first container implementation should package the combined Go launcher service, not split frontend and backend into separate containers prematurely.
+- The repo already has a good binary smoke test:
+  - `scripts/smoke-wesen-os-launcher.sh`
+  - this should become part of the image-validation pipeline later
+- There is no existing `Dockerfile`, `.dockerignore`, `deploy/k8s/`, Helm chart, or Kustomize base in the repo yet.
+
+### Output of this step
+
+- Added ticket script:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/01-audit-host-build-surface.sh`
+- Generated and committed audit artifact:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/01-host-build-surface-audit.md`
+
+### Why this matters
+
+This audit turns the next Docker task from guesswork into a concrete build recipe. The first host image should almost certainly do this:
+
+1. install Node dependencies
+2. build `apps/os-launcher`
+3. sync launcher UI into `pkg/launcherui/dist`
+4. build `cmd/wesen-os-launcher`
+5. run the existing smoke test or an image-adapted equivalent
+
+That is a materially better starting point than inventing a static-file-only container and discovering later that the runtime contract actually depends on the combined Go launcher process.
+
 ## 2026-03-29: reMarkable Delivery
 
 After the ticket content was written, I bundled the main deliverables into a single PDF for reMarkable delivery:
