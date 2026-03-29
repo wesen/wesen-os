@@ -396,6 +396,113 @@ docker run --name wesen-os-debug-smoke \
   - `/api/os/apps` returned `200`
   - startup logs showed the launcher listening on `:8091`
 
+## 2026-03-29: Task 5, Launcher Build Determinism
+
+Before moving on to GHCR publishing, I checked whether the launcher frontend output is actually reproducible across repeated clean builds. That question is easy to answer badly by eyeballing hashed filenames; it is better answered by running the build twice from a clean `dist/` state and comparing normalized per-file digests.
+
+The result was positive: the current `apps/os-launcher` production build is deterministic under the current toolchain and repository state. I turned that into a reusable ticket script so later deployment work can cite a concrete proof instead of an informal assumption.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 4)
+
+**Assistant interpretation:** Continue the deployment work in bounded, auditable increments and keep committing/recording what each slice proves.
+
+**Inferred user intent:** Build toward K3s/GitHub deployment with confidence that each prerequisite is validated, not just assumed.
+
+**Commit (code):** `5a3f94b` — `Check launcher build determinism`
+
+### What I did
+
+- Added ticket script:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/05-check-launcher-build-determinism.sh`
+- Added generated proof artifact:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/05-launcher-build-determinism-check.md`
+- Audited the launcher build inputs:
+  - `apps/os-launcher/package.json`
+  - `apps/os-launcher/vite.config.ts`
+  - `scripts/build-wesen-os-launcher.sh`
+- Searched for obvious nondeterminism sources like embedded timestamps, git metadata, or randomized build-time IDs.
+- Ran two clean `npm run build` cycles for `apps/os-launcher` and compared normalized relative-file SHA-256 digests across the resulting `dist/` trees.
+
+### Why
+
+- Reproducible frontend output makes the later container and GHCR steps easier to reason about.
+- If the launcher build were nondeterministic, image digests and deployment diffs would become noisier and harder to trust.
+- This is exactly the kind of prerequisite that is cheap to measure early and annoying to discover late.
+
+### What worked
+
+- Two clean launcher builds produced identical relative-file hash lists.
+- The final artifact captured:
+  - the exact file digests
+  - an empty diff
+  - the tail of both Vite build logs
+- The generated `vmmeta` step did not inject observable nondeterminism into the built `dist/` output in this scenario.
+
+### What didn't work
+
+- My first quick comparison falsely reported a mismatch because I hashed files using their absolute temp-directory paths:
+  - `/tmp/.../dist-1/...`
+  - `/tmp/.../dist-2/...`
+- That made the diff noisy even though the file contents were identical.
+- Re-running the comparison with relative paths inside each copied `dist/` tree fixed the measurement and showed the build was actually deterministic.
+
+### What I learned
+
+- The correct question is not “did the hashed filenames stay the same?” but “did the normalized output tree stay byte-identical?”
+- The current launcher build is deterministic enough for the next deployment steps, even with:
+  - `vmmeta:generate`
+  - Vite asset hashing
+  - the current dependency graph
+- The Vite build still emits large-chunk warnings, but those are performance/packaging concerns, not determinism failures.
+
+### What was tricky to build
+
+- The subtle part here was measurement, not implementation. A naive comparison used `shasum` output that included the full temp file paths. Because those paths differ across runs, the comparison looked like a determinism failure even though the file contents matched exactly. The fix was to compute digests from inside each copied `dist/` directory and compare relative path entries only.
+- This is a good reminder for later CI work: reproducibility checks need normalized paths and stable comparison formats, otherwise the harness itself creates false negatives.
+
+### What warrants a second pair of eyes
+
+- The proof currently covers repeated clean builds on this machine and workspace state; it does not yet prove cross-machine reproducibility.
+- The build logs still show large bundle warnings and browser-externalization warnings for the QuickJS packaging path; those are not blockers for determinism, but they may matter for runtime performance and later image size work.
+- If any build-time environment variables get introduced later, this proof should be rerun rather than assumed to remain valid.
+
+### What should be done in the future
+
+- Reuse this determinism script in CI if we decide reproducibility should become an enforced invariant.
+- Investigate the large launcher chunks separately as a performance/packaging follow-up.
+- Re-run this proof after any significant Vite config or generated-metadata pipeline changes.
+
+### Code review instructions
+
+- Start with:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/05-check-launcher-build-determinism.sh`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/05-launcher-build-determinism-check.md`
+- Validate with:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/05-check-launcher-build-determinism.sh`
+- If you want to reproduce the false-negative trap, compare absolute-path `shasum` output from two temp directories and watch the paths, not the file bytes, create the diff.
+
+### Technical details
+
+- Normalized digest loop used by the final script:
+
+```bash
+(
+  cd "$DIST_COPY"
+  find . -type f | LC_ALL=C sort | while read -r path; do
+    shasum -a 256 "$path"
+  done
+)
+```
+
+- Relevant build chain under test:
+  - `apps/os-launcher/package.json`:
+    - `prebuild -> npm run vmmeta:generate`
+    - `build -> vite build`
+  - `apps/os-launcher/vite.config.ts`
+  - generated outputs under `apps/os-launcher/dist`
+
 ## 2026-03-29: reMarkable Delivery
 
 After the ticket content was written, I bundled the main deliverables into a single PDF for reMarkable delivery:

@@ -31,7 +31,7 @@
 - [x] Decide that the first production image packages the combined Go launcher backend plus embedded frontend shell.
 - [x] Add a `.dockerignore`.
 - [x] Add a repo-local image build helper script under this ticket.
-- [ ] Produce deterministic frontend builds for `apps/os-launcher`.
+- [x] Produce deterministic frontend builds for `apps/os-launcher`.
 - [ ] Decide final image naming:
   - `ghcr.io/wesen/wesen-os:<git-sha>`
   - `ghcr.io/wesen/wesen-os:main`
