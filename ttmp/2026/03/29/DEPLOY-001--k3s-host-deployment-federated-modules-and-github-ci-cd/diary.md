@@ -1699,3 +1699,54 @@ I checked it because it has the same structural smell, but I deliberately did **
 - merge it
 - rerun `publish-host-image`
 - if that run succeeds, move immediately to digest capture and GHCR pull verification
+
+## 2026-03-29: Second Host Publish Failed On Buildx Driver Configuration
+
+The launcher placeholder fix did its job. After merging `wesen/wesen-os#6`, the rerun advanced through:
+
+- dependency install
+- launcher binary build
+- GHCR login
+- Docker metadata extraction
+
+and then failed in the Docker push step:
+
+- run: `https://github.com/wesen/wesen-os/actions/runs/23718753340`
+
+### Exact failure
+
+The critical line from the failed step was:
+
+```text
+ERROR: failed to build: Cache export is not supported for the docker driver.
+```
+
+The workflow currently asks Buildx to use GitHub Actions cache:
+
+- `cache-from: type=gha`
+- `cache-to: type=gha,mode=max`
+
+but it never sets up a Buildx builder that supports that backend. On GitHub Actions, that left the workflow on the default `docker` driver, which does not support exporting cache to `type=gha`.
+
+### Why this matters
+
+This is a pipeline-configuration bug, not an application build bug. The repo itself built correctly this time. The failure moved later, which is exactly what we want from iterative CI repair work.
+
+### Fix
+
+The right fix is to add:
+
+- `docker/setup-buildx-action@v3`
+
+before the `docker/build-push-action@v6` step, so the workflow uses a proper Buildx builder instead of relying on the default Docker driver.
+
+I also added a ticket helper for this failure capture:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/17-capture-host-publish-failure.sh`
+
+### What should happen next
+
+- patch `publish-host-image.yml` with an explicit Buildx setup step
+- merge that fix
+- rerun `publish-host-image`
+- if the run succeeds, capture the published digest and verify public pull behavior
