@@ -1618,3 +1618,84 @@ Both PRs came up clean immediately:
 - run the first real host image publish from GitHub Actions
 - verify the published GHCR image is publicly pullable
 - then update the Hetzner K3s package from the provisional `:main` image tag to an immutable digest or pinned SHA ref
+
+## 2026-03-29: First Real Host Publish Failed On A Missing Tracked Directory
+
+After merging `wesen/wesen-os#5`, GitHub registered both deployment workflows immediately:
+
+- `deploy-host-to-k3s`
+- `publish-host-image`
+
+The first `publish-host-image` run started automatically on the merge to `main`:
+
+- run: `https://github.com/wesen/wesen-os/actions/runs/23718680532`
+
+### What failed
+
+The run failed in `Build launcher binary`, before Docker build or GHCR push even started.
+
+The key CI error was:
+
+```text
+reading directory src/domain/vm/docs: open src/domain/vm/docs: no such file or directory
+```
+
+That came from the launcher prebuild step:
+
+- `apps/os-launcher/package.json`
+  - `vmmeta:generate`
+
+which calls:
+
+- `go run ../../workspace-links/go-go-os-backend/cmd/go-go-os-backend vmmeta generate ... --docs-dir src/domain/vm/docs ...`
+
+### Root cause
+
+This was not a GitHub-specific problem. It was a repository-shape problem.
+
+Locally, `apps/os-launcher/src/domain/vm/docs/` already existed on disk as an empty directory, so `npm run launcher:binary:build` passed. But Git does not track empty directories, and the repo did not contain any placeholder file there. In a clean GitHub Actions checkout, the directory simply did not exist.
+
+So the build had an implicit dependency on a locally-present, untracked empty directory.
+
+### Fix
+
+I added a tracked placeholder file:
+
+- `apps/os-launcher/src/domain/vm/docs/.gitkeep`
+
+I also added a ticket helper to make this class of issue explicit:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/16-check-vm-doc-dirs.sh`
+
+with the captured output stored in:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/16-vm-doc-dirs-check.md`
+
+### Validation
+
+After adding the tracked placeholder, this passed locally again:
+
+- `npm run launcher:binary:build`
+
+That is the correct validation for this slice because it exercises the exact failing path from CI:
+
+1. launcher frontend prebuild
+2. `vmmeta:generate`
+3. UI sync
+4. Go launcher binary build
+
+### Important nuance
+
+There is another empty VM docs directory in the inventory submodule:
+
+- `workspace-links/go-go-app-inventory/apps/inventory/src/domain/vm/docs`
+
+I checked it because it has the same structural smell, but I deliberately did **not** fold a submodule change into this host-publish repair slice. The immediate failure path was the launcher build in the root repo, so I kept the actual fix bounded to the root repository.
+
+### What should happen next
+
+- commit the launcher placeholder-directory fix
+- push it as a small follow-up PR to `wesen/wesen-os`
+- merge it
+- rerun `publish-host-image`
+- if that run succeeds, move immediately to digest capture and GHCR pull verification
