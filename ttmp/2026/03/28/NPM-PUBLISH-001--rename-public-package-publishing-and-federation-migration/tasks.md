@@ -202,6 +202,7 @@
 
 - [ ] Add a package-consumption mode in `wesen-os` that installs the renamed `@go-go-golems/os-*` packages by version instead of requiring sibling repos.
   - `apps/os-launcher` now has `typecheck:published`, `build:published`, `tsconfig.published.json`, and published-mode Vite resolution via `GO_GO_OS_FRONTEND_RESOLUTION=published`
+  - root workflow `.github/workflows/verify-launcher-canary-consumption.yml` is prepared but still needs default-branch registration and first live run
   - remaining work is CI/package rewrite proof for `wesen-os`, not the basic launcher-mode scaffold
 - [ ] Convert `apps/os-launcher/package.json` dependencies from `workspace:*` to real version ranges in publish mode.
 - [ ] Convert `go-go-app-inventory/apps/inventory/package.json` dependencies from `workspace:*` to real version ranges in publish mode.

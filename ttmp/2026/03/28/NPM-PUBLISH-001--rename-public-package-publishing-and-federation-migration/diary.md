@@ -1930,3 +1930,66 @@ This step starts the host-side migration in `wesen-os` itself. Inventory already
 - Successful final validations:
   - `npm run typecheck:published -w apps/os-launcher`
   - `npm run build:published -w apps/os-launcher`
+
+## Step 15: Prepare A `wesen-os` Actions Workflow For Launcher Canary Consumption
+
+This step turns the new launcher published-mode scaffold into a repeatable CI path, even though the workflow is not yet registered on the repo default branch. The goal is to make the host-side proof executable in GitHub Actions as soon as the workflow file is merged, rather than keeping the launcher published-mode validation as a local-only convention.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue. keep a detailed diary as you work, committting at appropriate intervals"
+
+**Assistant interpretation:** Keep moving the migration forward into reproducible automation and keep the ticket diary updated with exact state, including when work is prepared but not yet dispatchable.
+
+**Inferred user intent:** Reduce the gap between local host-side validation and real CI proof.
+
+### What I did
+
+- Added `.github/workflows/verify-launcher-canary-consumption.yml` in the root `wesen-os` repo.
+- The workflow:
+  - accepts `platform_version` as a `workflow_dispatch` input
+  - checks out the repo with recursive submodules
+  - sets up pnpm and Node
+  - configures GitHub Packages auth with `GITHUB_TOKEN`
+  - rewrites only the launcher’s platform package dependencies to the requested canary version
+  - runs `pnpm install --no-frozen-lockfile`
+  - runs `npm run typecheck:published -w apps/os-launcher`
+  - runs `npm run build:published -w apps/os-launcher`
+
+### Why
+
+- The launcher published-mode work is much more valuable if it can be re-run in CI on demand against a selected canary version.
+- The inventory workflow already proved the downstream-app pattern. `wesen-os` now needs the same kind of explicit host-side automation.
+- Submodules are part of the host repo contract, so the workflow must check them out recursively instead of assuming a flat single-repo layout.
+
+### What worked
+
+- The workflow shape is now aligned with the actual launcher published-mode path that already passed locally.
+- The workflow keeps the scope intentionally narrow: only the launcher’s platform dependencies are rewritten to a canary version, while linked app packages remain source-linked for now.
+
+### What didn't work
+
+- There is no live Actions run for this workflow yet because the root repo did not already have a registered workflow on its default branch. Like the earlier frontend workflow situation, this file must land on the default branch before GitHub will expose it as a dispatchable workflow.
+
+### What I learned
+
+- The next host-side blocker is no longer technical uncertainty about launcher published mode. It is workflow registration and then first live CI proof.
+- The right first CI scope for `wesen-os` is launcher-only published-mode validation, not a whole-repo publish-mode flip.
+
+### What warrants a second pair of eyes
+
+- Review the new root workflow:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/.github/workflows/verify-launcher-canary-consumption.yml`
+- Review whether `pnpm install --no-frozen-lockfile` is the right tradeoff for the first host-side canary consumer workflow, or whether the repo should eventually gain a more tightly controlled install strategy for published-mode verification.
+
+### What should be done in the future
+
+- Merge the workflow onto the default branch of the root repo.
+- Dispatch the workflow against `0.1.0-canary.4` or newer.
+- Record the first live run outcome in the diary, whether success or the next concrete host-side blocker.
+
+### Technical details
+
+- New workflow file:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/.github/workflows/verify-launcher-canary-consumption.yml`
+- There is intentionally no run URL yet for this step because the workflow is not registered on the default branch at the time of writing.

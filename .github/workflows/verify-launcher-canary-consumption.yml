@@ -1,0 +1,83 @@
+name: verify-launcher-canary-consumption
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform_version:
+        description: Canary platform package version to install from GitHub Packages
+        required: true
+        default: 0.1.0-canary.4
+        type: string
+
+jobs:
+  verify-launcher:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    env:
+      PLATFORM_VERSION: ${{ inputs.platform_version }}
+      GO_GO_OS_FRONTEND_RESOLUTION: published
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@go-go-golems'
+
+      - name: Configure GitHub Packages auth
+        run: |
+          cat <<EOF > "$HOME/.npmrc"
+          @go-go-golems:registry=https://npm.pkg.github.com
+          //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+          EOF
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rewrite launcher platform deps to published canary versions
+        run: |
+          node <<'EOF'
+          const fs = require('node:fs');
+          const packagePath = 'apps/os-launcher/package.json';
+          const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+          const platformDeps = [
+            '@go-go-golems/os-chat',
+            '@go-go-golems/os-core',
+            '@go-go-golems/os-kanban',
+            '@go-go-golems/os-repl',
+            '@go-go-golems/os-scripting',
+            '@go-go-golems/os-shell',
+            '@go-go-golems/os-ui-cards',
+            '@go-go-golems/os-widgets',
+          ];
+
+          for (const dep of platformDeps) {
+            if (packageJson.dependencies?.[dep]) {
+              packageJson.dependencies[dep] = process.env.PLATFORM_VERSION;
+            }
+          }
+
+          fs.writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`);
+          EOF
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Typecheck launcher in published mode
+        run: npm run typecheck:published -w apps/os-launcher
+
+      - name: Build launcher in published mode
+        run: npm run build:published -w apps/os-launcher
