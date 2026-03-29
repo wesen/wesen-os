@@ -36,7 +36,7 @@
   - `ghcr.io/wesen/wesen-os:<git-sha>`
   - `ghcr.io/wesen/wesen-os:main`
   - release tags later
-- [ ] Add a local smoke command:
+- [x] Add a local smoke command:
   - build image
   - run image
   - probe health or entry page

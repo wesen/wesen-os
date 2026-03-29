@@ -264,6 +264,138 @@ The next task after this checkpoint should be the image smoke run:
 - probe `/api/os/apps`
 - verify the default `--arc-enabled=false` startup path is healthy
 
+## 2026-03-29: Task 4, Local Host Image Smoke Command
+
+I turned the local image smoke check into a real reproducible ticket script and used it to debug the first container runtime failures instead of treating them as abstract “Docker problems.” That mattered because the image itself was mostly correct; the real issues were a mixture of launcher runtime requirements and a couple of subtle shell-script mistakes in the harness.
+
+This step closes the first end-to-end local deployment proof for `DEPLOY-001`: build the image, run it locally, probe the embedded SPA and backend app registry, and preserve enough logs in the artifact to make failures diagnosable.
+
+### Prompt Context
+
+**User prompt (verbatim):** "`let's go, task by task, committing as we go, keeping a detailed diary so that we can retrace our path at the end. Keep all scripts in the scripts/ folder of the ticket with XX-... prefix as well`"
+
+**Assistant interpretation:** Continue the deployment ticket incrementally, checkpoint each meaningful slice in git, and maintain enough diary detail that the path can be reconstructed later.
+
+**Inferred user intent:** Build the deployment system in small auditable steps, avoiding undocumented trial-and-error.
+
+**Commit (code):** `8f6a220` — `Add host image smoke validation`
+
+### What I did
+
+- Added ticket script:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/04-smoke-host-image.sh`
+- Added generated validation artifact:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/04-host-image-smoke-check.md`
+- Reproduced the container failure first with a retained manual debug container instead of `--rm`, so the actual startup logs stayed available.
+- Updated the smoke script so it:
+  - creates a temporary profile registry file
+  - mounts it into the container
+  - explicitly passes `--addr=:8091` and `--arc-enabled=false`
+  - probes `/` and `/api/os/apps`
+  - records container state, exit code, and logs in the output artifact
+  - suppresses repetitive `curl` connection-noise during readiness polling
+- Reran the smoke script until it produced a passing artifact.
+
+### Why
+
+- The first production image needs a single-command local proof before adding GHCR and K3s layers on top.
+- The launcher has a nontrivial runtime contract:
+  - it requires a profile registry source
+  - it can optionally boot ARC, which pulls in `dagger`
+- A smoke script that hides those requirements or loses logs on exit is not useful enough for future CI/CD work.
+
+### What worked
+
+- A retained debug run immediately exposed the true runtime failure:
+  - `Error: start backend module lifecycle: init module "arc-agi": dagger binary is not available: exec: "dagger": executable file not found in $PATH`
+- Passing `--arc-enabled=false` explicitly to `docker run` produced a healthy container:
+  - `/` returned `200`
+  - `/api/os/apps` returned `200`
+  - the app registry included `inventory`, `sqlite`, `assistant`, and `gepa`
+- The final smoke artifact recorded a `PASS` result with running container state and startup logs.
+
+### What didn't work
+
+- The first smoke attempt failed before startup because no profile registry was provided:
+  - `validation error (profile-settings.profile-registries): must be configured (hard cutover: no profile-file fallback)`
+- After adding a mounted profile registry file, the container still failed because the temp file permissions were too restrictive:
+  - `open /tmp/profiles.runtime.yaml: permission denied`
+- After fixing permissions, the container still failed because the smoke `docker run` arguments replaced the image `CMD`, silently dropping the Dockerfile default `--arc-enabled=false`:
+  - `init module "arc-agi": dagger binary is not available: exec: "dagger": executable file not found in $PATH`
+- The next smoke rerun still failed because the script called `cleanup` before `docker run`, which deleted the temp profile file. Docker then created a directory mount at that path:
+  - `read /tmp/profiles.runtime.yaml: is a directory`
+- One rerun failed for a purely local reason because the manual debug container was still holding the test port:
+  - `Bind for 127.0.0.1:18091 failed: port is already allocated.`
+
+### What I learned
+
+- For this image, launcher boot requires a runtime profile registry even in a minimal local smoke scenario.
+- `docker run IMAGE arg1 arg2 ...` replaces `CMD` but preserves `ENTRYPOINT`; this is easy to forget and directly affected whether ARC was disabled.
+- A smoke harness should never rely on `--rm` if the main goal is to debug startup failures. Retaining the container state long enough to collect logs is materially more useful.
+- The first healthy image contract is now concrete:
+  - mount a profile registry file
+  - pass `--arc-enabled=false`
+  - probe `/` and `/api/os/apps`
+
+### What was tricky to build
+
+- The trickiest issue was not the image itself but the interaction between Docker CLI semantics and our launcher defaults. The Dockerfile declared `CMD ["--addr=:8091","--arc-enabled=false"]`, but the smoke command added its own launcher flags after the image name, which replaced that `CMD` entirely. That made the container look like it was “ignoring” the Dockerfile even though Docker was behaving correctly.
+- The other sharp edge was the cleanup flow in the smoke script. I initially reused a single `cleanup()` function both to clear stale containers before the run and to tear down temporary files on exit. That removed the just-created temp profile file before `docker run`, causing Docker to mount a directory instead of the intended file. The symptom (`is a directory`) looked like a container issue, but the cause was the order of operations in the harness itself.
+
+### What warrants a second pair of eyes
+
+- The image runtime interface is still easy to misuse because adding `docker run ... extra-flags` can unintentionally replace useful default `CMD` flags.
+- The smoke script currently proves the minimal healthy path, but it does not yet exercise richer backend endpoints the way `scripts/smoke-wesen-os-launcher.sh` does for the local binary.
+- The profile bootstrap requirement is now explicit in the smoke harness, but we still need to document the intended production mechanism for providing profile registries in containers/Kubernetes.
+
+### What should be done in the future
+
+- Decide whether to keep the current Docker interface or add an entrypoint wrapper that preserves defaults more safely.
+- Extend image smoke validation to cover at least one namespaced backend endpoint beyond `/api/os/apps`.
+- Document runtime configuration for profile registries before writing K3s manifests.
+
+### Code review instructions
+
+- Start with:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/04-smoke-host-image.sh`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/04-host-image-smoke-check.md`
+- Validate with:
+  - `IMAGE_TAG=wesen-os:deploy-001 ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/04-smoke-host-image.sh`
+- Review the failure history in this step if you want to understand why the harness passes `--arc-enabled=false` explicitly instead of assuming the Dockerfile `CMD` survives.
+
+### Technical details
+
+- Manual retained debug command used to preserve logs:
+
+```bash
+PROFILE_FILE=$(mktemp "${TMPDIR:-/tmp}/wesen-os-profiles.XXXXXX.yaml")
+cat > "$PROFILE_FILE" <<'YAML'
+slug: smoke
+profiles:
+  default:
+    slug: default
+    runtime:
+      step_settings_patch:
+        ai-chat:
+          ai-engine: gpt-4.1-mini
+YAML
+chmod 644 "$PROFILE_FILE"
+
+docker run --name wesen-os-debug-smoke \
+  -p 127.0.0.1:18091:8091 \
+  -v "$PROFILE_FILE:/tmp/profiles.runtime.yaml:ro" \
+  -d wesen-os:deploy-001 \
+  --addr=:8091 \
+  --arc-enabled=false \
+  --profile default \
+  --profile-registries /tmp/profiles.runtime.yaml
+```
+
+- Key runtime proof points from the final passing artifact:
+  - root route returned HTML containing `<div id="root"></div>`
+  - `/api/os/apps` returned `200`
+  - startup logs showed the launcher listening on `:8091`
+
 ## 2026-03-29: reMarkable Delivery
 
 After the ticket content was written, I bundled the main deliverables into a single PDF for reMarkable delivery:
