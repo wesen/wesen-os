@@ -182,7 +182,14 @@
   - install in Actions
   - workflow file must first exist on the default branch so GitHub Actions can register and dispatch it
   - first successful real canary publish happened on 2026-03-29 for `os-shell-stack` as `0.1.0-canary.2`; remaining work is the post-publish validation matrix above
+  - first downstream Actions consumer proof now reaches GitHub Packages on `go-go-app-inventory` branch `task/rewrite-runtime` and fails on missing package `@go-go-golems/os-confirm@0.1.0-canary.2`
 - [ ] Publish the first full frontend package set to GitHub Packages.
+  - next missing inventory dependency wave is:
+    - `@go-go-golems/os-confirm`
+    - `@go-go-golems/os-ui-cards`
+    - `@go-go-golems/os-widgets`
+    - `@go-go-golems/os-kanban`
+  - current blocker for that wave: `os-widgets` and therefore `os-kanban` are not yet package-local publishable
 - [ ] Tag the release and record the exact published package/version matrix in the ticket.
 
 ## Phase 5: Convert `wesen-os` And App Repos To Versioned Consumption

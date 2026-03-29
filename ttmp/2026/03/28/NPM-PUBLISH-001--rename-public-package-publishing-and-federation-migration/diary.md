@@ -1518,6 +1518,154 @@ This step did not fully close the validation matrix, but it narrowed the open pr
   - `task/rewrite-runtime`
 - Inventory PR:
   - `https://github.com/go-go-golems/go-go-app-inventory/pull/5`
+
+## Step 19: Register The Inventory Consumer Workflow And Run The First Real Downstream Checks
+
+After the initial workflow-registration blocker in `go-go-app-inventory`, I cleaned up the PR path, got the consumer workflow onto the repo default branch, and then ran the workflow against both `main` and the renamed inventory branch. This step converted the consumer-validation plan into real GitHub Actions evidence.
+
+The important outcome is that the inventory-side workflow is now real and dispatchable, and the branch-aligned run reaches GitHub Packages. That means the next blockers are no longer “can we run a consumer workflow?” but “which packages are still missing from the published canary set?” and “which remaining frontend packages are not yet publishable?”
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 18)
+
+**Assistant interpretation:** Keep moving through the post-publish validation path without stopping at planning, and keep the diary/commit trail detailed while each blocker is discovered and addressed.
+
+**Inferred user intent:** Drive the migration forward through real downstream validation, not just local assumptions, and leave a durable record of each operational problem encountered.
+
+### What I did
+
+- Inspected the first inventory workflow PR and found it unsafe to merge because it carried unrelated rename/runtime work:
+  - `go-go-app-inventory#5`
+- Created a clean one-commit replacement branch from `origin/main` containing only the workflow file:
+  - branch: `task/platform-canary-consumer-workflow`
+  - commit: `f3844a4`
+- Opened the clean replacement PR:
+  - `https://github.com/go-go-golems/go-go-app-inventory/pull/6`
+- Closed the earlier broad draft PR as superseded.
+- Merged PR `#6`, which registered `verify-platform-canary-consumption` on `go-go-app-inventory` default branch.
+- Dispatched the workflow on `main`:
+  - run `23712209513`
+- Confirmed that `main` still fails early because it retains old `@hypercard/*` + `workspace:*` inventory dependencies, so `main` is not the right consumer branch for renamed package validation yet.
+- Dispatched the same workflow on:
+  - branch `task/rewrite-runtime`
+  - run `23712231087`
+- Diagnosed that run as a stale-lockfile problem (`Invalid Version:` from npm/Arborist).
+- Added a workflow fix to ignore the repo’s existing `package-lock.json` during this canary-only validation path:
+  - inventory commit `d00ed46`
+  - PR `https://github.com/go-go-golems/go-go-app-inventory/pull/7`
+- Merged PR `#7`.
+- Cherry-picked the same workflow fix onto the renamed inventory branch used for validation:
+  - branch commit `7fdc13a`
+- Re-ran the consumer workflow on `task/rewrite-runtime`:
+  - run `23712306500`
+- In parallel, mapped the remaining unpublished package chain required by inventory and started the next frontend unblock:
+  - `os-confirm`
+  - `os-ui-cards`
+  - `os-widgets`
+  - `os-kanban`
+- Improved `os-widgets` package-local path aliasing to stop some `os-core` source-tree leakage:
+  - frontend commit `99112c8`
+
+### Why
+
+- The consumer workflow had to be on the inventory default branch before GitHub would dispatch it at all.
+- Once registered, the right validation target is not inventory `main`, but the inventory branch that already contains the rename and published-mode changes.
+- The stale `package-lock.json` was never a trustworthy input for this validation because it encodes the old workspace-linked dependency graph rather than a fresh GitHub Packages install.
+
+### What worked
+
+- `go-go-app-inventory#6` merged cleanly and made `verify-platform-canary-consumption` dispatchable.
+- The workflow now runs against arbitrary refs, including `task/rewrite-runtime`.
+- The branch-aligned consumer workflow now reaches GitHub Packages with fresh dependency resolution.
+- That run surfaced the first true downstream missing-package failure:
+  - `@go-go-golems/os-confirm@0.1.0-canary.2` is not in the registry
+- The `os-widgets` tsconfig adjustment reduced its package-local TypeScript leak enough to expose a narrower next blocker rather than a giant `os-core` source-ingestion wall.
+
+### What didn't work
+
+- Inventory `main` was not a viable renamed-package consumer target yet. Its first run failed in `npm install` with:
+  - `Unsupported URL Type "workspace:": workspace:*`
+- The first branch-aligned consumer run failed with npm Arborist lockfile state:
+  - `npm error Invalid Version:`
+- Even after removing the stale lockfile from the workflow, the next branch-aligned run still failed in `npm install`, but this time for the real package gap:
+  - `404 Not Found - GET https://npm.pkg.github.com/@go-go-golems%2fos-confirm - npm package "os-confirm" does not exist under owner "go-go-golems"`
+- The `os-widgets` package is still not package-local publishable. After the alias improvement, the next failure is:
+  - `../os-scripting/src/plugin-runtime/runtimeService.ts(12,34): error TS2307: Cannot find module './stack-bootstrap.vm.js?raw' or its corresponding type declarations.`
+- Because `os-kanban` depends on `os-widgets`, `os-kanban` still fails at the same stage too.
+
+### What I learned
+
+- The downstream consumer validation path is now doing its job: it has moved from workflow registration problems, to workflow hygiene problems, to the real package inventory gap.
+- The first missing published inventory dependency is `os-confirm`. After that, the next real wave is `os-ui-cards`, `os-widgets`, and `os-kanban`.
+- `workflow_dispatch` uses the workflow file from the target ref, not from default-branch `main`, so workflow fixes must be present on the validation branch itself if that branch is the thing being tested.
+
+### What was tricky to build
+
+- The sharpest operational constraint was branch hygiene. The first inventory PR looked small in intent but was actually broad in scope, so merging it would have mixed unrelated work into the consumer-validation path.
+- The second sharp edge was that the validation workflow itself had to evolve while being used:
+  - first to exist on default branch
+  - then to ignore the stale lockfile
+  - then to be cherry-picked onto the renamed consumer branch
+- On the frontend side, `os-widgets` is still suffering from package-local boundary leakage through subpath imports and transitive source inclusion. Fixing one layer reveals the next, which is expected in this migration stage.
+
+### What warrants a second pair of eyes
+
+- Review the merged inventory workflow and follow-up lockfile adjustment on `go-go-app-inventory`:
+  - PR `#6`
+  - PR `#7`
+- Review the current frontend blocker at:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-widgets/tsconfig.json`
+- Review whether the next publish wave should be implemented as:
+  - a new expanded package set in the frontend publish scripts
+  - or as a smaller subset if inventory can temporarily avoid one of the unpublished packages
+
+### What should be done in the future
+
+- Publish the next required inventory package wave:
+  - `os-confirm`
+  - `os-ui-cards`
+  - `os-widgets`
+  - `os-kanban`
+- Finish the `os-widgets` package-local typecheck/build boundary so `os-kanban` can become publishable too.
+- Re-run the inventory consumer workflow on `task/rewrite-runtime` once that next package wave is published.
+- After inventory installs cleanly, continue the same downstream validation pattern in `wesen-os`.
+
+### Code review instructions
+
+- Start with the consumer-validation workflow:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-inventory/.github/workflows/verify-platform-canary-consumption.yml`
+- Then inspect the current frontend publish blocker:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-widgets/tsconfig.json`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-kanban/package.json`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-confirm/package.json`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-ui-cards/package.json`
+- Validate with:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-inventory && gh run view 23712306500 --json status,conclusion,url,jobs,headBranch,headSha`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-inventory && gh run view 23712306500 --log-failed`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run typecheck -w packages/os-confirm && npm run build:dist -w packages/os-confirm`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run typecheck -w packages/os-ui-cards && npm run test -w packages/os-ui-cards && npm run build:dist -w packages/os-ui-cards`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run typecheck -w packages/os-widgets`
+
+### Technical details
+
+- Inventory workflow registration PR:
+  - `https://github.com/go-go-golems/go-go-app-inventory/pull/6`
+- Inventory workflow lockfile fix PR:
+  - `https://github.com/go-go-golems/go-go-app-inventory/pull/7`
+- Superseded broad PR:
+  - `https://github.com/go-go-golems/go-go-app-inventory/pull/5`
+- First inventory `main` run:
+  - `https://github.com/go-go-golems/go-go-app-inventory/actions/runs/23712209513`
+  - failed on `workspace:*`
+- First renamed-branch run:
+  - `https://github.com/go-go-golems/go-go-app-inventory/actions/runs/23712231087`
+  - failed on stale lockfile / `Invalid Version:`
+- Latest renamed-branch run:
+  - `https://github.com/go-go-golems/go-go-app-inventory/actions/runs/23712306500`
+  - failed on missing package `@go-go-golems/os-confirm@0.1.0-canary.2`
+- Frontend commit that improved `os-widgets` path aliasing:
+  - `99112c8c0159533524156aa0ac2b0fc04aa45309`
 - Exact local install failure:
   - `403 Forbidden - GET https://npm.pkg.github.com/@go-go-golems%2fos-shell - Permission permission_denied: The token provided does not match expected scopes.`
 - Exact inventory pre-push hook failure:
