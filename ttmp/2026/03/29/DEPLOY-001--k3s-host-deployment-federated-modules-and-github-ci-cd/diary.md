@@ -1929,3 +1929,68 @@ This is worth doing only after the `wesen-os` source repo actually follows the s
 - validate the updated workflow YAML
 - commit the publish-success checkpoint and workflow-consolidation slice in bounded commits
 - then push the branch and run the new `gitops-pr` job on GitHub
+
+## 2026-03-29: Pinning The Hetzner GitOps Package To The Immutable `wesen-os` Digest
+
+Once the source-repo workflow consolidation was committed, the next operational gap was in the GitOps repo itself.
+
+The ticket prose already treated the K3s deployment as if it had been pinned to an immutable image, but the actual branch state in `/home/manuel/code/wesen/2026-03-27--hetzner-k3s` still needed to be checked carefully.
+
+### What I found
+
+The live feature branch was:
+
+- `task/deploy-001-wesen-os-gitops`
+
+and PR `#5` was still open:
+
+- `https://github.com/wesen/2026-03-27--hetzner-k3s/pull/5`
+
+The manifest no longer pointed at `:main`, but it still needed a final normalization step. The deployment file was effectively in this intermediate state:
+
+- `ghcr.io/wesen/wesen-os:sha-4a14ccc`
+
+That is better than `:main`, but it is still not the strongest deployment contract we want. The ticket guidance for this project is to use immutable image refs in manifests whenever possible.
+
+### Decision
+
+Pin the deployment to the exact digest produced by the successful host publish run:
+
+- `ghcr.io/wesen/wesen-os@sha256:751929d27806403965bc7998ed1e4dfec168b1ee81723535dd695b04b8e8fbf2`
+
+This is the right GitOps contract because:
+
+- it cannot drift if tags are moved later
+- it makes rollback and provenance simpler
+- it matches the deployment policy we already wrote into the ticket tasks
+
+### Validation
+
+I added another helper script for the ticket record:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/22-check-k3s-wesen-os-image-pin.sh`
+
+That helper does two things:
+
+1. prints the current image line from `gitops/kustomize/wesen-os/deployment.yaml`
+2. runs:
+   - `kubectl kustomize /home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os`
+
+The captured output lives in:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/22-k3s-wesen-os-image-pin-check.md`
+
+The render validation succeeded, which means the digest pin did not break the Kustomize package.
+
+### GitOps repo commit
+
+I committed the Hetzner repo slice as:
+
+- `4eed295` `Pin wesen-os deployment to published image digest`
+
+### What should happen next
+
+- push `task/deploy-001-wesen-os-gitops`
+- update PR `#5`
+- merge the GitOps PR once reviewed
+- then run the new source-repo `gitops-pr` workflow path on GitHub so the next image bump happens automatically instead of by local manifest edit

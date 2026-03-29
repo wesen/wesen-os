@@ -113,6 +113,8 @@
   - destination namespace
   - sync policy
 - [x] Once the first real GHCR image exists, pin the K3s deployment to an immutable image ref.
+- [x] Validate the pinned `wesen-os` image ref with:
+  - `kubectl kustomize gitops/kustomize/wesen-os`
 - [ ] Decide whether to remove or demote the draft manifests in `wesen-os/deploy/k8s/wesen-os/` after the K3s repo becomes canonical.
 - [ ] Merge the pinned-image `wesen-os` GitOps PR in `/home/manuel/code/wesen/2026-03-27--hetzner-k3s` after the deployment manifest is updated away from `:main`.
 
