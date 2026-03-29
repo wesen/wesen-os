@@ -629,3 +629,67 @@ That keeps the root workspace packages source-first for local development while 
   - `@go-go-golems/os-core@0.1.0`
   - `@go-go-golems/os-repl@0.1.0`
   - `@go-go-golems/os-scripting@0.1.0`
+
+## Step 8: Install Packed Canaries In A Clean Fixture
+
+This step moves validation one level closer to a real publish consumer. Producing a tarball is useful, but it still leaves open the question of whether a fresh project can install the packed artifacts without relying on workspace links or unresolved `workspace:*` references.
+
+The answer is now yes for the first canary set.
+
+### What I did
+
+- Added `workspace-links/go-go-os-frontend/scripts/packages/install-smoke.mjs`.
+- Added `install:smoke-v1` to `workspace-links/go-go-os-frontend/package.json`.
+- The install smoke script now:
+  - creates a fresh temp fixture project under `/tmp`
+  - packs staged `dist/` package roots for the selected canaries
+  - installs those tarballs into the fixture with the required React/Redux peer packages
+  - verifies the expected top-level package installs via `npm ls --depth=0 --json`
+  - removes the fixture and temporary tarballs on success
+- Validated the first clean-fixture install set:
+  - `packages/os-core`
+  - `packages/os-chat`
+  - `packages/os-repl`
+  - `packages/os-scripting`
+
+### Why
+
+- A staged publish manifest is only useful if a real consumer can install it without access to the monorepo workspace.
+- `os-scripting` is the right canary here because it exercises rewritten internal package dependencies on top of `os-core`, `os-chat`, and `os-repl`.
+
+### What worked
+
+- The clean fixture install now passes with:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run install:smoke-v1`
+- The canary tarballs install into a fresh temp project with no workspace links.
+- The staged manifest rewrite for internal package versions is sufficient for a real `npm install` path on the canary set.
+
+### What I learned
+
+- The migration is now beyond “artifact shape looks plausible.” The canary package set can actually be consumed as packed npm artifacts.
+- The next missing proof is downstream composition, not package install mechanics. We still need at least one real app/host consumer to install against packed platform packages rather than source links.
+
+### What warrants a second pair of eyes
+
+- The install smoke currently verifies installability and package presence, not runtime import/execution in Node or browser bundlers. That is the right scope for this step, but it should not be confused with a full consumer integration proof.
+- The peer dependency set in the fixture is currently minimal and tuned to the canary packages; that list may need to expand as more packages join the install smoke.
+
+### What should be done in the future
+
+- Add the first downstream consumer smoke case, likely against a small fixture or one of the linked app repos in published-package mode.
+- Decide whether the fixture should stay script-owned and ephemeral or graduate into a checked-in sample consumer once the publish path stabilizes.
+
+### Code review instructions
+
+- Start with `workspace-links/go-go-os-frontend/scripts/packages/install-smoke.mjs`.
+- Then review the `install:smoke-v1` script in `workspace-links/go-go-os-frontend/package.json`.
+- Validate with:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run install:smoke-v1`
+
+### Technical details
+
+- First clean-fixture install set:
+  - `@go-go-golems/os-core`
+  - `@go-go-golems/os-chat`
+  - `@go-go-golems/os-repl`
+  - `@go-go-golems/os-scripting`
