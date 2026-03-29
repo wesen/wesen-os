@@ -1994,3 +1994,55 @@ I committed the Hetzner repo slice as:
 - update PR `#5`
 - merge the GitOps PR once reviewed
 - then run the new source-repo `gitops-pr` workflow path on GitHub so the next image bump happens automatically instead of by local manifest edit
+
+## 2026-03-29: Pushing The Consolidated Source Flow And Updating The Open GitOps PR
+
+After the source-repo and GitOps-repo slices were committed locally, I pushed both branches so the work could actually move through review.
+
+### Source repo
+
+Branch pushed:
+
+- `task/deploy-001-draft-review-flow`
+
+Draft PR opened:
+
+- `https://github.com/wesen/wesen-os/pull/8`
+
+That PR is the key handoff for the new automation path. Once it lands on `main`, `wesen-os` will stop depending on the manual deploy workflow as its primary deployment story and will instead follow the same release shape as `draft-review`:
+
+- publish image
+- then open GitOps PR
+
+### GitOps repo
+
+Updated branch pushed:
+
+- `task/deploy-001-wesen-os-gitops`
+
+Existing PR carrying the digest pin:
+
+- `https://github.com/wesen/2026-03-27--hetzner-k3s/pull/5`
+
+I also verified through `gh pr view` that the new commit is present on that PR:
+
+- `4eed295` `Pin wesen-os deployment to published image digest`
+
+### Why this matters for documentation later
+
+This is exactly the point where the K3s docs can become more concrete. We now have all of the real pieces needed for an intern-facing end-to-end example:
+
+- source workflow consolidation PR in `wesen-os`
+- GitOps PR in the Hetzner repo
+- immutable GHCR digest
+- local validation helpers
+- a direct `draft-review` comparison artifact
+
+That means the later documentation update can point at real repositories and real pull requests instead of describing an intended future system.
+
+### What should happen next
+
+- review and merge `wesen/wesen-os#8`
+- review and merge `wesen/2026-03-27--hetzner-k3s#5`
+- then observe the first GitHub run of the new `gitops-pr` job on `wesen-os`
+- once that is green, start the K3s doc update slice with concrete examples from these PRs

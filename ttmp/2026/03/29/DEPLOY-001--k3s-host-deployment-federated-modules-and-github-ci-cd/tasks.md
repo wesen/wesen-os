@@ -56,6 +56,7 @@
   - then open a GitOps PR against the K3s repo
 - [x] Add `deploy/gitops-targets.json` to `wesen-os`.
 - [x] Add `scripts/open_gitops_pr.py` to `wesen-os`.
+- [x] Push the `wesen-os` workflow-consolidation branch and open a PR for review.
 - [x] Use immutable tags keyed by git SHA.
 - [x] Optionally add mutable tags:
   - `main`
@@ -115,6 +116,7 @@
 - [x] Once the first real GHCR image exists, pin the K3s deployment to an immutable image ref.
 - [x] Validate the pinned `wesen-os` image ref with:
   - `kubectl kustomize gitops/kustomize/wesen-os`
+- [x] Push the updated digest-pin commit onto the open Hetzner K3s PR branch.
 - [ ] Decide whether to remove or demote the draft manifests in `wesen-os/deploy/k8s/wesen-os/` after the K3s repo becomes canonical.
 - [ ] Merge the pinned-image `wesen-os` GitOps PR in `/home/manuel/code/wesen/2026-03-27--hetzner-k3s` after the deployment manifest is updated away from `:main`.
 
