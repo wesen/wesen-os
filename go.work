@@ -2,9 +2,9 @@ go 1.26.1
 
 use (
 	.
-	../geppetto
-	../go-go-os-chat
-	../pinocchio
+	./workspace-links/geppetto
+	./workspace-links/go-go-os-chat
+	./workspace-links/pinocchio
 	./workspace-links/go-go-app-arc-agi-3
 	./workspace-links/go-go-app-inventory
 	./workspace-links/go-go-app-sqlite
@@ -12,4 +12,4 @@ use (
 	./workspace-links/go-go-os-backend
 )
 
-replace github.com/go-go-golems/go-go-os-chat v0.0.0 => ../go-go-os-chat
+replace github.com/go-go-golems/go-go-os-chat v0.0.1 => ./workspace-links/go-go-os-chat

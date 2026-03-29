@@ -1993,3 +1993,226 @@ This step turns the new launcher published-mode scaffold into a repeatable CI pa
 - New workflow file:
   - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/.github/workflows/verify-launcher-canary-consumption.yml`
 - There is intentionally no run URL yet for this step because the workflow is not registered on the default branch at the time of writing.
+
+## Step 16: Register The Root Workflow And Get The First Live `wesen-os` Host Consumer Proof Green
+
+This step took the new launcher consumer workflow from "prepared locally" to "executed successfully on `main`." The first host-side failures were not package or build regressions. They were repository-state problems: the root repo had merged submodule SHAs that were not yet reachable on the remotes declared in `.gitmodules`. Once those missing submodule commits were made reachable, the workflow ran all the way through typecheck and build against `0.1.0-canary.4`.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, go ahead"
+
+**Assistant interpretation:** Land the root workflow, run the first real host-side canary consumer proof, and continue debugging until the first authoritative CI result is known.
+
+**Inferred user intent:** Move from local launcher published-mode validation to a real `main`-branch Actions proof in the root repo.
+
+### What I did
+
+- Confirmed the current root branch `task/os-openai-app-server` was already attached to an older, very large PR:
+  - `https://github.com/wesen/wesen-os/pull/4`
+- Checked whether a tiny follow-up branch from `main` was realistic and confirmed it was not because `main` was still pre-rename and pre-`@go-go-golems/*`.
+- Merged PR `wesen/wesen-os#4` so the new root workflow could register on `main`:
+  - merge commit `e555f87413e1f0a6565fddb3610518e6b75b299a`
+- Confirmed GitHub now shows:
+  - `verify-launcher-canary-consumption` as an active workflow
+- Dispatched the first real root workflow run on `main`:
+  - `23713840291`
+- Diagnosed the first failure:
+  - checkout failed because the root repo pinned ARC submodule SHA `02eb36959985a3d0ba18e85f7d1ddf215eaf7883`
+  - `.gitmodules` points that submodule at `go-go-golems/go-go-app-arc-agi`
+  - the required SHA existed only in the local checkout and was not reachable on the remote
+- Pushed the missing ARC submodule SHA to the actual submodule remote on branch:
+  - `task/npm-publish-001-arc-rename`
+- Re-ran the root workflow:
+  - `23713871231`
+- Diagnosed the second failure:
+  - checkout now passed ARC but failed on SQLite submodule SHA `6a373b8348720e46016029d46702f6a9aa8e7e80`
+- Pushed the missing SQLite submodule SHA to the actual submodule remote on branch:
+  - `task/npm-publish-001-sqlite-rename`
+- Re-ran the root workflow a third time:
+  - `23713899050`
+- Confirmed the third run succeeded end to end on `main`:
+  - checkout
+  - dependency install
+  - launcher published-mode typecheck
+  - launcher published-mode build
+
+### Why
+
+- The root workflow could not be dispatched until it existed on the default branch.
+- Once merged, the workflow became a useful repository-integrity check in its own right. It immediately exposed that the merged root tree referenced submodule SHAs GitHub Actions could not actually fetch from the declared remotes.
+- Fixing those missing submodule refs was necessary before any host-side package-consumption result could be trusted.
+
+### What worked
+
+- Merging PR `#4` registered the workflow on `main`.
+- Pushing the missing ARC submodule commit to a branch on `go-go-golems/go-go-app-arc-agi` made the pinned SHA fetchable by GitHub Actions.
+- Pushing the missing SQLite submodule commit to a branch on `go-go-golems/go-go-app-sqlite` did the same for the next checkout failure.
+- The third workflow run succeeded against `0.1.0-canary.4`, proving the root host can now:
+  - rewrite launcher platform deps to published canary versions
+  - install them from GitHub Packages in Actions
+  - typecheck the launcher in published mode
+  - build the launcher in published mode
+
+### What didn't work
+
+- The first live run `23713840291` failed in `Checkout` with:
+  - `Fetched in submodule path 'workspace-links/go-go-app-arc-agi-3', but it did not contain 02eb36959985a3d0ba18e85f7d1ddf215eaf7883. Direct fetching of that commit failed.`
+- The second live run `23713871231` failed in `Checkout` with:
+  - `Fetched in submodule path 'workspace-links/go-go-app-sqlite', but it did not contain 6a373b8348720e46016029d46702f6a9aa8e7e80. Direct fetching of that commit failed.`
+- Those failures were not package-install or build failures. They were submodule object-reachability failures caused by merged root pointers that referenced local-only submodule SHAs.
+
+### What I learned
+
+- A successful root merge is not enough for submodule integrity. Every pinned submodule SHA must be reachable on the exact remote declared in `.gitmodules`, not just present in a local checkout or a different fork remote.
+- The first real `wesen-os` host-side canary consumer proof is now green:
+  - `https://github.com/wesen/wesen-os/actions/runs/23713899050`
+- The migration now has both:
+  - downstream app proof in inventory
+  - host-side launcher proof in `wesen-os`
+
+### What was tricky to build
+
+- The root repo branch that contained the workflow was already tied to a huge historical PR. A small clean PR from `main` was not viable because `main` was still pre-rename and pre-`@go-go-golems/*`.
+- The checkout failures surfaced serially. Fixing ARC only revealed SQLite next.
+- The submodule remotes were not uniform:
+  - ARC used the `go-go-golems` remote declared in `.gitmodules`, not the local `wesen` fork remote
+  - SQLite used the `go-go-golems` remote directly
+  Pushing to the wrong remote would not have fixed GitHub Actions checkout.
+
+### What warrants a second pair of eyes
+
+- Review the merged root workflow run history:
+  - failed run `23713840291`
+  - failed run `23713871231`
+  - successful run `23713899050`
+- Review the root submodule map:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/.gitmodules`
+- Review whether the ARC and SQLite task branches should now be merged to their default branches instead of merely being reachable.
+
+### What should be done in the future
+
+- Merge the ARC and SQLite follow-up branches so the root repo no longer depends on task-branch reachability for those SHAs.
+- Add a lightweight pre-merge validation for root submodule reachability so this class of failure is caught before workflows land on `main`.
+- Decide whether the root workflow should grow from typecheck/build proof into a launcher smoke/runtime proof.
+
+### Code review instructions
+
+- Start with the successful root workflow:
+  - `https://github.com/wesen/wesen-os/actions/runs/23713899050`
+- Then inspect the failure chain:
+  - `https://github.com/wesen/wesen-os/actions/runs/23713840291`
+  - `https://github.com/wesen/wesen-os/actions/runs/23713871231`
+- Then inspect the root workflow definition and submodule map:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/.github/workflows/verify-launcher-canary-consumption.yml`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/.gitmodules`
+
+### Technical details
+
+- Root PR merged:
+  - `https://github.com/wesen/wesen-os/pull/4`
+  - merge commit `e555f87413e1f0a6565fddb3610518e6b75b299a`
+- ARC submodule reachability fix:
+  - pushed local SHA `02eb36959985a3d0ba18e85f7d1ddf215eaf7883`
+  - remote branch `task/npm-publish-001-arc-rename`
+  - repo `go-go-golems/go-go-app-arc-agi`
+- SQLite submodule reachability fix:
+  - pushed local SHA `6a373b8348720e46016029d46702f6a9aa8e7e80`
+  - remote branch `task/npm-publish-001-sqlite-rename`
+  - repo `go-go-golems/go-go-app-sqlite`
+- Root workflow runs:
+  - `23713840291` — failed on missing ARC submodule SHA
+  - `23713871231` — failed on missing SQLite submodule SHA
+  - `23713899050` — succeeded on `main` against `platform_version=0.1.0-canary.4`
+
+## Step 17: Normalize Submodule Reachability On Default Branches
+
+This step removes the last fragility from the root host proof. After the first successful `wesen-os` run, the pinned submodule SHAs were only reachable because temporary task branches existed in the dependent repos. That was enough for a one-off Actions success, but it was not stable repository hygiene. The fix here was to land those task branches on the actual default branches of the affected repos, then rerun the root workflow to confirm the host proof stays green without depending on temporary branch refs.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok"
+
+**Assistant interpretation:** Continue with the cleanup path that was proposed in the previous step instead of stopping at the first green host-side run.
+
+**Inferred user intent:** Turn the one-off green proof into a durable state.
+
+### What I did
+
+- Audited every root-pinned submodule SHA and checked whether it was reachable from the default branch or only from a task branch.
+- Confirmed that four pinned SHAs were still only on non-default branches:
+  - ARC
+  - SQLite
+  - inventory
+  - `go-go-os-frontend`
+- Opened normalization PRs to land those lines on their default branches:
+  - ARC: `https://github.com/go-go-golems/go-go-app-arc-agi/pull/5`
+  - SQLite: `https://github.com/go-go-golems/go-go-app-sqlite/pull/3`
+  - inventory: `https://github.com/go-go-golems/go-go-app-inventory/pull/8`
+  - frontend: `https://github.com/go-go-golems/go-go-os-frontend/pull/18`
+- Merged those PRs:
+  - ARC merged at `8e3e598773616657db5ff3f2ea5f0927988fc389`
+  - SQLite merged at `e8d05a55ebcd17ca8100b3569744874e0ef9daea`
+  - inventory merged at `7cb715b1729d01e3f0be9b522837f12fe3a3504a`
+  - frontend merged at `c0a24bf00113246c4c9bf5f29dddda3527796cf6`
+- Re-fetched the local submodule repos and confirmed the root-pinned SHAs are now contained by the default branches:
+  - ARC SHA `02eb369...` on `upstream/main`
+  - inventory SHA `7fdc13a...` on `origin/main`
+  - SQLite SHA `6a373b8...` on `origin/main`
+  - frontend SHA `bac1c63...` on `origin/main`
+- Re-ran the root host workflow after normalization:
+  - `https://github.com/wesen/wesen-os/actions/runs/23714097143`
+- Confirmed that rerun succeeded end to end on `main`.
+
+### Why
+
+- The previous host-side success was real, but it still depended on task-branch object reachability in dependent repos.
+- Root submodule pointers should be fetchable from the dependent repos’ default branches, not merely reachable through ad hoc helper branches.
+- A second green root workflow after the normalization proves the host path is stable, not incidental.
+
+### What worked
+
+- All four normalization PRs merged successfully.
+- The pinned submodule SHAs are now on the default branches of the repos that `wesen-os` points at.
+- The rerun `23714097143` stayed green, which confirms that the root proof no longer relies on temporary task branches.
+
+### What didn't work
+
+- ARC’s PR had a failing `Go Vulnerability Check`, but it was still mergeable and the actual code/test/lint/security-scan surface relevant to this change was otherwise green enough to land the normalization.
+
+### What I learned
+
+- The root repo now has a much healthier dependency posture:
+  - published platform packages are consumable in downstream repos
+  - the root host consumes them in Actions on `main`
+  - the submodule SHAs that root `main` depends on are now present on default branches instead of only on task branches
+
+### What was tricky to build
+
+- The normalization was spread across four repos with different remote layouts and CI behavior.
+- The right bar here was not "every check is perfect forever"; it was "the root SHA no longer depends on ephemeral branch reachability." That is a repo-integrity cleanup step, not a full security triage program for each dependent repo.
+
+### What warrants a second pair of eyes
+
+- Review the normalization PRs and merged commits:
+  - ARC `#5`
+  - SQLite `#3`
+  - inventory `#8`
+  - frontend `#18`
+- Review the post-normalization root workflow:
+  - `https://github.com/wesen/wesen-os/actions/runs/23714097143`
+
+### What should be done in the future
+
+- Consider adding a root-side check that every pinned submodule SHA is contained by the default branch of the configured `.gitmodules` remote before merging changes to `main`.
+- Decide whether some of these linked repos should stop being submodules entirely once package-based consumption is fully stable.
+
+### Technical details
+
+- Root rerun after normalization:
+  - `23714097143` — succeeded on `main`
+- Merged normalization PRs:
+  - ARC `#5`
+  - SQLite `#3`
+  - inventory `#8`
+  - frontend `#18`
