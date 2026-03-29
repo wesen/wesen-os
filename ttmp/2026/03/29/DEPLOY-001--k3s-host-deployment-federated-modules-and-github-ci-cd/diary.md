@@ -1280,6 +1280,104 @@ This gives us the first real transfer of Kubernetes ownership from the `wesen-os
 - K3s repo commit:
   - `04328a41ed201a53457be163367accdf99db584c`
 
+## 2026-03-29: Step 13, Add The `wesen-os` Argo CD Application Definition
+
+Once the Kustomize package existed and I confirmed that `gitops/applications/*.yaml` are applied explicitly in this repo rather than auto-discovered by a root app-of-apps, it became safe to add the `Application` manifest itself. That is an important distinction: adding the file to Git does not, by itself, trigger a live rollout here.
+
+This means we can finish the declarative GitOps shape now and reserve the actual cluster activation for a later, more controlled step.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 11)
+
+**Assistant interpretation:** Keep progressing through the Hetzner-repo migration in bounded slices, but avoid surprising live-cluster side effects.
+
+**Inferred user intent:** Get the GitOps ownership structure in place while maintaining control over when the live cluster starts reconciling `wesen-os`.
+
+### What I did
+
+- Verified repo behavior by reading the docs and grepping the repo for how `gitops/applications/*.yaml` are introduced.
+- Added:
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/applications/wesen-os.yaml`
+- Added ticket validation helper:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/12-check-hetzner-k3s-wesen-os-application.sh`
+- Added generated validation artifact:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/12-hetzner-k3s-wesen-os-application-check.md`
+- Committed the K3s-repo slice as:
+  - Hetzner repo commit `1c80376` — `Add wesen-os Argo CD application`
+
+### Why
+
+- The K3s repo’s documented model is:
+  - Kustomize package in `gitops/kustomize/<app>`
+  - Argo `Application` in `gitops/applications/<app>.yaml`
+- Without the `Application`, the package exists but the intended GitOps ownership shape is still incomplete.
+- Adding the file now is useful because it captures the expected source path, destination namespace, and sync policy in Git, even before anyone applies it.
+
+### What worked
+
+- The new `Application` parsed as valid YAML.
+- The validation helper confirmed the key ownership fields:
+  - name: `wesen-os`
+  - destination namespace: `wesen-os`
+  - source repo: `https://github.com/wesen/2026-03-27--hetzner-k3s.git`
+  - source path: `gitops/kustomize/wesen-os`
+  - sync policy: automated prune + self-heal with `CreateNamespace=true` and `ServerSideApply=true`
+- The repo investigation also confirmed that adding this file to Git does not itself apply it to the cluster.
+
+### What didn't work
+
+- Nothing failed technically in this step.
+- The important limitation remains:
+  - the `Application` exists in Git
+  - but it has not been applied to the live cluster yet
+  - and we should still resolve image pull mode before doing that
+
+### What I learned
+
+- The cluster repo’s activation model is safer than a root app-of-apps model for this slice because it lets us prepare declarative state without immediate reconciliation.
+- With the package and application now both defined, the remaining activation blockers are operational rather than structural:
+  - GHCR image availability
+  - public vs private image pull mode
+  - deliberate `kubectl apply` of the `Application`
+
+### What was tricky to build
+
+- The tricky part was validating the activation semantics before adding the file. If the repo had been auto-applying every `gitops/applications/*.yaml`, this step would have been too early. I explicitly checked the docs and repo patterns first so that the action stayed “declare intent in Git” rather than “accidentally deploy.”
+- Another subtlety was not conflating “valid `Application` definition” with “safe to activate.” The manifest shape is correct now, but activation still depends on the image strategy being settled.
+
+### What warrants a second pair of eyes
+
+- Whether the `Application` should target `main` immediately or use a different revision strategy for early rollout testing.
+- Whether we want to hold off on actually applying the `Application` until the deployment image is pinned to an immutable SHA instead of `:main`.
+- Whether environment-specific overlays should exist before the first live apply, or whether a single staging-oriented path is enough.
+
+### What should be done in the future
+
+- Decide the GHCR pull mode.
+- Publish the first real host image.
+- Replace the provisional `:main` image ref with an immutable ref.
+- Only then apply `gitops/applications/wesen-os.yaml` to the cluster and watch Argo converge.
+
+### Code review instructions
+
+- Start with:
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/applications/wesen-os.yaml`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/12-check-hetzner-k3s-wesen-os-application.sh`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/12-hetzner-k3s-wesen-os-application-check.md`
+- Validate with:
+  - `yq eval '.' /home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/applications/wesen-os.yaml >/dev/null`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/12-check-hetzner-k3s-wesen-os-application.sh`
+
+### Technical details
+
+- K3s repo commit:
+  - `1c803762c59003e9cb86037d584e11dd88917a7a`
+- Current source path recorded in the `Application`:
+  - `gitops/kustomize/wesen-os`
+- Current destination namespace:
+  - `wesen-os`
+
 ## 2026-03-29: reMarkable Delivery
 
 After the ticket content was written, I bundled the main deliverables into a single PDF for reMarkable delivery:

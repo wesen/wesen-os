@@ -96,9 +96,9 @@
   - `kubectl kustomize gitops/kustomize/wesen-os`
 - [ ] Decide whether the cluster will pull `ghcr.io/wesen/wesen-os` publicly or via image pull secret.
 - [ ] If private pull is required, add the cluster-side service account / pull-secret pattern in the Hetzner repo.
-- [ ] Add:
+- [x] Add:
   - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/applications/wesen-os.yaml`
-- [ ] Validate Argo ownership shape before enabling live sync:
+- [x] Validate Argo ownership shape before enabling live sync:
   - source path
   - destination namespace
   - sync policy
