@@ -101,3 +101,99 @@ The checkpoint was committed as a set of focused repo-local commits, then pinned
   - `cd apps/os-launcher && npm run typecheck` -> initially failed, later passed
   - `cd workspace-links/go-go-app-sqlite && pnpm install` -> refreshed stale lockfile rename references
   - `cd workspace-links/go-go-os-frontend && git ls-files --others --exclude-standard -z | xargs -0 rm -f` -> removed generated untracked artifacts before commit
+
+## Step 2: Freeze The Publish Matrix
+
+This step turned the live manifests into a concrete publish matrix for the migration. Instead of keeping the next phases implicit, it records exactly which packages are v1 public contracts, which app packages ship later, and what still blocks each package from becoming publishable.
+
+The output is intentionally ticket-local documentation rather than a risky package-manifest refactor. The audit exposed that the most immediate publish blockers are structural and shared across packages: `private: true`, `src/*` exports, `workspace:*` dependency leakage, and missing dist asset-copy steps for CSS and `.vm.js` files.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok let's go on. make sure to commit at proper intervals and keeping a diary."
+
+**Assistant interpretation:** Continue the migration in bounded steps, keep commits focused, and document each checkpoint so the work can be reviewed and resumed cleanly.
+
+**Inferred user intent:** Advance the ticket without losing the implementation trail or letting the commit history turn into an unreviewable blob.
+
+**Commit (code):** N/A (documentation-only step)
+
+### What I did
+
+- Parsed the current package manifests for the nine v1 platform packages and the six later-wave app packages.
+- Wrote `package-identity-matrix.md` to capture:
+  - package name
+  - owning repo
+  - source path
+  - artifact kind
+  - public entrypoints
+  - runtime assets that must ship
+  - current publish blockers
+- Updated `tasks.md` to mark these planning/contract decisions complete:
+  - package identity matrix
+  - public contract vs internal implementation decision
+  - frozen v1 publish set
+  - app packages publish later
+
+### Why
+
+- The rename is done, so the next risk is uncontrolled scope in the publish work. Freezing the matrix prevents accidental expansion of the first release wave.
+- The current package manifests are inconsistent with npm publishing, but the blockers are shared enough that they should be solved systematically rather than package-by-package by memory.
+
+### What worked
+
+- The live manifests already contain enough information to freeze the package ownership and entrypoint map without guessing.
+- The audit made the next technical slice obvious: build/package preparation for the nine `os-*` platform packages first, then app packages later.
+
+### What didn't work
+
+- N/A. This step was a manifest/documentation audit and did not hit a tooling failure.
+
+### What I learned
+
+- The publish wave boundary is now concrete: platform packages first, app packages later.
+- Several packages need non-TypeScript runtime assets copied into `dist`, especially:
+  - CSS entrypoints in `os-core`, `os-chat`, `os-repl`, `os-widgets`, `os-kanban`
+  - `.vm.js` assets in `os-scripting`, `os-ui-cards`, `os-kanban`
+- The common blockers are more important than any one package-specific tweak, which argues for shared build/publish tooling in the next slice.
+
+### What was tricky to build
+
+- The tricky part here was drawing a clean line between “public contract” and “current implementation layout.” Some packages expose stable public subpaths already, but those subpaths still point at `src/*`, which is fine for the linked workspace and wrong for publishing. The matrix therefore had to record both the intended contract and the current blocker without pretending the package is ready just because the name is final.
+
+### What warrants a second pair of eyes
+
+- The classification of `os-widgets`, `os-kanban`, and `os-ui-cards` as v1 public contracts should be reviewed against the desired long-term API surface. They are part of the agreed first wave, but their public exports may still be wider than intended.
+- The “app packages later” decision should be revisited once the platform publish path is green, especially for `@go-go-golems/inventory`, which is the strongest external-consumer proof case.
+
+### What should be done in the future
+
+- Add a shared dist-build helper that copies CSS and `.vm.js` assets for publishable packages.
+- Add publish metadata and `files` allowlists to the nine v1 platform packages.
+- Choose the workspace-dependency version rewrite strategy before removing `private: true`.
+
+### Code review instructions
+
+- Start with `ttmp/2026/03/28/NPM-PUBLISH-001--rename-public-package-publishing-and-federation-migration/package-identity-matrix.md`.
+- Compare the v1 publish set there against `ttmp/2026/03/28/NPM-PUBLISH-001--rename-public-package-publishing-and-federation-migration/tasks.md`.
+- Spot-check the current manifests in:
+  - `workspace-links/go-go-os-frontend/packages/engine/package.json`
+  - `workspace-links/go-go-os-frontend/packages/hypercard-runtime/package.json`
+  - `workspace-links/go-go-os-frontend/packages/kanban-runtime/package.json`
+  - `workspace-links/go-go-app-inventory/apps/inventory/package.json`
+
+### Technical details
+
+- Manifest fields checked in this step:
+  - `name`
+  - `private`
+  - `exports`
+  - `main`
+  - `types`
+  - `dependencies`
+- Asset classes checked in this step:
+  - `src/**/*.css`
+  - `src/**/*.vm.js`
+- Relevant command patterns:
+  - package manifest audit via Node/JS file reads
+  - asset audit via `find ... -path '*/src/*.vm.js' -o -path '*/src/**/*.vm.js' -o -path '*/src/*.css' -o -path '*/src/**/*.css'`

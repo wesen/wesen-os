@@ -31,14 +31,14 @@
   - `rich-widgets` -> `os-widgets`
   - `kanban-runtime` -> `os-kanban`
   - `confirm-runtime` -> `os-confirm`
-- [ ] Write a package identity matrix for every publishable artifact:
+- [x] Write a package identity matrix for every publishable artifact:
   - package name
   - owning repo
   - source path
   - exported entrypoints
   - whether it is a core package, app package, or runtime package
-- [ ] Decide which packages are first-class public contracts versus internal implementation packages.
-- [ ] Freeze the first publish set for v1:
+- [x] Decide which packages are first-class public contracts versus internal implementation packages.
+- [x] Freeze the first publish set for v1:
   - `@go-go-golems/os-core`
   - `@go-go-golems/os-shell`
   - `@go-go-golems/os-chat`
@@ -48,7 +48,7 @@
   - `@go-go-golems/os-repl`
   - `@go-go-golems/os-widgets`
   - `@go-go-golems/os-confirm`
-- [ ] Decide whether app packages also publish in the same wave or later:
+- [x] Decide whether app packages also publish in the same wave or later:
   - inventory app package under its final `@go-go-golems/*` name
   - apps browser package under its final `@go-go-golems/*` name
   - todo app package under its final `@go-go-golems/*` name
