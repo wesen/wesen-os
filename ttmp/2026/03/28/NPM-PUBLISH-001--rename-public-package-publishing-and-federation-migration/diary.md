@@ -922,3 +922,58 @@ This step adds the first real publish path, but keeps it intentionally narrow. I
 - Frontend repo checkpoint commit: `071efc0180a20bc860bc3516b9fe543957fdcc11`
 - Validation command:
   - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-core && node scripts/packages/publish-github-package.mjs packages/os-core --tag canary --version-suffix canary.local --dry-run`
+
+## Step 12: Rewrite Internal Package Versions For Lockstep Canary Publishes
+
+This step closes the remaining blocker between "we can publish `os-core`" and "we can publish packages that depend on other platform packages." The staged publish manifests already rewrote `workspace:*` to concrete versions, but a canary publish still needed those internal versions to move in lockstep when the published package version receives a prerelease suffix.
+
+### What I did
+
+- Extended `workspace-links/go-go-os-frontend/scripts/packages/publish-github-package.mjs` so it now:
+  - discovers workspace package names across `packages/*` and `apps/*`
+  - rewrites `dependencies`, `peerDependencies`, and `optionalDependencies` for internal workspace packages to the same publish version
+  - preserves `^` and `~` prefixes when present
+  - supports `--manifest-only` so the rewritten staged manifest can be inspected without mutating the file on disk
+- Expanded `workspace-links/go-go-os-frontend/package.json` so `install:smoke-v1` now includes `packages/os-shell`, not only leaf-ish canary packages.
+
+### Why
+
+- Before this step, `publish-github-package.mjs` only rewrote the version of the package being published. A canary publish of `os-shell` would have produced:
+  - `@go-go-golems/os-shell@0.1.0-canary.*`
+  - but dependencies still pinned to `@go-go-golems/os-core@0.1.0` and `@go-go-golems/os-scripting@0.1.0`
+- That would immediately become wrong once the canary publish set starts moving together under prerelease versions.
+- The install smoke also needed at least one package with internal platform dependencies to prove the dependency chain is not only working for the simpler leaf packages.
+
+### What worked
+
+- The staged publish manifest for `os-shell` now rewrites internal dependencies to the same canary version:
+  - `@go-go-golems/os-core: 0.1.0-canary.local`
+  - `@go-go-golems/os-scripting: 0.1.0-canary.local`
+- `npm run install:smoke-v1` now passes with:
+  - `@go-go-golems/os-core`
+  - `@go-go-golems/os-chat`
+  - `@go-go-golems/os-repl`
+  - `@go-go-golems/os-scripting`
+  - `@go-go-golems/os-shell`
+- That means the clean-fixture install proof now includes a package with real internal platform dependencies instead of only simpler packages.
+
+### What I learned
+
+- The project is implicitly using a lockstep version assumption for the publish wave. This step makes that assumption concrete at publish time without yet committing the repo to a full release-management system such as Changesets or release-please.
+- A local `--manifest-only` inspection mode is useful because publish-time rewrites otherwise disappear too quickly to audit.
+
+### What warrants a second pair of eyes
+
+- The rewrite currently targets all workspace package names discovered under the frontend repo, which is the right default for a lockstep repo but should be revisited if the repo later adopts independent versioning.
+- `peerDependencies` are also rewritten for internal workspace packages. That is consistent with the current lockstep publish intent, but the final peer-vs-dependency policy is still an open task.
+
+### What should be done in the future
+
+- Broaden the canary workflow once the next package set is ready, using the same lockstep publish-version rewrite.
+- Decide whether the long-term release mechanism remains implicit lockstep or becomes explicit through a dedicated release/versioning tool.
+
+### Technical details
+
+- Validation commands:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-shell && node scripts/packages/publish-github-package.mjs packages/os-shell --version-suffix canary.local --manifest-only`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run install:smoke-v1`

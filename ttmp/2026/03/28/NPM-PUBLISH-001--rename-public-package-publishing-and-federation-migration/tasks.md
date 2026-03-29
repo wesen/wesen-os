@@ -123,7 +123,7 @@
 - [ ] Add an API-surface audit for each package so only supported exports remain public.
 - [ ] Decide `peerDependencies` versus `dependencies` policy for shared React and Redux packages.
 - [x] Eliminate `workspace:*` leakage from staged published dependency manifests.
-- [ ] Add a release-time rewrite/versioning strategy for intra-repo package references.
+- [x] Add a release-time rewrite/versioning strategy for intra-repo package references.
 - [ ] Verify published packages can be installed in a fresh external fixture with no sibling-repo aliasing.
 - [ ] Phase 1D: Add external-consumer verification.
 - [x] Phase 1D.1: Add `npm pack` smoke checks for at least `os-core`, `os-repl`, and `os-scripting`.
