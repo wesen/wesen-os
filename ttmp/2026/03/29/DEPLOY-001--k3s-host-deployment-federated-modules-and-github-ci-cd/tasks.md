@@ -58,6 +58,7 @@
 - [x] Add provenance/metadata labels.
 - [x] Decide whether production deploys use tags or digests:
   - recommended: digests for deployment manifests
+- [ ] After the first real host image publish, verify the GHCR package is publicly pullable at the pinned image ref.
 - [ ] Verify K3s can pull the GHCR image using its registry credentials.
 
 ## Phase 3: Define K3s Deployment For The Host
@@ -94,7 +95,7 @@
   - `kustomization.yaml`
 - [x] Render-validate the new package with:
   - `kubectl kustomize gitops/kustomize/wesen-os`
-- [ ] Decide whether the cluster will pull `ghcr.io/wesen/wesen-os` publicly or via image pull secret.
+- [x] Decide whether the cluster will pull `ghcr.io/wesen/wesen-os` publicly or via image pull secret.
 - [ ] If private pull is required, add the cluster-side service account / pull-secret pattern in the Hetzner repo.
 - [x] Add:
   - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/applications/wesen-os.yaml`

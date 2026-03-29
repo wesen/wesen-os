@@ -1378,6 +1378,99 @@ This means we can finish the declarative GitOps shape now and reserve the actual
 - Current destination namespace:
   - `wesen-os`
 
+## 2026-03-29: Step 14, Choose The Public GHCR Path For First Host Rollout
+
+With the GitOps package and `Application` definition in place, the next unresolved branch in the implementation tree was image pull mode. I checked the actual GitHub repository visibility for `wesen/wesen-os` instead of assuming it from memory, then used that to choose the first rollout strategy.
+
+The result is that the first intended path should be the simple public-GHCR flow, with one explicit follow-up still left open: after the first real image publish, confirm the GHCR package itself is publicly pullable in practice.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 11)
+
+**Assistant interpretation:** Keep advancing the migration by resolving real deployment decisions, not just creating file scaffolding.
+
+**Inferred user intent:** Remove ambiguity from the deployment path so the next live rollout steps can proceed with fewer branch points.
+
+### What I did
+
+- Queried GitHub directly:
+  - `gh repo view wesen/wesen-os --json visibility,isPrivate,url,nameWithOwner`
+- Added ticket helper:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/13-check-wesen-os-repo-visibility.sh`
+- Added generated reference artifact:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/13-wesen-os-repo-visibility-and-ghcr-path.md`
+- Updated the task board to:
+  - mark the public-vs-private pull decision complete
+  - add an explicit follow-up to verify actual public pullability after the first image publish
+
+### Why
+
+- The K3s repo docs make the decision tree explicit:
+  - public image path if possible
+  - pull-secret path only if necessary
+- It is better to choose the simple path when the repo supports it instead of prematurely building private-registry plumbing.
+- The remaining risk is package visibility at GHCR, not source-repo visibility itself.
+
+### What worked
+
+- GitHub confirmed:
+  - `visibility: PUBLIC`
+  - `isPrivate: false`
+- That is enough to choose the public GHCR path as the default first rollout strategy.
+- The K3s package already aligns with that choice because it does not yet require a service account or image pull secret.
+
+### What didn't work
+
+- Nothing failed technically in this step.
+- The one thing that remains unresolved is external runtime proof:
+  - the repository is public
+  - but the GHCR package still needs to be published and then tested for public pullability
+
+### What I learned
+
+- This decision is best made with an explicit repo-visibility check rather than informal memory.
+- The source repo being public does not automatically prove the final GHCR package behavior, so the follow-up task to test anonymous pull remains important.
+- The simplest path now is:
+  - public repo
+  - public GHCR image target
+  - no pull secret for the first rollout unless verification says otherwise
+
+### What was tricky to build
+
+- The subtlety here was separating **intended path** from **proved runtime behavior**. It would be easy to overstate the result and say “public repo means no auth issues.” The correct conclusion is narrower: a public repo makes the public-image path the right default, but the package-level pull test still has to happen after the first publish.
+
+### What warrants a second pair of eyes
+
+- Whether we want to proactively document how to switch the `wesen-os` package to the private-image pull-secret pattern if the GHCR package does not come out publicly pullable.
+- Whether the public-image policy is acceptable long-term for the host service, not just for the first rollout.
+
+### What should be done in the future
+
+- Run the first real host image publish.
+- Test:
+  - `docker pull ghcr.io/wesen/wesen-os:<pinned-ref>`
+- If that fails anonymously, add the cluster-side pull-secret pattern before applying the Argo `Application`.
+
+### Code review instructions
+
+- Start with:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/13-check-wesen-os-repo-visibility.sh`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/13-wesen-os-repo-visibility-and-ghcr-path.md`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/tasks.md`
+
+### Technical details
+
+- Raw GitHub result:
+
+```json
+{"isPrivate":false,"nameWithOwner":"wesen/wesen-os","url":"https://github.com/wesen/wesen-os","visibility":"PUBLIC"}
+```
+
+- Current chosen first-rollout strategy:
+  - public GHCR image path
+  - no cluster-side pull secret unless the first real pull test disproves that path
+
 ## 2026-03-29: reMarkable Delivery
 
 After the ticket content was written, I bundled the main deliverables into a single PDF for reMarkable delivery:
