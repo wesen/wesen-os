@@ -177,6 +177,7 @@
   - package metadata
   - install from another repo
   - install in Actions
+  - workflow file must first exist on the default branch so GitHub Actions can register and dispatch it
 - [ ] Publish the first full frontend package set to GitHub Packages.
 - [ ] Tag the release and record the exact published package/version matrix in the ticket.
 

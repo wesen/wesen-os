@@ -1042,3 +1042,48 @@ This step upgrades the GitHub Packages canary workflow from a single-package pro
 
 - Validation command:
   - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:publish-v1 && node scripts/packages/publish-github-package-set.mjs os-shell-stack --tag canary --version-suffix canary.local --dry-run`
+
+## Step 14: Attempt The First Real GitHub Actions Canary Publish
+
+This step was the first attempt to leave local dry-runs and use the real GitHub Actions path against the `go-go-golems/go-go-os-frontend` repository.
+
+### What I did
+
+- Pushed the frontend branch to the `origin` remote so the new workflow files existed on GitHub under:
+  - `task/js-runtime-manager`
+- Attempted to dispatch the real canary workflow against that branch with:
+  - `package_set=os-shell-stack`
+  - `npm_tag=canary`
+  - `dry_run=false`
+
+### What didn't work
+
+- The dispatch failed immediately with:
+  - `HTTP 404: Not Found (https://api.github.com/repos/go-go-golems/go-go-os-frontend/actions/workflows/publish-github-package-canary.yml)`
+- `gh workflow list` in the `go-go-golems/go-go-os-frontend` repo still only showed:
+  - `go-go-os-platform-ci`
+
+### Why it failed
+
+- The workflow file exists on the pushed feature branch, but GitHub Actions has not registered it as a dispatchable workflow in the repository yet because it is not present on the default branch.
+- In practical terms, that means the package-publish pipeline is ready in code, but the first real Actions-driven canary publish is blocked on getting the workflow into a branch/state that GitHub recognizes for workflow dispatch.
+
+### What I learned
+
+- There are two distinct readiness layers for a GitHub Actions release pipeline:
+  - code readiness in the repository
+  - workflow registration/availability in GitHub Actions
+- We are currently blocked at the second layer, not by package build logic and not yet by GitHub Packages access settings.
+
+### What should be done in the future
+
+- Get `publish-github-package-canary.yml` onto the default branch of `go-go-os-frontend` through the normal GitHub flow.
+- Once GitHub recognizes the workflow, retry the real canary publish for `os-shell-stack`.
+- Only after that should we evaluate package visibility, installability from other repos, and `Manage Actions access`.
+
+### Technical details
+
+- Commands used:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && git push origin HEAD:refs/heads/task/js-runtime-manager`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && gh workflow run publish-github-package-canary.yml --ref task/js-runtime-manager -f package_set=os-shell-stack -f npm_tag=canary -f dry_run=false`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && gh workflow list`
