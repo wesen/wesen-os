@@ -197,3 +197,90 @@ The output is intentionally ticket-local documentation rather than a risky packa
 - Relevant command patterns:
   - package manifest audit via Node/JS file reads
   - asset audit via `find ... -path '*/src/*.vm.js' -o -path '*/src/**/*.vm.js' -o -path '*/src/*.css' -o -path '*/src/**/*.css'`
+
+## Step 3: Add Shared Dist-Build Scaffolding
+
+This step added the first reusable packaging helper in `go-go-os-frontend`: a `build:dist` script that runs a forced TypeScript build and then copies runtime CSS and `.vm.js` assets into `dist`. That gives the publishable packages a concrete mechanism for building package contents, instead of relying on `tsc -b` alone.
+
+The helper did not finish publishability by itself. It validated cleanly on `os-core` and `os-repl`, but `os-ui-cards` still failed because its standalone build resolves sibling package source through the existing linked-workspace path assumptions. That failure is useful because it identifies the next structural packaging blocker with an exact command and error.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Continue the migration with small, reviewable implementation slices and keep the ticket diary current.
+
+**Inferred user intent:** Make concrete forward progress toward published packages without mixing many risky changes into one commit.
+
+**Commit (code):** `8db71ad` — "Add dist-build helper for publishable packages"
+
+### What I did
+
+- Added `workspace-links/go-go-os-frontend/scripts/packages/build-dist.mjs`.
+- Added `build:dist` scripts to the nine v1 platform package manifests in `go-go-os-frontend`.
+- Added a root `build:publish-v1` convenience script in `workspace-links/go-go-os-frontend/package.json`.
+- Tightened `workspace-links/go-go-os-frontend/packages/ui-runtime/src/UIRuntimeRenderer.tsx` callback typing so `os-ui-cards` is closer to standalone strict-mode builds.
+- Validated successful dist builds for:
+  - `@go-go-golems/os-core`
+  - `@go-go-golems/os-repl`
+- Captured the remaining `os-ui-cards` standalone build blocker for the next slice.
+
+### Why
+
+- Publishable packages need more than declarations and JS output; they also need runtime asset copying for CSS and `.vm.js` files.
+- A shared helper prevents nine packages from growing nine near-identical post-build copy scripts.
+
+### What worked
+
+- `npm run build:dist -w packages/engine` succeeded and copied 10 asset files into `dist`.
+- `npm run build:dist -w packages/repl` succeeded and copied 1 asset file into `dist`.
+- The helper now forces a fresh `tsc -b --force` build, which is more appropriate for publish-prep than relying on incremental state.
+
+### What didn't work
+
+- `npm run build:dist -w packages/ui-runtime` still failed with:
+  - `TS6305: Output file '.../packages/engine/dist/index.d.ts' has not been built from source file '.../packages/engine/src/index.ts'.`
+- That means `os-ui-cards` is still crossing a source-level package boundary during standalone package builds, even after the shared helper was added.
+
+### What I learned
+
+- The asset-copy problem and the source-boundary problem are separate. The new helper solves the first one, but not the second.
+- The next packaging refactor likely needs to address TypeScript path/reference behavior across the platform packages, not just package manifests.
+
+### What was tricky to build
+
+- The subtle part was making the helper useful for publish-prep rather than just “whatever `tsc -b` happened to leave in `dist`”. A normal incremental build can hide missing outputs behind stale project state, especially once `dist` directories get cleaned independently. Switching the helper to `tsc -b --force` makes the dist build more honest, but it also surfaced the deeper `TS6305` source-boundary issue immediately.
+
+### What warrants a second pair of eyes
+
+- The `build:publish-v1` script currently reflects the intended v1 package set, but several packages are still expected to fail until the cross-package build boundaries are corrected.
+- The `os-ui-cards` failure should be reviewed together with `tsconfig.json` path/reference strategy across `os-core`, `os-scripting`, `os-ui-cards`, `os-shell`, `os-widgets`, and `os-kanban`.
+
+### What should be done in the future
+
+- Fix package-local TypeScript resolution so referenced platform packages build against publish-style boundaries rather than sibling source trees.
+- Once that is green, switch package `exports`, `main`, and `types` from `src/*` to `dist/*`.
+- After that, add `files` allowlists and package metadata for actual npm publishing.
+
+### Code review instructions
+
+- Start with `workspace-links/go-go-os-frontend/scripts/packages/build-dist.mjs`.
+- Then review the added `build:dist` and `build:publish-v1` scripts in:
+  - `workspace-links/go-go-os-frontend/package.json`
+  - `workspace-links/go-go-os-frontend/packages/*/package.json`
+- Validate with:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:dist -w packages/engine`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:dist -w packages/repl`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:dist -w packages/ui-runtime`
+
+### Technical details
+
+- Linked repo commit:
+  - `8db71adec71516a3e122fc46ead30d7c7ebdcd40` (`go-go-os-frontend`)
+- Commands run in this step:
+  - `npm run build:dist -w packages/engine`
+  - `npm run build:dist -w packages/repl`
+  - `npm run build:dist -w packages/ui-runtime`
+- Observed good outputs:
+  - `Copied 10 asset file(s) into dist.` for `os-core`
+  - `Copied 1 asset file(s) into dist.` for `os-repl`

@@ -63,11 +63,11 @@
   - `bugs`
   - ownership/maintainer policy
 - No package currently declares a strict `files` allowlist for npm packaging.
-- Packages that rely on CSS or `.vm.js` runtime assets need an asset-copy step in their dist build, not only `tsc -b`.
+- A shared `build:dist` helper now exists in `go-go-os-frontend`, but the publish set still is not package-locally green end-to-end because some package builds continue to resolve sibling source trees instead of a publish-style boundary.
 
 ## Immediate Follow-Up
 
 - Add missing publish metadata to the nine v1 platform packages.
 - Decide the release/version rewrite mechanism for `workspace:*` internal package dependencies.
-- Add package-local `build:dist` or equivalent scripts that emit JS/types plus required CSS and `.vm.js` assets into `dist`.
+- Extend the new shared dist-build helper so the full v1 publish set builds cleanly package-by-package.
 - Only after that, switch package `exports`, `main`, and `types` to `dist/*`.
