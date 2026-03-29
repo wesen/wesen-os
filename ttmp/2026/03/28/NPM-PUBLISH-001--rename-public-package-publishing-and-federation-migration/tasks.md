@@ -204,6 +204,7 @@
   - `apps/os-launcher` now has `typecheck:published`, `build:published`, `tsconfig.published.json`, and published-mode Vite resolution via `GO_GO_OS_FRONTEND_RESOLUTION=published`
   - root workflow `.github/workflows/verify-launcher-canary-consumption.yml` is now registered on `main`
   - first live host-side canary consumer proof succeeded on `main`: run `23713899050`
+  - post-normalization rerun also succeeded on `main`: run `23714097143`
   - remaining work is CI/package rewrite proof for `wesen-os`, not the basic launcher-mode scaffold
 - [ ] Convert `apps/os-launcher/package.json` dependencies from `workspace:*` to real version ranges in publish mode.
 - [ ] Convert `go-go-app-inventory/apps/inventory/package.json` dependencies from `workspace:*` to real version ranges in publish mode.
@@ -211,6 +212,7 @@
 - [ ] Create a documented local override workflow for engineers who need to patch a published package locally.
 - [ ] Prove that `wesen-os` can build, test, and run with no `workspace-links/go-go-os-frontend` source aliasing.
   - host-side launcher published-mode `typecheck` and `build` now succeed in GitHub Actions on `main` against `0.1.0-canary.4`
+  - root-pinned submodule SHAs are now on default branches of ARC, SQLite, inventory, and frontend; the host proof no longer depends on task-branch reachability
   - remaining gap is runtime/smoke proof and deeper app-package decoupling, not platform package resolution
 - [x] Prove that `go-go-app-inventory` can build, test, and run against published platform packages.
   - GitHub Actions workflow `verify-platform-canary-consumption` succeeded on `task/rewrite-runtime`

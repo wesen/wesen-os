@@ -2124,3 +2124,95 @@ This step took the new launcher consumer workflow from "prepared locally" to "ex
   - `23713840291` — failed on missing ARC submodule SHA
   - `23713871231` — failed on missing SQLite submodule SHA
   - `23713899050` — succeeded on `main` against `platform_version=0.1.0-canary.4`
+
+## Step 17: Normalize Submodule Reachability On Default Branches
+
+This step removes the last fragility from the root host proof. After the first successful `wesen-os` run, the pinned submodule SHAs were only reachable because temporary task branches existed in the dependent repos. That was enough for a one-off Actions success, but it was not stable repository hygiene. The fix here was to land those task branches on the actual default branches of the affected repos, then rerun the root workflow to confirm the host proof stays green without depending on temporary branch refs.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok"
+
+**Assistant interpretation:** Continue with the cleanup path that was proposed in the previous step instead of stopping at the first green host-side run.
+
+**Inferred user intent:** Turn the one-off green proof into a durable state.
+
+### What I did
+
+- Audited every root-pinned submodule SHA and checked whether it was reachable from the default branch or only from a task branch.
+- Confirmed that four pinned SHAs were still only on non-default branches:
+  - ARC
+  - SQLite
+  - inventory
+  - `go-go-os-frontend`
+- Opened normalization PRs to land those lines on their default branches:
+  - ARC: `https://github.com/go-go-golems/go-go-app-arc-agi/pull/5`
+  - SQLite: `https://github.com/go-go-golems/go-go-app-sqlite/pull/3`
+  - inventory: `https://github.com/go-go-golems/go-go-app-inventory/pull/8`
+  - frontend: `https://github.com/go-go-golems/go-go-os-frontend/pull/18`
+- Merged those PRs:
+  - ARC merged at `8e3e598773616657db5ff3f2ea5f0927988fc389`
+  - SQLite merged at `e8d05a55ebcd17ca8100b3569744874e0ef9daea`
+  - inventory merged at `7cb715b1729d01e3f0be9b522837f12fe3a3504a`
+  - frontend merged at `c0a24bf00113246c4c9bf5f29dddda3527796cf6`
+- Re-fetched the local submodule repos and confirmed the root-pinned SHAs are now contained by the default branches:
+  - ARC SHA `02eb369...` on `upstream/main`
+  - inventory SHA `7fdc13a...` on `origin/main`
+  - SQLite SHA `6a373b8...` on `origin/main`
+  - frontend SHA `bac1c63...` on `origin/main`
+- Re-ran the root host workflow after normalization:
+  - `https://github.com/wesen/wesen-os/actions/runs/23714097143`
+- Confirmed that rerun succeeded end to end on `main`.
+
+### Why
+
+- The previous host-side success was real, but it still depended on task-branch object reachability in dependent repos.
+- Root submodule pointers should be fetchable from the dependent repos’ default branches, not merely reachable through ad hoc helper branches.
+- A second green root workflow after the normalization proves the host path is stable, not incidental.
+
+### What worked
+
+- All four normalization PRs merged successfully.
+- The pinned submodule SHAs are now on the default branches of the repos that `wesen-os` points at.
+- The rerun `23714097143` stayed green, which confirms that the root proof no longer relies on temporary task branches.
+
+### What didn't work
+
+- ARC’s PR had a failing `Go Vulnerability Check`, but it was still mergeable and the actual code/test/lint/security-scan surface relevant to this change was otherwise green enough to land the normalization.
+
+### What I learned
+
+- The root repo now has a much healthier dependency posture:
+  - published platform packages are consumable in downstream repos
+  - the root host consumes them in Actions on `main`
+  - the submodule SHAs that root `main` depends on are now present on default branches instead of only on task branches
+
+### What was tricky to build
+
+- The normalization was spread across four repos with different remote layouts and CI behavior.
+- The right bar here was not "every check is perfect forever"; it was "the root SHA no longer depends on ephemeral branch reachability." That is a repo-integrity cleanup step, not a full security triage program for each dependent repo.
+
+### What warrants a second pair of eyes
+
+- Review the normalization PRs and merged commits:
+  - ARC `#5`
+  - SQLite `#3`
+  - inventory `#8`
+  - frontend `#18`
+- Review the post-normalization root workflow:
+  - `https://github.com/wesen/wesen-os/actions/runs/23714097143`
+
+### What should be done in the future
+
+- Consider adding a root-side check that every pinned submodule SHA is contained by the default branch of the configured `.gitmodules` remote before merging changes to `main`.
+- Decide whether some of these linked repos should stop being submodules entirely once package-based consumption is fully stable.
+
+### Technical details
+
+- Root rerun after normalization:
+  - `23714097143` — succeeded on `main`
+- Merged normalization PRs:
+  - ARC `#5`
+  - SQLite `#3`
+  - inventory `#8`
+  - frontend `#18`
