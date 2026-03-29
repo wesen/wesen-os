@@ -166,11 +166,16 @@ describe('launcher host wiring', () => {
   it('imports inventory module/reducers from public package exports only', () => {
     const moduleSource = readFileSync(new URL('../app/modules.tsx', import.meta.url), 'utf8');
     const storeSource = readFileSync(new URL('../app/store.ts', import.meta.url), 'utf8');
+    const docsSource = readFileSync(new URL('../app/registerAppsBrowserDocs.ts', import.meta.url), 'utf8');
 
-    expect(moduleSource).toContain("@go-go-golems/inventory/launcher");
-    expect(storeSource).toContain("@go-go-golems/inventory/reducers");
+    expect(moduleSource).toContain("@go-go-golems/inventory/host");
+    expect(storeSource).toContain("@go-go-golems/inventory/host");
+    expect(docsSource).toContain("@go-go-golems/inventory/host");
+    expect(moduleSource).not.toContain("@go-go-golems/inventory/launcher");
+    expect(storeSource).not.toContain("@go-go-golems/inventory/reducers");
     expect(moduleSource).not.toContain('@go-go-golems/inventory/src/');
     expect(storeSource).not.toContain('@go-go-golems/inventory/src/');
+    expect(docsSource).not.toContain('@go-go-golems/inventory/src/');
   });
 
   it('prevents placeholder module labels from being reintroduced', () => {

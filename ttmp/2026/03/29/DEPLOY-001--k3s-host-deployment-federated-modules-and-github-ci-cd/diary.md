@@ -2194,3 +2194,122 @@ This helper is intentionally small and boring. Its only job is to capture the cu
 - add the dedicated inventory host export
 - switch the host imports
 - run host tests and typechecks
+
+## 2026-03-29: First Federation Code Slice, Collapse Inventory To One Host Contract
+
+After the audit, I implemented the first real code step toward federation. The scope was intentionally narrow: do not add dynamic loading yet, do not add Module Federation config yet, and do not redesign the launcher. Just replace the fragmented `inventory` host surface with one explicit contract boundary.
+
+### Design decision
+
+I chose a dedicated package subpath:
+
+- `@go-go-golems/inventory/host`
+
+That subpath now acts as the single launcher-facing boundary for `inventory`. This is the same shape we are likely to want later when the app stops being linked locally and starts being loaded through a remote entrypoint or manifest-backed host contract.
+
+To avoid making the contract inventory-specific, I also added a generic type in `@go-go-golems/os-shell`:
+
+- `FederatedAppHostContract`
+
+It currently includes:
+
+- `remoteId`
+- `launcherModule`
+- `sharedReducers`
+- `docsMetadata`
+- `runtimeBundles`
+
+That is enough for the current launcher integration points and small enough to evolve safely later.
+
+### Files changed
+
+In `go-go-os-frontend`:
+
+- `workspace-links/go-go-os-frontend/packages/os-shell/src/contracts/federatedAppHostContract.ts`
+- `workspace-links/go-go-os-frontend/packages/os-shell/src/index.ts`
+
+In `go-go-app-inventory`:
+
+- `workspace-links/go-go-app-inventory/apps/inventory/src/host.ts`
+- `workspace-links/go-go-app-inventory/apps/inventory/package.json`
+
+In `wesen-os`:
+
+- `apps/os-launcher/src/app/modules.tsx`
+- `apps/os-launcher/src/app/store.ts`
+- `apps/os-launcher/src/app/registerAppsBrowserDocs.ts`
+- `apps/os-launcher/src/app/hypercardReplModule.tsx`
+- `apps/os-launcher/src/app/runtimeDebugModule.tsx`
+- `apps/os-launcher/src/app/taskManagerModule.tsx`
+- `apps/os-launcher/src/app/runtimeDebugModule.test.tsx`
+- `apps/os-launcher/src/__tests__/launcherHost.test.tsx`
+
+### What changed in behavior
+
+Before this step, the host reached into:
+
+- `@go-go-golems/inventory/launcher`
+- `@go-go-golems/inventory/reducers`
+- `@go-go-golems/inventory`
+
+After this step, the production host code reaches into:
+
+- `@go-go-golems/inventory/host`
+
+The contract object carries the same data the launcher previously pulled from three separate entrypoints:
+
+- launcher module
+- shared reducers
+- docs metadata
+- runtime stack bundle
+
+That is a better pre-federation shape because the future runtime loader only needs to replace one stable boundary.
+
+### One failure along the way
+
+The implementation passed `apps/os-launcher` typecheck immediately, but the first focused test run failed:
+
+- command:
+  - `npm run test -w apps/os-launcher -- --run runtimeDebugModule registerAppsBrowserDocs launcherHost`
+- failure:
+  - `runtimeDebugModule.test.tsx` timed out after 5000ms
+
+The root cause was not a real runtime regression. I had updated the production import path to `@go-go-golems/inventory/host` but left one test mock on the old path:
+
+- stale mock:
+  - `vi.mock('@go-go-golems/inventory/launcher', ...)`
+
+That meant the test imported the real module graph instead of the stubbed host contract. After switching the mock to:
+
+- `vi.mock('@go-go-golems/inventory/host', ...)`
+
+the focused test set passed cleanly.
+
+### Validation
+
+Commands run:
+
+- `npm run typecheck -w apps/os-launcher`
+- `npm run typecheck -w workspace-links/go-go-app-inventory/apps/inventory`
+- `npm run test -w apps/os-launcher -- --run runtimeDebugModule registerAppsBrowserDocs launcherHost`
+
+All three passed after the mock-path correction.
+
+### Ticket helper added
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/26-validate-inventory-host-contract.sh`
+
+This helper reruns the exact narrow validation loop for this slice and also prints the launcher’s remaining `inventory` import surface so future diary/doc work can verify that the collapse stayed intact.
+
+### What this does not solve yet
+
+This is still package-linked composition, not real runtime federation.
+
+The remaining gaps are now clearer than before:
+
+- the host still statically imports `inventory`
+- there is no manifest or remote registry yet
+- there is no runtime timeout/failure UX for a missing remote
+- there is no object-storage upload flow yet
+
+That is fine. The point of this slice was to create the correct contract boundary before we introduce runtime loading machinery.

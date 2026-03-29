@@ -4,7 +4,7 @@ import type { LaunchableAppModule } from '@go-go-golems/os-shell';
 import { arcPlayerLauncherModule } from '@go-go-golems/arc-agi-player/launcher';
 import { appsBrowserLauncherModule } from '@go-go-golems/apps-browser/launcher';
 import { hypercardToolsLauncherModule } from '@go-go-golems/hypercard-tools/launcher';
-import { inventoryLauncherModule } from '@go-go-golems/inventory/launcher';
+import { inventoryHostContract } from '@go-go-golems/inventory/host';
 import { richWidgetsLauncherModule } from '@go-go-golems/os-widgets/launcher';
 import { sqliteLauncherModule } from '@go-go-golems/sqlite/launcher';
 import { todoLauncherModule } from '@go-go-golems/todo/launcher';
@@ -26,7 +26,7 @@ export const launcherModules: LaunchableAppModule[] = [
   assistantLauncherModule,
   hypercardReplLauncherModule,
   jsReplLauncherModule,
-  inventoryLauncherModule,
+  inventoryHostContract.launcherModule,
   sqliteLauncherModule,
   todoLauncherModule,
   crmLauncherModule,

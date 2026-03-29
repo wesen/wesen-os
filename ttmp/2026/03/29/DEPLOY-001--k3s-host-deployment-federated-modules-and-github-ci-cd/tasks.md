@@ -126,13 +126,13 @@
   - Module Federation manifest (`mf-manifest.json`) preferred
   - `remoteEntry.js` only if manifest mode is not workable in current tooling
 - [x] Freeze `inventory` as the first federation candidate and capture the current host touchpoints.
-- [ ] Collapse the current `inventory` host surface behind a single public export path:
+- [x] Collapse the current `inventory` host surface behind a single public export path:
   - recommended: `@go-go-golems/inventory/host`
   - move launcher module, shared reducers, docs metadata, and runtime bundles behind one contract object
-- [ ] Add a generic host-contract type to `@go-go-golems/os-shell` so remotes and the host share one TypeScript boundary.
-- [ ] Switch `apps/os-launcher` to consume the inventory host contract instead of separate `launcher`, `reducers`, and root metadata imports.
-- [ ] Update host tests so they enforce the single-entrypoint rule for `inventory`.
-- [ ] Record the remaining host/runtime gaps after the contract collapse:
+- [x] Add a generic host-contract type to `@go-go-golems/os-shell` so remotes and the host share one TypeScript boundary.
+- [x] Switch `apps/os-launcher` to consume the inventory host contract instead of separate `launcher`, `reducers`, and root metadata imports.
+- [x] Update host tests so they enforce the single-entrypoint rule for `inventory`.
+- [x] Record the remaining host/runtime gaps after the contract collapse:
   - static import still exists
   - no dynamic remote loader yet
   - no runtime manifest registry yet
@@ -164,10 +164,10 @@
 - [x] Pick the first remote repo.
 - [x] First remote repo:
   - `workspace-links/go-go-app-inventory/apps/inventory`
-- [ ] Introduce a dedicated federation-facing export in `inventory`:
+- [x] Introduce a dedicated federation-facing export in `inventory`:
   - stable public contract object for the host
   - keep existing package exports working until host migration is complete
-- [ ] Decide the eventual exposed Module Federation module name for `inventory`:
+- [x] Decide the eventual exposed Module Federation module name for `inventory`:
   - likely `./host`
   - alternatives only if current tooling forces a different name
 - [ ] Add a launcher-side adapter if needed so the host can consume the same contract from both local package mode and future remote mode.
