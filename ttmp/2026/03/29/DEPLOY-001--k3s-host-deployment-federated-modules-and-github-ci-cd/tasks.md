@@ -241,15 +241,16 @@
   - reviewer merges GitOps PR
   - Argo CD syncs cluster state
 - [ ] Add a short top-level deployment-model page in `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/`.
-- [ ] Update `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/app-packaging-and-gitops-pr-standard.md` so the GitHub -> GitOps PR flow appears near the top.
-- [ ] Update `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/source-app-deployment-infrastructure-playbook.md` with a “most common misunderstanding” section:
+- [x] Update `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/app-packaging-and-gitops-pr-standard.md` so the GitHub -> GitOps PR flow appears near the top and the one-time `Application` bootstrap rule is explicit.
+- [x] Update `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/source-app-deployment-infrastructure-playbook.md` with a “most common misunderstanding” section:
   - publishing to GHCR is not deployment
   - Argo only acts on GitOps repo changes
   - the CI-created GitOps PR is the deployment handoff
-- [ ] Update `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/public-repo-ghcr-argocd-deployment-playbook.md` with the same explicit sequence.
+- [x] Update `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/public-repo-ghcr-argocd-deployment-playbook.md` with the same explicit sequence and the one-time `Application` bootstrap step.
 - [ ] Add one concrete reference implementation section in the K3s docs that points at:
   - `draft-review`
   - `deploy/gitops-targets.json`
   - `scripts/open_gitops_pr.py`
   - the GitOps deployment manifest
   - the Argo `Application`
+- [x] Update `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/README.md` so the initial `kubectl apply -f gitops/applications/<name>.yaml` pattern is framed as the generic first-time bootstrap rule for new apps.

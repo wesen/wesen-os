@@ -2046,3 +2046,73 @@ That means the later documentation update can point at real repositories and rea
 - review and merge `wesen/2026-03-27--hetzner-k3s#5`
 - then observe the first GitHub run of the new `gitops-pr` job on `wesen-os`
 - once that is green, start the K3s doc update slice with concrete examples from these PRs
+
+## 2026-03-29: Tightening The K3s Docs Around The One-Time Argo Bootstrap Step
+
+After checking the current K3s docs again, the conclusion changed slightly but not completely.
+
+### What I found on re-read
+
+The initial `kubectl apply -f gitops/applications/...` step was already documented in several concrete examples:
+
+- `README.md`
+- `docs/argocd-app-setup.md`
+- `docs/coinvault-k3s-deployment-playbook.md`
+
+So the problem was not “the docs never mention `kubectl apply`.”
+
+The real problem was more specific:
+
+- the docs did not clearly teach the generic rule
+- they did not say bluntly that a brand-new file under `gitops/applications/` is only Git state until the `Application` object exists in the cluster once
+- they also did not say explicitly that this repo does not currently have an app-of-apps or `ApplicationSet` layer that auto-creates every new `Application`
+
+That is exactly why the `wesen-os` rollout question was easy to get wrong even after reading the docs.
+
+### Docs updated
+
+I patched the K3s repo directly in these files:
+
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/README.md`
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/source-app-deployment-infrastructure-playbook.md`
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/app-packaging-and-gitops-pr-standard.md`
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/public-repo-ghcr-argocd-deployment-playbook.md`
+
+### What the new text says
+
+The new wording now makes all of these points explicit:
+
+- publishing to GHCR is not deployment by itself
+- merging a GitOps PR is not sufficient if the `Application` object does not exist yet
+- this repo does not currently auto-materialize new `Application` objects from `gitops/applications/`
+- the first rollout of a new app includes a one-time bootstrap step:
+  - `kubectl apply -f gitops/applications/<app>.yaml`
+  - `kubectl -n argocd annotate application <app> argocd.argoproj.io/refresh=hard --overwrite`
+- after that, normal GitOps PR merges are enough because Argo already has the `Application` object
+
+### Ticket helper and validation artifact
+
+I added another ticket helper:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/23-check-k3s-doc-bootstrap-instructions.sh`
+
+and captured its output in:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/23-k3s-doc-bootstrap-instruction-check.md`
+
+That artifact is intentionally simple: it proves the new bootstrap-language anchors now exist in the main docs that operators are likely to read first.
+
+### K3s repo commit
+
+The documentation fix was committed and pushed on the K3s repo as:
+
+- `ec2537b` `Clarify one-time Argo application bootstrap`
+
+### What still remains
+
+The docs are better now, but there are still higher-level doc tasks left open:
+
+- a short top-level deployment-model page
+- a concrete reference implementation section that points at `draft-review`, `deploy/gitops-targets.json`, `scripts/open_gitops_pr.py`, and the matching GitOps manifests
+
+Those are still worth doing, but the immediate shortcoming that caused confusion in the `wesen-os` rollout path is now addressed directly.
