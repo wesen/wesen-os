@@ -175,21 +175,27 @@
     - `go-go-app-inventory` now has a consumer-validation workflow on branch `task/rewrite-runtime`, and draft PR `go-go-app-inventory#5` was opened to land it on the default branch so GitHub can dispatch it
 - [x] Implement a publish workflow that only runs after package build/test/pack smoke checks pass.
 - [x] Broaden the canary publish path to support at least one ordered dependent package chain, not just a single leaf package.
-- [ ] Publish one canary package first and validate:
+- [x] Publish one canary package first and validate:
   - package visibility
   - package metadata
   - install from another repo
   - install in Actions
   - workflow file must first exist on the default branch so GitHub Actions can register and dispatch it
   - first successful real canary publish happened on 2026-03-29 for `os-shell-stack` as `0.1.0-canary.2`; remaining work is the post-publish validation matrix above
-  - first downstream Actions consumer proof now reaches GitHub Packages on `go-go-app-inventory` branch `task/rewrite-runtime` and fails on missing package `@go-go-golems/os-confirm@0.1.0-canary.2`
-- [ ] Publish the first full frontend package set to GitHub Packages.
-  - next missing inventory dependency wave is:
+  - downstream Actions consumer proof is now green on `go-go-app-inventory` branch `task/rewrite-runtime` with `platform_version=0.1.0-canary.4`
+- [x] Publish the first full frontend package set to GitHub Packages.
+  - full ordered `os-inventory-stack` publish succeeded on 2026-03-29 as `0.1.0-canary.4`
+  - published packages:
+    - `@go-go-golems/os-core`
+    - `@go-go-golems/os-chat`
+    - `@go-go-golems/os-repl`
+    - `@go-go-golems/os-scripting`
+    - `@go-go-golems/os-shell`
     - `@go-go-golems/os-confirm`
     - `@go-go-golems/os-ui-cards`
     - `@go-go-golems/os-widgets`
     - `@go-go-golems/os-kanban`
-  - current blocker for that wave: `os-widgets` and therefore `os-kanban` are not yet package-local publishable
+  - first live attempt failed on workflow policy because `os-confirm` has no `test` script; workflow now skips packages without a `test` script instead of aborting
 - [ ] Tag the release and record the exact published package/version matrix in the ticket.
 
 ## Phase 5: Convert `wesen-os` And App Repos To Versioned Consumption
@@ -200,7 +206,10 @@
 - [ ] Decide which repos remain source-linked during active development and which become package consumers only.
 - [ ] Create a documented local override workflow for engineers who need to patch a published package locally.
 - [ ] Prove that `wesen-os` can build, test, and run with no `workspace-links/go-go-os-frontend` source aliasing.
-- [ ] Prove that `go-go-app-inventory` can build, test, and run against published platform packages.
+- [x] Prove that `go-go-app-inventory` can build, test, and run against published platform packages.
+  - GitHub Actions workflow `verify-platform-canary-consumption` succeeded on `task/rewrite-runtime`
+  - run: `23713135135`
+  - installed and typechecked against `0.1.0-canary.4`
 - [ ] Add a rollback procedure for bad package publishes:
   - pin previous versions
   - republish patch

@@ -1672,3 +1672,165 @@ The important outcome is that the inventory-side workflow is now real and dispat
   - `build failed: couldn't find main file: stat cmd/XXX: no such file or directory`
 - Exact inventory workflow dispatch failure:
   - `HTTP 404: Not Found (https://api.github.com/repos/go-go-golems/go-go-app-inventory/actions/workflows/verify-platform-canary-consumption.yml)`
+
+## Step 13: Publish The Full Inventory Platform Canary Wave And Prove Downstream Consumption
+
+This step closes the gap that the first inventory consumer run exposed. The earlier consumer workflow made it all the way to GitHub Packages and failed because the inventory dependency chain was only partially published. The work here finished package-local publishability for the remaining chain, extended the canary publish workflow to a larger ordered set, handled the first real CI workflow-policy failure, and then proved that `go-go-app-inventory` can install and typecheck against the published canary packages in GitHub Actions.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue. keep a detailed diary as you work, committting at appropriate intervals"
+
+**Assistant interpretation:** Keep pushing the migration forward without stopping at the previous missing-package diagnosis, but record each attempt, fix, and result in the ticket diary and preserve the work as focused commits.
+
+**Inferred user intent:** Move from "we know what is missing" to "the next package wave is actually published and a real consumer works," while keeping the implementation trail strong enough to review or resume later.
+
+### What I did
+
+- Finished package-local publishability work for the remaining inventory dependency chain in `go-go-os-frontend`.
+- Added narrower public subpath exports to `os-shell` so `os-widgets` could depend on the small contract surface it actually needs instead of the full `os-shell` barrel:
+  - `./contracts/appManifest`
+  - `./contracts/launchableAppModule`
+  - `./contracts/launcherHostContext`
+  - `./contracts/launcherRenderContext`
+  - `./runtime/appKey`
+- Updated `os-widgets` to import from those narrower `os-shell` subpaths and to treat `os-shell` as an explicit package-local dependency boundary rather than pulling transitive `os-scripting` source through the shell barrel.
+- Fixed the `os-kanban` runtime-registration test fixture so package-local test/build runs include the required `packId` on the test surface bundle.
+- Added a new frontend publish package set named `os-inventory-stack` containing:
+  - `packages/os-core`
+  - `packages/os-chat`
+  - `packages/os-repl`
+  - `packages/os-scripting`
+  - `packages/os-shell`
+  - `packages/os-confirm`
+  - `packages/os-ui-cards`
+  - `packages/os-widgets`
+  - `packages/os-kanban`
+- Ran local typecheck/test/build verification for that full package chain and then dry-ran the ordered publish set.
+- Committed the package-boundary and package-set changes in the frontend repo as:
+  - `dc0b952` — `Tighten package boundaries for inventory stack`
+  - `30c8035` — `Add inventory canary package set`
+- Pushed the branch and dispatched the first real GitHub Actions publish of `os-inventory-stack`:
+  - run `23713037643`
+- Inspected the failed run logs and found that the first live publish attempt did not fail on code or registry issues. It failed because the generic workflow assumes every package has a `test` script, while `os-confirm` intentionally has none.
+- Updated the canary workflow to skip packages with no `test` script instead of crashing the job on `npm run test`.
+- Committed that workflow-policy fix as:
+  - `bac1c63` — `Skip missing package tests in canary workflow`
+- Pushed again and dispatched the second real GitHub Actions publish of `os-inventory-stack`:
+  - run `23713084607`
+- Confirmed that the second run published the complete inventory platform canary wave as `0.1.0-canary.4`:
+  - `@go-go-golems/os-core`
+  - `@go-go-golems/os-chat`
+  - `@go-go-golems/os-repl`
+  - `@go-go-golems/os-scripting`
+  - `@go-go-golems/os-shell`
+  - `@go-go-golems/os-confirm`
+  - `@go-go-golems/os-ui-cards`
+  - `@go-go-golems/os-widgets`
+  - `@go-go-golems/os-kanban`
+- Re-ran the inventory consumer-validation workflow on the renamed inventory branch with the new canary version:
+  - run `23713135135`
+- Confirmed that `go-go-app-inventory` now:
+  - authenticates to GitHub Packages in Actions
+  - installs the published canary platform packages
+  - passes `npm run typecheck:published -w apps/inventory`
+
+### Why
+
+- The earlier consumer proof had already shown that the install path, registry auth, and published-mode typecheck flow were conceptually correct. The remaining gap was concrete: unpublished dependencies.
+- Publishing only leaf packages would keep creating false progress. Inventory needs a lockstep chain, so the publish workflow had to support a larger ordered set.
+- The first live publish attempt exposed a workflow-contract issue rather than a code issue, which meant the right fix was to improve the workflow semantics, not to inject placeholder scripts into packages that do not need tests.
+
+### What worked
+
+- The `os-shell` subpath export split was enough to stop `os-widgets` from dragging the whole shell barrel and transitive `os-scripting` source tree into its package-local build.
+- `os-confirm`, `os-ui-cards`, `os-widgets`, and `os-kanban` all validated locally as publishable packages once those boundary fixes landed.
+- The new ordered package set successfully dry-ran locally before the live GitHub Actions publish.
+- The second GitHub Actions run fully published the inventory stack to GitHub Packages at `0.1.0-canary.4`.
+- The downstream inventory Actions workflow on `task/rewrite-runtime` succeeded against those published packages.
+
+### What didn't work
+
+- The first real publish run `23713037643` failed during `Run selected package set tests`, but not because tests failed.
+- The exact failure was workflow-policy related:
+  - `npm error Missing script: "test"`
+  - `npm error workspace @go-go-golems/os-confirm@0.1.0`
+- A local probe of the workflow loop first failed because it was accidentally run under `zsh` using Bash array syntax:
+  - `zsh:read:1: bad option: -a`
+- That shell mismatch was local-only. Re-running the exact same logic under `/bin/bash` matched GitHub Actions behavior and confirmed the fix.
+
+### What I learned
+
+- Package-local publishability and live publishability are adjacent but not identical milestones. The first inventory-stack publish attempt only became meaningful because the package-local work had already exposed and fixed the real source-boundary problems.
+- Workflow assumptions are part of the release contract. A generic publish loop cannot assume every package defines the same npm lifecycle scripts.
+- The correct canary version for this full inventory wave is now `0.1.0-canary.4`, and that version is sufficient for the inventory branch’s published-mode typecheck proof.
+- The migration now has a stronger downstream proof than before:
+  - successful platform publish in `go-go-os-frontend`
+  - successful consumer install and typecheck in `go-go-app-inventory`
+
+### What was tricky to build
+
+- `os-widgets` looked like a package-local TypeScript problem, but the real issue was architectural leakage through broad barrel imports. The symptom was a source-tree leak from `os-shell` into `os-scripting`; the durable fix was to narrow the contract imports rather than add more alias band-aids.
+- The first real publish failure was easy to misread as "tests are broken," but the logs showed a narrower truth: `os-confirm` has no `test` script at all. That distinction matters because the correct repair lives in the workflow, not in package metadata theater.
+- The kanban fixture failure was similarly easy to dismiss as test noise, but it revealed that package-local validation now enforces a stronger runtime contract around `packId`, which is exactly the sort of strictness we want before publishing artifacts.
+
+### What warrants a second pair of eyes
+
+- Review the new `os-shell` public subpath exports and make sure they are the intended long-term contract surface, not just a migration convenience:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-shell/package.json`
+- Review the `os-widgets` import narrowing and confirm it does not bypass any intended shell-level abstraction:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-widgets/src/launcher/modules.tsx`
+- Review the canary workflow skip logic to confirm the team agrees with "skip missing test scripts" as the release policy for currently untested packages:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/.github/workflows/publish-github-package-canary.yml`
+
+### What should be done in the future
+
+- Record the `0.1.0-canary.4` publish matrix as the current downstream-consumable platform baseline.
+- Expand the same consumer-proof pattern to `wesen-os`, not just inventory.
+- Decide whether untested publishable packages should remain testless with explicit workflow skipping, or whether the migration should add at least smoke tests for each package before stable release.
+- Handle the GitHub Actions Node 20 deprecation warnings in both frontend and consumer workflows before June 2026 runner defaults change underneath the pipeline.
+
+### Code review instructions
+
+- Start with the frontend package-boundary fix:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-shell/package.json`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-widgets/src/launcher/modules.tsx`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-widgets/tsconfig.json`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-kanban/src/runtimeRegistration.test.tsx`
+- Then review the frontend release-pipeline changes:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/scripts/packages/package-sets.mjs`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/.github/workflows/publish-github-package-canary.yml`
+- Then review the downstream proof in GitHub Actions:
+  - `https://github.com/go-go-golems/go-go-os-frontend/actions/runs/23713084607`
+  - `https://github.com/go-go-golems/go-go-app-inventory/actions/runs/23713135135`
+
+### Technical details
+
+- Frontend commits for this step:
+  - `dc0b95282915f2241f02f02075934bb744a7de88` — `Tighten package boundaries for inventory stack`
+  - `30c8035a84b12f769a9950422da5d50f4dd7c57d` — `Add inventory canary package set`
+  - `bac1c63c010250508cde2e6d565ecc4b687f9822` — `Skip missing package tests in canary workflow`
+- First live inventory-stack publish attempt:
+  - `https://github.com/go-go-golems/go-go-os-frontend/actions/runs/23713037643`
+  - failed on missing npm `test` script in `os-confirm`
+- Successful live inventory-stack publish:
+  - `https://github.com/go-go-golems/go-go-os-frontend/actions/runs/23713084607`
+  - published:
+    - `@go-go-golems/os-core@0.1.0-canary.4`
+    - `@go-go-golems/os-chat@0.1.0-canary.4`
+    - `@go-go-golems/os-repl@0.1.0-canary.4`
+    - `@go-go-golems/os-scripting@0.1.0-canary.4`
+    - `@go-go-golems/os-shell@0.1.0-canary.4`
+    - `@go-go-golems/os-confirm@0.1.0-canary.4`
+    - `@go-go-golems/os-ui-cards@0.1.0-canary.4`
+    - `@go-go-golems/os-widgets@0.1.0-canary.4`
+    - `@go-go-golems/os-kanban@0.1.0-canary.4`
+- Successful downstream inventory consumer proof:
+  - `https://github.com/go-go-golems/go-go-app-inventory/actions/runs/23713135135`
+  - ref: `task/rewrite-runtime`
+  - input: `platform_version=0.1.0-canary.4`
+- Exact first live publish failure:
+  - `npm error Missing script: "test"`
+  - `npm error workspace @go-go-golems/os-confirm@0.1.0`
+- Exact local shell mismatch while validating the workflow guard:
+  - `zsh:read:1: bad option: -a`
