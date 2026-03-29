@@ -776,3 +776,149 @@ The stable code changes here are in the inventory repo itself:
   - `npm run typecheck:published`
   - `GO_GO_OS_FRONTEND_RESOLUTION=published npm exec -- vite build`
 - The successful published-mode build emitted a full production Vite output, including the QuickJS wasm assets, from the inventory fixture.
+
+## Step 10: Tighten Staged Package Metadata For GitHub Packages
+
+This step turns the generated `dist/package.json` artifacts into credible publish targets instead of bare build byproducts. The important constraint is that the workspace-source manifests remain optimized for local development, while the staged publish manifests carry the metadata GitHub Packages needs.
+
+### What I did
+
+- Added missing publish metadata to the nine v1 platform package manifests in `go-go-os-frontend`:
+  - package descriptions
+  - `license`
+  - `author`
+  - `repository.directory`
+  - `homepage`
+  - `bugs`
+  - `publishConfig.registry`
+  - `files`
+- Added an MIT `LICENSE` file to `go-go-os-frontend` so the package metadata no longer points at a missing repository license.
+- Updated `go-go-os-frontend/README.md` so the repo layout example now matches the renamed `os-*` package folders.
+- Extended `scripts/packages/build-dist.mjs` so `dist/package.json` now carries the new `files` allowlists instead of dropping them.
+- Fixed a publish leak in the dist builder by deleting compiled `*.test.js`, `*.test.d.ts`, `*.stories.js`, and `*.stories.d.ts` artifacts before packaging.
+- Extended `scripts/packages/pack-smoke.mjs` so the smoke check now fails on leaked Storybook/test artifacts instead of only `*.test.*`.
+
+### Why
+
+- GitHub Packages publishes whatever is in the package manifest presented to `npm publish`; the staged dist manifests were missing key metadata even though the build output itself was already usable.
+- The first attempt to re-run pack smoke after adding `files` surfaced a real packaging problem: compiled test artifacts were still entering tarballs. That had to be fixed before adding any registry workflow, otherwise the workflow would have been validating the wrong artifact shape.
+- Keeping the source manifests `private: true` still protects local development from accidental workspace-root publishes while the staged dist manifests remain the real publish surface.
+
+### What worked
+
+- `npm run build:publish-v1` now regenerates `dist/package.json` files with GitHub Packages metadata and file allowlists for the full v1 package set.
+- `npm run pack:smoke-v1` passes again after the dist-builder cleanup removed leaked compiled tests from `os-repl`, `os-ui-cards`, `os-scripting`, and `os-kanban`.
+- `packages/os-core/dist/package.json` now shows the intended publish contract:
+  - GitHub repo linkage
+  - MIT license
+  - `publishConfig.registry` pointing at `https://npm.pkg.github.com`
+  - a publish-time `files` allowlist
+
+### What didn't work
+
+- The first `npm run pack:smoke-v1` after adding `files` failed with:
+  - `Error: packages/os-repl tarball still includes test artifacts: MacRepl.test.d.ts, MacRepl.test.js`
+- That failure was useful, not noise. It exposed that the allowlist alone was too broad unless the build output itself was cleaned first.
+
+### What I learned
+
+- The right place to enforce publish cleanliness is the staged dist builder, not only `.npmignore`, because the compiled test artifacts are generated into the same tree as real runtime output.
+- `files` allowlists and `.npmignore` are complementary here:
+  - `files` makes the intended published surface explicit
+  - dist cleanup plus `.npmignore` catches accidental noisy build output
+- A same-repo GitHub Packages strategy is viable for this repo because each package manifest can point back to its owning `packages/os-*` directory via `repository.directory`.
+
+### What warrants a second pair of eyes
+
+- The current `files` patterns are intentionally broad enough to cover JavaScript, declarations, CSS, VM bootstrap files, and future generated JSON metadata. Reviewers should confirm no package needs a narrower allowlist once the public API surface is fully frozen.
+- The source manifests still keep `private: true` while the staged dist manifests are publishable. That split is deliberate, but it should remain explicit in future release tooling so nobody assumes the package-root manifests are the publish entrypoint.
+
+### What should be done in the future
+
+- Add the first manual GitHub Packages canary workflow on top of these staged manifests instead of publishing ad hoc from a developer machine.
+- Eventually decide whether the package-root manifests should remain permanently `private` or whether release tooling should generate publish-only manifests from a separate template/input source.
+
+### Technical details
+
+- Frontend repo checkpoint commit: `2f7a05bf66b67015f64e4e980fecc365f36f2f0a`
+- Validation commands:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:publish-v1`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run pack:smoke-v1`
+
+## Step 11: Add The First GitHub Packages Canary Workflow
+
+This step adds the first real publish path, but keeps it intentionally narrow. Instead of trying to publish the whole platform graph immediately, the workflow starts with `@go-go-golems/os-core`, which has no intra-platform runtime dependencies and is therefore the cleanest canary package.
+
+### What I did
+
+- Added `.github/workflows/publish-github-package-canary.yml` in `go-go-os-frontend`.
+- Scoped the workflow to manual `workflow_dispatch` runs and restricted the first canary package choice to `packages/os-core`.
+- Configured the workflow for same-repo GitHub Packages publishing:
+  - `permissions.contents: read`
+  - `permissions.packages: write`
+  - `actions/setup-node` with `registry-url: https://npm.pkg.github.com`
+  - `scope: @go-go-golems`
+  - `NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`
+- Made the workflow verify the artifact before publish:
+  - `npm run typecheck -w "$PACKAGE_DIR"`
+  - `npm run test -w "$PACKAGE_DIR"`
+  - `npm run build:dist -w "$PACKAGE_DIR"`
+  - `node scripts/packages/pack-smoke.mjs "$PACKAGE_DIR"`
+- Added `scripts/packages/publish-github-package.mjs` so the workflow can:
+  - publish from the staged `dist/` directory
+  - optionally append a prerelease suffix such as `canary.<run-number>`
+  - dry-run the publish path without mutating git state
+  - restore the original `dist/package.json` after the publish step
+
+### Why
+
+- The repo now has publishable staged manifests, so the next missing piece is a repeatable registry path that does not depend on local shell history.
+- `os-core` is the right first canary because it exercises:
+  - the GitHub Packages namespace (`@go-go-golems`)
+  - same-repo package linkage
+  - staged dist-manifest publishing
+  - package installability metadata
+  without immediately taking on the internal dependency version-rewrite problem for the full platform graph.
+- This also locks in the repository-linkage decision: publish from the source repo and let GitHub Packages associate the package with `go-go-os-frontend`, not a separate distribution repo.
+
+### What worked
+
+- A local dry-run of the publish helper succeeded for `os-core`:
+  - it stamped `0.1.0-canary.local`
+  - ran `npm publish --dry-run` from `packages/os-core/dist`
+  - targeted `https://npm.pkg.github.com`
+  - restored the original staged `package.json` afterward
+- The workflow is now structured so the actual publish step only runs after typecheck, tests, dist build, and pack smoke pass.
+
+### What didn't work
+
+- The first draft tried to detect the presence of a `test` script dynamically with `npm pkg get scripts.test -w "$PACKAGE_DIR"`, but npm returns an object keyed by package name rather than a simple scalar. Since the workflow is intentionally restricted to `os-core`, the safer fix was to run the package test command directly and avoid clever detection logic.
+
+### What I learned
+
+- A narrow canary workflow is more useful than a generic-but-fragile one at this stage. The full publish-set workflow will need version orchestration across internal package dependencies, but the first registry proof does not.
+- The same-source-repo strategy is now concrete in both code and docs:
+  - package metadata points at `go-go-os-frontend`
+  - the workflow uses `GITHUB_TOKEN`
+  - package access is expected to inherit from the linked source repository unless later package settings require explicit `Manage Actions access`
+- Federation remains separate from npm distribution. The GitHub Packages workflow only covers installable npm artifacts; remote browser bundles and manifests still belong under the later static-hosting/federation phases.
+
+### What warrants a second pair of eyes
+
+- GitHub package settings will still need a manual check after the first real canary publish:
+  - visibility
+  - repository linkage
+  - inherited access
+  - `Manage Actions access` for any other repo that must consume the package in CI
+- The workflow currently only offers `packages/os-core` as a manual choice. That is intentional for the first registry proof, but it will need to broaden once intra-platform version rewriting is automated.
+
+### What should be done in the future
+
+- Run the first non-dry-run canary publish for `@go-go-golems/os-core` from GitHub Actions and verify package settings on GitHub.
+- After that, add release-time version rewriting for dependent platform packages so `os-chat`, `os-scripting`, `os-shell`, and the rest can publish as a coherent set.
+
+### Technical details
+
+- Frontend repo checkpoint commit: `071efc0180a20bc860bc3516b9fe543957fdcc11`
+- Validation command:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-core && node scripts/packages/publish-github-package.mjs packages/os-core --tag canary --version-suffix canary.local --dry-run`

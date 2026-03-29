@@ -66,10 +66,10 @@
   - `@hypercard/kanban-runtime` -> `@go-go-golems/os-kanban`
   - `@hypercard/confirm-runtime` -> `@go-go-golems/os-confirm`
   - source-path aliases -> package imports
-- [ ] Decide repository linkage strategy for GitHub Packages:
+- [x] Decide repository linkage strategy for GitHub Packages:
   - publish from the source repo and link package to that repo
-  - or publish into a dedicated distribution repo
-- [ ] Record the rule that federation/distribution URLs are a separate concern from npm package registry URLs.
+  - do not add a separate distribution repo for the npm registry path
+- [x] Record the rule that federation/distribution URLs are a separate concern from npm package registry URLs.
 
 ## Phase 1: Make Packages Actually Publishable
 
@@ -107,11 +107,11 @@
   - generated JSON metadata if needed
 - [ ] Phase 1C: Tighten published package manifests.
 - [ ] Remove `private: true` from packages that will be published.
-- [ ] Add complete `repository`, `license`, `homepage`, `bugs`, and ownership metadata to each publishable `package.json`.
+- [x] Add complete `repository`, `license`, `homepage`, `bugs`, and ownership metadata to each publishable `package.json`.
 - [ ] Replace source-first entrypoints with built artifacts:
   - change `exports`, `main`, and `types` away from `src/*`
   - point them to `dist/*`
-- [ ] Add explicit `files` allowlists so publishes contain only the intended runtime assets.
+- [x] Add explicit `files` allowlists so publishes contain only the intended runtime assets.
 - [ ] Audit every package for non-TypeScript runtime assets that must ship:
   - CSS files
   - `.vm.js` bootstrap/prelude files
@@ -162,15 +162,15 @@
 ## Phase 4: Publish To GitHub Packages
 
 - [ ] Create the GitHub Packages target namespace and confirm the owning user or organization.
-- [ ] Add `publishConfig.registry` or workflow-level registry configuration for `https://npm.pkg.github.com`.
+- [x] Add `publishConfig.registry` or workflow-level registry configuration for `https://npm.pkg.github.com`.
 - [ ] Ensure every published package is scoped to the chosen GitHub owner namespace and uses the `@go-go-golems/*` package names.
-- [ ] Add workflow permissions required for same-repo publishes:
+- [x] Add workflow permissions required for same-repo publishes:
   - `contents: read`
   - `packages: write`
 - [ ] If publishing to a different destination repository, provision and store the required PAT instead of relying on `GITHUB_TOKEN`.
-- [ ] Decide whether packages inherit access from linked repositories or use explicit package permissions.
+- [x] Decide whether packages inherit access from linked repositories or use explicit package permissions.
 - [ ] Grant `Manage Actions access` to every repo that must install private/internal packages in CI.
-- [ ] Implement a publish workflow that only runs after package build/test/pack smoke checks pass.
+- [x] Implement a publish workflow that only runs after package build/test/pack smoke checks pass.
 - [ ] Publish one canary package first and validate:
   - package visibility
   - package metadata
