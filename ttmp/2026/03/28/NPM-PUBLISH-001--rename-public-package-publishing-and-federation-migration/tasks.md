@@ -1,0 +1,242 @@
+# Tasks
+
+## Complete
+
+- [x] Read the existing split/composition and runtime-package guides that already define the intended architecture boundary.
+- [x] Inspect the current `@hypercard/*` workspace packages, app packages, launcher host, Vite aliasing, and CI workflow.
+- [x] Verify the current external constraints for GitHub Packages publishing and package access.
+- [x] Write a migration task board that stages rename decisions, publishable npm packages, host consumption by version, and federation as separate cuts.
+- [x] Confirm the target published npm scope is `@go-go-golems/*`.
+- [x] Confirm the platform package rename map:
+  - `@hypercard/engine` -> `@go-go-golems/os-core`
+  - `@hypercard/desktop-os` -> `@go-go-golems/os-shell`
+  - `@hypercard/hypercard-runtime` -> `@go-go-golems/os-scripting`
+  - `@hypercard/ui-runtime` -> `@go-go-golems/os-ui-cards`
+  - `@hypercard/chat-runtime` -> `@go-go-golems/os-chat`
+  - `@hypercard/repl` -> `@go-go-golems/os-repl`
+  - `@hypercard/rich-widgets` -> `@go-go-golems/os-widgets`
+  - `@hypercard/kanban-runtime` -> `@go-go-golems/os-kanban`
+  - `@hypercard/confirm-runtime` -> `@go-go-golems/os-confirm`
+
+## Phase 0: Freeze Public Naming And Release Policy
+
+- [x] Apply the hard-cut rename from `@hypercard/*` to `@go-go-golems/*` across package manifests, imports, docs, and examples.
+- [x] Execute the agreed platform rename map:
+  - `engine` -> `os-core`
+  - `desktop-os` -> `os-shell`
+  - `hypercard-runtime` -> `os-scripting`
+  - `ui-runtime` -> `os-ui-cards`
+  - `chat-runtime` -> `os-chat`
+  - `repl` -> `os-repl`
+  - `rich-widgets` -> `os-widgets`
+  - `kanban-runtime` -> `os-kanban`
+  - `confirm-runtime` -> `os-confirm`
+- [ ] Write a package identity matrix for every publishable artifact:
+  - package name
+  - owning repo
+  - source path
+  - exported entrypoints
+  - whether it is a core package, app package, or runtime package
+- [ ] Decide which packages are first-class public contracts versus internal implementation packages.
+- [ ] Freeze the first publish set for v1:
+  - `@go-go-golems/os-core`
+  - `@go-go-golems/os-shell`
+  - `@go-go-golems/os-chat`
+  - `@go-go-golems/os-scripting`
+  - `@go-go-golems/os-ui-cards`
+  - `@go-go-golems/os-kanban`
+  - `@go-go-golems/os-repl`
+  - `@go-go-golems/os-widgets`
+  - `@go-go-golems/os-confirm`
+- [ ] Decide whether app packages also publish in the same wave or later:
+  - inventory app package under its final `@go-go-golems/*` name
+  - apps browser package under its final `@go-go-golems/*` name
+  - todo app package under its final `@go-go-golems/*` name
+  - crm app package under its final `@go-go-golems/*` name
+  - book-tracker-debug package under its final `@go-go-golems/*` name
+  - hypercard-tools package under its final `@go-go-golems/*` name
+- [x] Write the hard-cut rename map for every old import path, alias, README example, and docs/tutorial snippet:
+  - `@hypercard/engine` -> `@go-go-golems/os-core`
+  - `@hypercard/desktop-os` -> `@go-go-golems/os-shell`
+  - `@hypercard/hypercard-runtime` -> `@go-go-golems/os-scripting`
+  - `@hypercard/ui-runtime` -> `@go-go-golems/os-ui-cards`
+  - `@hypercard/chat-runtime` -> `@go-go-golems/os-chat`
+  - `@hypercard/repl` -> `@go-go-golems/os-repl`
+  - `@hypercard/rich-widgets` -> `@go-go-golems/os-widgets`
+  - `@hypercard/kanban-runtime` -> `@go-go-golems/os-kanban`
+  - `@hypercard/confirm-runtime` -> `@go-go-golems/os-confirm`
+  - source-path aliases -> package imports
+- [ ] Decide repository linkage strategy for GitHub Packages:
+  - publish from the source repo and link package to that repo
+  - or publish into a dedicated distribution repo
+- [ ] Record the rule that federation/distribution URLs are a separate concern from npm package registry URLs.
+
+## Phase 1: Make Packages Actually Publishable
+
+- [ ] Remove `private: true` from packages that will be published.
+- [ ] Add complete `repository`, `license`, `homepage`, `bugs`, and ownership metadata to each publishable `package.json`.
+- [ ] Replace source-first entrypoints with built artifacts:
+  - change `exports`, `main`, and `types` away from `src/*`
+  - point them to `dist/*`
+- [ ] Add explicit `files` allowlists so publishes contain only the intended runtime assets.
+- [ ] Audit every package for non-TypeScript runtime assets that must ship:
+  - CSS files
+  - `.vm.js` bootstrap/prelude files
+  - generated JSON metadata
+  - docs metadata helpers
+- [ ] Add package-local build steps that emit clean ESM plus declarations into `dist/`.
+- [ ] Ensure subpath exports continue to work after dist-output rewrite.
+- [ ] Add pack/install smoke tests that consume packed tarballs rather than workspace source.
+- [ ] Add an API-surface audit for each package so only supported exports remain public.
+- [ ] Decide `peerDependencies` versus `dependencies` policy for shared React and Redux packages.
+- [ ] Eliminate `workspace:*` leakage from published dependency manifests.
+- [ ] Add a release-time rewrite/versioning strategy for intra-repo package references.
+- [ ] Verify published packages can be installed in a fresh external fixture with no sibling-repo aliasing.
+
+## Phase 2: Replace Local Source Alias Assumptions In Consumers
+
+- [ ] Inventory every place where `wesen-os` resolves `@hypercard/*` or `@go-go-golems/*` to sibling repo source paths.
+- [ ] Inventory every place where app repos resolve frontend packages to `go-go-os-frontend/packages/*/src`.
+- [ ] Replace Vite alias generation that points at source trees with a two-mode resolver:
+  - local-dev workspace mode
+  - published-package mode
+- [ ] Replace TypeScript `paths` mappings that point to sibling `src` directories with publish-compatible resolution.
+- [ ] Add a root composition switch that can run the launcher against installed package versions instead of linked source.
+- [ ] Add one CI job that forbids accidental `src/` imports from external repos.
+- [ ] Add one CI job that builds the launcher and inventory app against packed or published package artifacts.
+- [ ] Update tutorials and developer docs so the public contract is package import plus exported subpaths only.
+
+## Phase 3: Introduce Versioning And Release Tooling
+
+- [ ] Choose the release/versioning mechanism for the frontend package repo:
+  - Changesets
+  - release-please
+  - custom tag-driven workflow
+- [ ] Define versioning policy:
+  - lockstep versioning for all frontend packages
+  - or independent versioning with explicit compatibility ranges
+- [ ] Decide prerelease policy for architecture work that is not yet stable.
+- [ ] Add automated changelog generation for published packages.
+- [ ] Add release PR or release tag workflow for publish candidates.
+- [ ] Add package provenance/signing policy where supported by the target registry.
+- [ ] Add a release checklist that includes build, test, pack, install-smoke, and docs validation gates.
+
+## Phase 4: Publish To GitHub Packages
+
+- [ ] Create the GitHub Packages target namespace and confirm the owning user or organization.
+- [ ] Add `publishConfig.registry` or workflow-level registry configuration for `https://npm.pkg.github.com`.
+- [ ] Ensure every published package is scoped to the chosen GitHub owner namespace and uses the `@go-go-golems/*` package names.
+- [ ] Add workflow permissions required for same-repo publishes:
+  - `contents: read`
+  - `packages: write`
+- [ ] If publishing to a different destination repository, provision and store the required PAT instead of relying on `GITHUB_TOKEN`.
+- [ ] Decide whether packages inherit access from linked repositories or use explicit package permissions.
+- [ ] Grant `Manage Actions access` to every repo that must install private/internal packages in CI.
+- [ ] Implement a publish workflow that only runs after package build/test/pack smoke checks pass.
+- [ ] Publish one canary package first and validate:
+  - package visibility
+  - package metadata
+  - install from another repo
+  - install in Actions
+- [ ] Publish the first full frontend package set to GitHub Packages.
+- [ ] Tag the release and record the exact published package/version matrix in the ticket.
+
+## Phase 5: Convert `wesen-os` And App Repos To Versioned Consumption
+
+- [ ] Add a package-consumption mode in `wesen-os` that installs the renamed `@go-go-golems/os-*` packages by version instead of requiring sibling repos.
+- [ ] Convert `apps/os-launcher/package.json` dependencies from `workspace:*` to real version ranges in publish mode.
+- [ ] Convert `go-go-app-inventory/apps/inventory/package.json` dependencies from `workspace:*` to real version ranges in publish mode.
+- [ ] Decide which repos remain source-linked during active development and which become package consumers only.
+- [ ] Create a documented local override workflow for engineers who need to patch a published package locally.
+- [ ] Prove that `wesen-os` can build, test, and run with no `workspace-links/go-go-os-frontend` source aliasing.
+- [ ] Prove that `go-go-app-inventory` can build, test, and run against published platform packages.
+- [ ] Add a rollback procedure for bad package publishes:
+  - pin previous versions
+  - republish patch
+  - invalidate remote asset manifests if needed
+
+## Phase 6: Publish App Packages And Runtime Packs
+
+- [ ] Make the inventory app package publishable under its final `@go-go-golems/*` name, with dist outputs and packaged generated VM metadata.
+- [ ] Ensure published app packages expose only stable public entrypoints:
+  - `.`
+  - `./launcher`
+  - `./reducers`
+- [ ] Decide whether demo apps publish as true packages or remain workspace-only examples.
+- [ ] Separate package-owned runtime metadata from host-owned registration logic where needed.
+- [ ] Verify `@go-go-golems/os-kanban` and `@go-go-golems/os-ui-cards` stay host-registered and do not regress into side-effect registration.
+- [ ] Add consumer smoke tests proving an external host can register runtime packages from installed npm artifacts.
+
+## Phase 7: Federation Architecture Decision
+
+- [ ] Decide the federation unit:
+  - full app launcher module
+  - runtime package bundle
+  - both
+- [ ] Decide the loading protocol:
+  - Vite/Module Federation remote container
+  - versioned remote ESM manifest without full module federation
+- [ ] Write the remote contract for a federated module:
+  - app id
+  - version
+  - exposed entrypoint
+  - required shared dependencies
+  - runtime package registrations
+  - integrity metadata
+- [ ] Define shared-singleton policy for React, React DOM, Redux, and host runtime registries.
+- [ ] Define how a remote app declares reducers, docs metadata, launcher module, and runtime-pack registrations.
+- [ ] Define host failure behavior for:
+  - unreachable remote
+  - version mismatch
+  - incompatible shared dependency graph
+  - missing runtime package registration
+- [ ] Add a proof-of-concept federated remote for one non-critical app before touching inventory.
+- [ ] Validate that the host can mount a remote app without reintroducing source-level package alias assumptions.
+
+## Phase 8: Static Asset Distribution For Federation
+
+- [ ] Separate npm package publishing from browser asset hosting in the architecture docs and release tooling.
+- [ ] Decide the remote asset host for federated builds:
+  - GitHub-hosted static delivery
+  - Hetzner Object Storage
+  - another CDN/object store
+- [ ] If using Hetzner Object Storage, create the bucket layout and naming convention:
+  - environment
+  - app id
+  - version
+  - manifest path
+  - chunk path
+- [ ] Configure CORS for browser loading of remote manifests and chunks.
+- [ ] Decide custom-domain strategy:
+  - reverse proxy
+  - S3 proxy
+  - provider-native endpoint
+- [ ] Add immutable versioned paths for remote entries and chunks.
+- [ ] Add a signed or checksummed manifest so the host can verify the remote asset set before execution.
+- [ ] Add cache invalidation policy for:
+  - remote entry
+  - manifest
+  - chunk files
+- [ ] Add retention/cleanup policy for stale remote versions.
+
+## Phase 9: End-To-End Cutover
+
+- [ ] Publish the stable core package set.
+- [ ] Convert `wesen-os` to consume published versions in CI and production builds.
+- [ ] Publish the first app package set.
+- [ ] Land one federated remote in a staging environment.
+- [ ] Add end-to-end tests that exercise:
+  - package install and launcher startup
+  - docs registration
+  - runtime package registration
+  - remote app load
+  - remote failure fallback
+- [ ] Remove obsolete alias-only composition code after the package-based path is proven.
+- [ ] Update operator docs, onboarding docs, and release docs for the final model.
+
+## Notes
+
+- The task board originally treated the npm scope as undecided and used the current package basenames as placeholders. That was wrong. The target published scope is `@go-go-golems/*`, and the platform package rename is the concrete `os-*` map listed above.
+- Current platform packages are not publishable yet: they are still `private`, export `src/*`, and rely on `workspace:*` plus sibling-repo Vite/TypeScript aliasing.
+- GitHub Packages is a good fit for versioned internal npm distribution, but it should not be treated as the browser delivery mechanism for federated runtime assets.
+- Federation should start only after package publishing and host consumption by version are stable; otherwise failures will mix package-contract issues with remote-loading issues.
