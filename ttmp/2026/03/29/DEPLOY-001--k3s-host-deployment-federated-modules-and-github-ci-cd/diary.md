@@ -1750,3 +1750,182 @@ I also added a ticket helper for this failure capture:
 - merge that fix
 - rerun `publish-host-image`
 - if the run succeeds, capture the published digest and verify public pull behavior
+
+## 2026-03-29: First Successful Host Image Publish And Public Pull Proof
+
+The third host publish attempt finally succeeded end to end:
+
+- run: `https://github.com/wesen/wesen-os/actions/runs/23718834950`
+
+This was the first run that included both CI repairs:
+
+- tracked launcher VM docs directory
+- explicit `docker/setup-buildx-action@v3`
+
+### Published image ref
+
+The immutable digest from the successful run is:
+
+- `ghcr.io/wesen/wesen-os@sha256:751929d27806403965bc7998ed1e4dfec168b1ee81723535dd695b04b8e8fbf2`
+
+The run also pushed these tags:
+
+- `ghcr.io/wesen/wesen-os:main`
+- `ghcr.io/wesen/wesen-os:sha-4a14ccc`
+
+### Evidence captured
+
+I added:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/18-capture-host-publish-success.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/19-check-public-ghcr-pull.sh`
+
+and used them to capture:
+
+- run/digest proof
+- anonymous pull proof
+
+### Public pull verification
+
+I checked the digest with an empty Docker config so no cached local credentials could influence the result.
+
+The decisive command was effectively:
+
+- `DOCKER_CONFIG=$(mktemp -d) docker pull ghcr.io/wesen/wesen-os@sha256:751929d27806403965bc7998ed1e4dfec168b1ee81723535dd695b04b8e8fbf2`
+
+That succeeded.
+
+This is the important operational conclusion: the cluster does **not** need a pull secret for the first `wesen-os` host rollout if it uses this public GHCR image path.
+
+### Nuance
+
+A direct raw HTTP probe against the registry manifest endpoint still returned `401 Unauthorized`. That is not the same thing as “the image is private”; registries commonly use an auth challenge and token flow for anonymous clients. The meaningful operational test is the anonymous Docker client pull, and that passed.
+
+### What should happen next
+
+- pin the Hetzner K3s deployment manifest to the immutable digest
+- push that update into `wesen/2026-03-27--hetzner-k3s#5`
+- then merge the GitOps PR
+
+## 2026-03-29: Consolidating `wesen-os` To The `draft-review` GitOps-PR Model
+
+After the first successful host publish, the main architectural question was no longer “can we build and publish the image?” It was “are we using the same operator model we already documented and proved elsewhere?”
+
+The answer was: not yet.
+
+### Why this follow-up was necessary
+
+At this point `wesen-os` still had two separate deployment-era workflows:
+
+- `.github/workflows/publish-host-image.yml`
+- `.github/workflows/deploy-host-to-k3s.yml`
+
+That shape is acceptable during early bring-up, but it is not the clean standard documented in the Hetzner K3s repo and already exercised by `draft-review`.
+
+The standard model is:
+
+```text
+source repo CI
+  -> publish immutable GHCR image
+  -> open GitOps PR against the K3s repo
+  -> reviewer merges PR
+  -> Argo CD reconciles cluster
+```
+
+That flow keeps the control-plane boundaries clear:
+
+- source repo owns build/publish logic
+- GitOps repo owns desired deployment state
+- Argo owns rollout
+
+### What I reviewed before changing code
+
+- `/home/manuel/code/wesen/2026-03-24--draft-review/.github/workflows/publish-image.yaml`
+- `/home/manuel/code/wesen/2026-03-24--draft-review/deploy/gitops-targets.json`
+- `/home/manuel/code/wesen/2026-03-24--draft-review/scripts/open_gitops_pr.py`
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/app-packaging-and-gitops-pr-standard.md`
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/source-app-deployment-infrastructure-playbook.md`
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/public-repo-ghcr-argocd-deployment-playbook.md`
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/deployment.yaml`
+- `.github/workflows/publish-host-image.yml`
+- `.github/workflows/deploy-host-to-k3s.yml`
+
+### Core conclusion
+
+`draft-review` was not merely “another way to do it.” It is the correct normalization target for `wesen-os` too:
+
+- keep image publishing in the source repo
+- add `deploy/gitops-targets.json`
+- add `scripts/open_gitops_pr.py`
+- let the publish workflow open the GitOps PR itself
+- leave the manual `kubectl` workflow only as a break-glass operator path
+
+That is also the model another colleague expected to see in the docs, which is a useful signal: the current documentation still makes this too easy to miss.
+
+### Changes made in this slice
+
+I added the source-repo metadata that the GitOps PR flow needs:
+
+- `deploy/gitops-targets.json`
+- `scripts/open_gitops_pr.py`
+
+The target metadata is intentionally minimal and points at the canonical cluster manifest:
+
+- repo: `wesen/2026-03-27--hetzner-k3s`
+- branch: `main`
+- manifest: `gitops/kustomize/wesen-os/deployment.yaml`
+- container: `wesen-os`
+
+I then rewrote `.github/workflows/publish-host-image.yml` to follow the same structure as `draft-review`:
+
+- top-level workflow permissions
+- workflow concurrency
+- `docker` job for build/publish
+- `gitops-pr` job that runs only after `docker`
+- shell-side empty-token check for `GITOPS_PR_TOKEN`
+
+I also modernized the shared action versions while touching the file:
+
+- `actions/checkout@v5`
+- `actions/setup-node@v5`
+- `docker/setup-buildx-action@v4`
+- `docker/login-action@v4`
+- `docker/metadata-action@v6`
+- `docker/build-push-action@v7`
+- `actions/setup-python@v6`
+
+That change is not cosmetic. It also removes the earlier drift from the reference workflow and reduces the chance that future debugging gets obscured by old action-version behavior.
+
+### Ticket helper scripts added for this step
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/20-compare-draft-review-publish-workflow.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/21-check-open-gitops-pr-helper.sh`
+
+These exist for two reasons:
+
+1. they let us compare the local `wesen-os` workflow against the `draft-review` reference quickly
+2. they let us dry-run the GitOps PR helper against the local Hetzner K3s checkout before depending on GitHub Actions
+
+### Documentation work discovered during this slice
+
+While reviewing the K3s docs and discussing the model, it became obvious that the GitHub -> GitOps PR handoff is still too implicit. The information exists, but it is too distributed across:
+
+- the app-packaging standard
+- the public-GHCR playbook
+- the source-app deployment playbook
+
+The ticket backlog now explicitly includes follow-up tasks to tighten that documentation:
+
+- add a short top-level deployment-model page in the K3s repo
+- move the GitHub -> GitOps PR flow nearer the top of the main app-packaging doc
+- add a “most common misunderstanding” section explaining that GHCR publish is not deployment by itself
+- add a concrete end-to-end reference section pointing at `draft-review`
+
+This is worth doing only after the `wesen-os` source repo actually follows the same model. Otherwise the documentation would be ahead of the implementation and therefore less trustworthy.
+
+### What should happen next
+
+- dry-run `scripts/open_gitops_pr.py` locally against `/home/manuel/code/wesen/2026-03-27--hetzner-k3s`
+- validate the updated workflow YAML
+- commit the publish-success checkpoint and workflow-consolidation slice in bounded commits
+- then push the branch and run the new `gitops-pr` job on GitHub
