@@ -113,6 +113,71 @@ This audit turns the next Docker task from guesswork into a concrete build recip
 
 That is a materially better starting point than inventing a static-file-only container and discovering later that the runtime contract actually depends on the combined Go launcher process.
 
+## 2026-03-29: Task 2, Self-Contained Go Workspace
+
+The first attempt at a container-friendly build immediately exposed a bigger infrastructure problem than the missing `Dockerfile`.
+
+### The blocker
+
+The root `go.work` still depended on sibling directories outside this repository:
+
+- `../geppetto`
+- `../go-go-os-chat`
+- `../pinocchio`
+
+That is acceptable on one developer workstation. It is not acceptable for:
+
+- GitHub Actions
+- Docker image builds
+- reproducible deployment pipelines
+
+If the repo checkout itself is not self-contained, every downstream deployment artifact becomes fragile.
+
+### What I tested
+
+- `go env CGO_ENABLED GOOS GOARCH`
+- `npm run launcher:binary:build`
+- `GOWORK=off go build -o /tmp/wesen-os-launcher-gowork-off ./cmd/wesen-os-launcher`
+- `GOWORK=off go list -m -versions github.com/go-go-golems/go-go-os-chat`
+- `GOWORK=off go list -m -versions github.com/go-go-golems/geppetto`
+- `GOWORK=off go list -m -versions github.com/go-go-golems/pinocchio`
+
+### What I learned
+
+- The normal local launcher build succeeds.
+- The root binary currently builds with `CGO_ENABLED=1`, which matters for the future image builder.
+- `GOWORK=off` initially failed because `go.mod` still pinned `github.com/go-go-golems/go-go-os-chat` to `v0.0.0`.
+- After updating to `v0.0.1`, the deeper issue became visible:
+  - the current app/backend stack still expects local Geppetto surfaces not available in the older dependency graph assumed by the root repo
+- In other words, the root build was reproducible only if the sibling repos happened to exist on disk.
+
+### Decision
+
+For this deployment program, the pragmatic fix is to move those implicit sibling dependencies under `workspace-links/` as tracked submodules and rewrite `go.work` to reference only repo-local paths.
+
+### Changes in this step
+
+- Added new tracked submodules:
+  - `workspace-links/geppetto`
+  - `workspace-links/pinocchio`
+  - `workspace-links/go-go-os-chat`
+- Rewrote `go.work` from `../...` references to `./workspace-links/...`
+- Rewrote the `go-go-os-chat` replace path in `go.work`
+- Updated the root module graph toward the current published dependency line:
+  - `github.com/go-go-golems/go-go-os-chat v0.0.1`
+  - newer `geppetto`, `pinocchio`, and transitive versions in `go.mod`
+
+### Output of this step
+
+- Ticket script:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/02-check-repo-local-go-work.sh`
+- Generated check artifact:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/02-repo-local-go-work-check.md`
+
+### Why this matters
+
+This is the actual prerequisite for the Dockerfile task. A deployment image built from this repo must be able to reconstruct the same Go dependency graph from the repo checkout plus tracked submodules, not from undocumented sibling directories outside version control.
+
 ## 2026-03-29: reMarkable Delivery
 
 After the ticket content was written, I bundled the main deliverables into a single PDF for reMarkable delivery:

@@ -26,6 +26,7 @@
 ## Phase 1: Containerize The Host
 
 - [x] Audit the current host build surface, binary entrypoint, frontend embed path, and existing smoke/build scripts.
+- [x] Make the root Go workspace self-contained inside this repository so CI and Docker builds do not depend on sibling checkouts outside the repo.
 - [ ] Add a production `Dockerfile` for the `wesen-os` host.
 - [ ] Decide whether the container serves only frontend assets or also embeds the Go launcher backend.
 - [ ] Add a `.dockerignore`.
