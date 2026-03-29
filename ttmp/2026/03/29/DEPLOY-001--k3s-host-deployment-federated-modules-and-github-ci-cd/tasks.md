@@ -83,16 +83,16 @@
 
 ## Phase 3B: Move Canonical Host GitOps Into Hetzner K3s Repo
 
-- [ ] Add a `wesen-os` Kustomize package under:
+- [x] Add a `wesen-os` Kustomize package under:
   - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/`
-- [ ] Normalize that package to repo conventions:
+- [x] Normalize that package to repo conventions:
   - `namespace.yaml`
   - `configmap.yaml`
   - `deployment.yaml`
   - `service.yaml`
   - `ingress.yaml`
   - `kustomization.yaml`
-- [ ] Render-validate the new package with:
+- [x] Render-validate the new package with:
   - `kubectl kustomize gitops/kustomize/wesen-os`
 - [ ] Decide whether the cluster will pull `ghcr.io/wesen/wesen-os` publicly or via image pull secret.
 - [ ] If private pull is required, add the cluster-side service account / pull-secret pattern in the Hetzner repo.

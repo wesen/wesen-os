@@ -1172,6 +1172,114 @@ I wrote that migration guide into the active ticket and expanded the task board 
 - First concrete target for `wesen-os`:
   - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/`
 
+## 2026-03-29: Step 12, First Hetzner GitOps Package For `wesen-os`
+
+With the migration guide and Phase `3B` task list in place, I started the actual cross-repo implementation by creating the first canonical Kustomize package in the Hetzner K3s repo. I stopped deliberately before adding an Argo `Application`, because the safe next checkpoint is “render-valid package exists in the cluster repo,” not “cluster starts trying to deploy it immediately.”
+
+This gives us the first real transfer of Kubernetes ownership from the `wesen-os` draft manifests to the GitOps repo while keeping the live rollout risk controlled.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 11)
+
+**Assistant interpretation:** After documenting the migration path, start implementing it immediately, task by task.
+
+**Inferred user intent:** Make the cluster repo the real home of the deployment shape, but do it in a staged and auditable way.
+
+### What I did
+
+- Added a new Kustomize package in the Hetzner repo:
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/kustomization.yaml`
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/namespace.yaml`
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/configmap.yaml`
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/deployment.yaml`
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/service.yaml`
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/ingress.yaml`
+- Followed the repo’s conventions:
+  - namespace manifest with Argo sync-wave
+  - Kustomize package under `gitops/kustomize/<app>`
+  - Traefik ingress
+  - `letsencrypt-prod` issuer annotation
+  - `IfNotPresent` image pull policy
+- Kept the current image reference provisional:
+  - `ghcr.io/wesen/wesen-os:main`
+- Added ticket render helper:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/11-render-hetzner-k3s-wesen-os-package.sh`
+- Added render artifact:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/11-hetzner-k3s-wesen-os-package-render.md`
+- Committed the K3s-repo slice as:
+  - Hetzner repo commit `04328a4` — `Add wesen-os GitOps package`
+
+### Why
+
+- The docs in the Hetzner repo make the target ownership model unambiguous: the canonical cluster package belongs there.
+- Adding the package without adding the Argo `Application` lets us validate the manifest shape safely before the cluster starts reconciling it.
+- This is the smallest real slice that proves we can move from “draft manifests in the app repo” to “canonical manifests in the GitOps repo.”
+
+### What worked
+
+- The new package rendered successfully with:
+  - `kubectl kustomize /home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os`
+- The package lines up with the repo’s existing examples such as:
+  - `pretext`
+  - `artifacts`
+- The deployment config remains aligned with the host runtime contract we already proved:
+  - `--addr=:8091`
+  - `--arc-enabled=false`
+  - mounted profile registry config
+
+### What didn't work
+
+- The first version of the ticket render helper had a shell quoting bug because the markdown title contained backticks:
+  - shell tried to execute `wesen-os` as a command
+- The rendered manifest itself was fine; the bug was only in the reporting helper.
+- I fixed the helper and reran the render artifact.
+
+### What I learned
+
+- The Hetzner repo’s package conventions are simple enough that the `wesen-os` host fits naturally as a standard Kustomize app package.
+- We do not need the Argo `Application` yet to make real progress. The package-level checkpoint is valuable on its own.
+- The first package can stay public-image-oriented for now; image-pull auth can be layered in later if the GHCR package ends up private.
+
+### What was tricky to build
+
+- The main design choice was what **not** to do yet. It would have been easy to add `gitops/applications/wesen-os.yaml` immediately, but that would have turned a manifest-shape task into a live rollout task before the GHCR image and pull-mode questions were settled.
+- The other subtlety was deciding how much of the draft `wesen-os` manifest shape to carry over unchanged. I kept the runtime args, probes, config mount, and service shape, but normalized the package to the Hetzner repo’s conventions for namespace, ingress, labels, and sync-wave annotations.
+
+### What warrants a second pair of eyes
+
+- Whether `wesen-os.yolo.scapegoat.dev` is the right ingress hostname or only a temporary placeholder.
+- Whether the initial image reference should stay `:main` until the first published SHA exists, or whether we should block even the package from landing until the SHA is known.
+- Whether the config belongs in a `ConfigMap` long-term or should later move behind Vault/VSO.
+
+### What should be done in the future
+
+- Decide the GHCR pull strategy:
+  - public image
+  - or cluster pull secret
+- Add `gitops/applications/wesen-os.yaml` only after that decision and after the first real image exists.
+- Then wire `wesen-os` CI to propose GitOps image updates into the Hetzner repo.
+
+### Code review instructions
+
+- Start with:
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/kustomization.yaml`
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/deployment.yaml`
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/ingress.yaml`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/11-render-hetzner-k3s-wesen-os-package.sh`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/11-hetzner-k3s-wesen-os-package-render.md`
+- Validate with:
+  - `kubectl kustomize /home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os`
+
+### Technical details
+
+- Current provisional image ref in the package:
+  - `ghcr.io/wesen/wesen-os:main`
+- Current provisional ingress host:
+  - `wesen-os.yolo.scapegoat.dev`
+- K3s repo commit:
+  - `04328a41ed201a53457be163367accdf99db584c`
+
 ## 2026-03-29: reMarkable Delivery
 
 After the ticket content was written, I bundled the main deliverables into a single PDF for reMarkable delivery:
