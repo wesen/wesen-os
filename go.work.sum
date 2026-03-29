@@ -349,6 +349,7 @@ github.com/a-h/htmlformat v0.0.0-20250209131833-673be874c677 h1:H1EoxMpNo/TnCZEg
 github.com/a-h/htmlformat v0.0.0-20250209131833-673be874c677/go.mod h1:FMIm5afKmEfarNbIXOaPHFY8X7fo+fRQB6I9MPG2nB0=
 github.com/a-h/parse v0.0.0-20250122154542-74294addb73e h1:HjVbSQHy+dnlS6C3XajZ69NYAb5jbGNfHanvm1+iYlo=
 github.com/a-h/parse v0.0.0-20250122154542-74294addb73e/go.mod h1:3mnrkvGpurZ4ZrTDbYU84xhwXW2TjTKShSwjRi2ihfQ=
+github.com/a-h/templ v0.3.898/go.mod h1:oLBbZVQ6//Q6zpvSMPTuBK0F3qOtBdFBcGRspcT+VNQ=
 github.com/adrg/xdg v0.5.3 h1:xRnxJXne7+oWDatRhR1JLnvuccuIeCoBu2rtuLqQB78=
 github.com/adrg/xdg v0.5.3/go.mod h1:nlTsY+NNiCBGCK2tpm09vRqfVzrc2fLmXGpBLF0zlTQ=
 github.com/agnivade/levenshtein v1.2.1 h1:EHBY3UOn1gwdy/VbFwgo4cxecRznFk7fKWN1KOX7eoM=
@@ -508,9 +509,10 @@ github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200222043503-6f7a984d4dc4 h1:WtGNWLvXpe
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200222043503-6f7a984d4dc4/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-go-golems/bobatea v0.1.1 h1:yZvNBBd7vV2NIyCF+0HjSwyd65flgxrR7wKg98njK/I=
 github.com/go-go-golems/bobatea v0.1.1/go.mod h1:YOyr6o37FxChZdeVfYip9obm66SwOpl8/x/Y8U1/nBs=
+github.com/go-go-golems/bobatea v0.1.3/go.mod h1:Q9yzdSlVk/V61k0BGY3lsXYleZomXDl/ZBmpI9HnCPg=
 github.com/go-go-golems/geppetto v0.8.0/go.mod h1:4v2EP5+LwhgUvqD3k11j1b5foWp1EEW8UHsd81pK9bo=
+github.com/go-go-golems/geppetto v0.10.15/go.mod h1:Pa8R0u2dUBC8rLH3B7a05TxBXGlnITaQZoNSoLjF9CE=
 github.com/go-go-golems/glazed v1.0.1/go.mod h1:kE/DlsgJKyGci2p/qw2p4ra3HkYjBCSQrOU8k0wBetA=
-github.com/go-go-golems/go-go-os-chat v0.0.1/go.mod h1:q9O+yX42dJ8JGu/csgEaO0dfkiT7nK92lt3/SjqJnWc=
 github.com/go-go-golems/go-sqlite-regexp v0.0.1 h1:EX5c+9YXEiXjTlR2187kYVfPFwOOLFyADJrNrZFnK+I=
 github.com/go-go-golems/go-sqlite-regexp v0.0.1/go.mod h1:hq4dRsHIPcPy7sHevG9vh/mf6T5/BiWwcsRll+n4PzA=
 github.com/go-jose/go-jose/v4 v4.0.5/go.mod h1:s3P1lRrkT8igV8D9OjyL4WRyHvjB6a4JSllnOrmmBOA=

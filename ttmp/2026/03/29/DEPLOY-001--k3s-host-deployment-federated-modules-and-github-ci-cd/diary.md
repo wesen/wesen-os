@@ -178,6 +178,92 @@ For this deployment program, the pragmatic fix is to move those implicit sibling
 
 This is the actual prerequisite for the Dockerfile task. A deployment image built from this repo must be able to reconstruct the same Go dependency graph from the repo checkout plus tracked submodules, not from undocumented sibling directories outside version control.
 
+## 2026-03-29: Task 3, First Host Dockerfile
+
+With the repo-local Go workspace in place, I could finally add the first real host image definition.
+
+### Decision
+
+The first image packages the combined launcher process:
+
+- embedded frontend shell
+- namespaced backend modules
+- one runtime binary
+
+I explicitly did **not** split the frontend into a separate static webserver image yet, because the current build and runtime contract is already centered on the combined Go launcher binary and its embedded SPA assets.
+
+### Files added
+
+- `Dockerfile`
+- `.dockerignore`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/03-build-host-image.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/03-host-image-build-check.md`
+
+### Dockerfile shape
+
+- stage 1: `golang:1.26.1-bookworm`
+  - source of the Go toolchain
+- stage 2: `node:22-bookworm-slim`
+  - install build-essential and git
+  - copy the Go toolchain in
+  - run `npm ci`
+  - run `npm run launcher:binary:build`
+- stage 3: `debian:bookworm-slim`
+  - install `ca-certificates` and `tini`
+  - add non-root user
+  - copy the built launcher binary
+  - default entrypoint:
+    - `/usr/local/bin/wesen-os-launcher wesen-os-launcher --addr=:8091 --arc-enabled=false`
+
+### Why `--arc-enabled=false` by default
+
+The ARC runtime is not yet part of the production image contract. Leaving it on by default would make the first image far more fragile. The safe first host image should boot with the core module set even if ARC remains an optional later concern.
+
+### Why the image uses the combined binary
+
+The current packaging chain already assumes:
+
+1. Vite build for `apps/os-launcher`
+2. sync into `pkg/launcherui/dist`
+3. Go binary build from `cmd/wesen-os-launcher`
+
+The Dockerfile now formalizes that existing chain instead of inventing a different deployment model.
+
+### First build failures and fixes
+
+The first image build did not pass immediately. That was expected, and the failure sequence was useful:
+
+1. `npm ci` failed in the builder stage with:
+   - `EUNSUPPORTEDPROTOCOL Unsupported URL Type "workspace:"`
+2. I switched the image builder to:
+   - `corepack enable`
+   - `corepack prepare pnpm@10.17.1 --activate`
+   - `pnpm install --frozen-lockfile`
+3. The next image build failed because `pnpm-lock.yaml` was stale relative to the current workspace.
+4. I refreshed the root lockfile with:
+   - `pnpm install`
+5. The next image build succeeded.
+
+### Validation result
+
+- local image tag:
+  - `wesen-os:deploy-001`
+- local image ID:
+  - `sha256:c46ede3516ac1c5b1bf79f306a200c4c5363708e698f13a276d1f71923ec637f`
+- approximate local size:
+  - `180MB`
+
+### Ticket artifact
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/03-host-image-build-check.md`
+
+The next task after this checkpoint should be the image smoke run:
+
+- start the container
+- probe `/`
+- probe `/api/os/apps`
+- verify the default `--arc-enabled=false` startup path is healthy
+
 ## 2026-03-29: reMarkable Delivery
 
 After the ticket content was written, I bundled the main deliverables into a single PDF for reMarkable delivery:

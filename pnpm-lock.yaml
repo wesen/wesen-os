@@ -583,12 +583,21 @@ importers:
       '@go-go-golems/os-chat':
         specifier: workspace:*
         version: link:../../../go-go-os-frontend/packages/os-chat
+      '@go-go-golems/os-confirm':
+        specifier: workspace:*
+        version: link:../../../go-go-os-frontend/packages/os-confirm
+      '@go-go-golems/os-core':
+        specifier: workspace:*
+        version: link:../../../go-go-os-frontend/packages/os-core
       '@go-go-golems/os-kanban':
         specifier: workspace:*
         version: link:../../../go-go-os-frontend/packages/os-kanban
       '@go-go-golems/os-scripting':
         specifier: workspace:*
         version: link:../../../go-go-os-frontend/packages/os-scripting
+      '@go-go-golems/os-shell':
+        specifier: workspace:*
+        version: link:../../../go-go-os-frontend/packages/os-shell
       '@go-go-golems/os-ui-cards':
         specifier: workspace:*
         version: link:../../../go-go-os-frontend/packages/os-ui-cards
@@ -1083,15 +1092,22 @@ importers:
       '@reduxjs/toolkit':
         specifier: ^2.0.0
         version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
-      react:
-        specifier: ^18 || ^19
-        version: 19.2.4
-      react-dom:
-        specifier: ^18 || ^19
-        version: 19.2.4(react@19.2.4)
       react-redux:
         specifier: ^9.0.0
         version: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.14)
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.2.4
+        version: 19.2.4(react@19.2.4)
 
   workspace-links/go-go-os-frontend/packages/os-scripting:
     dependencies:
