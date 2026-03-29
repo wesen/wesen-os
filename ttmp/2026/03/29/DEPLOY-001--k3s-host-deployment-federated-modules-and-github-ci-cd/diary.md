@@ -503,6 +503,111 @@ The result was positive: the current `apps/os-launcher` production build is dete
   - `apps/os-launcher/vite.config.ts`
   - generated outputs under `apps/os-launcher/dist`
 
+## 2026-03-29: Task 6, Host Image Naming Decision
+
+With the local image and smoke path proven, I locked down the host image naming policy instead of leaving it as a vague “something under GHCR.” That decision needs to be concrete before the first GHCR workflow is written, otherwise the workflow, deployment manifests, and rollback docs will each invent slightly different names and tags.
+
+I encoded the decision as a ticket-local resolver script rather than a prose-only note so the forthcoming workflow can reuse the same logic and so the ticket preserves the exact inputs that drove the naming choice.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 4)
+
+**Assistant interpretation:** Keep advancing the deployment ticket in small committed slices and document each decision clearly enough to reconstruct later.
+
+**Inferred user intent:** Avoid implicit deployment conventions; turn them into explicit, reviewable decisions before automation depends on them.
+
+**Commit (code):** `eef13b2` — `Define host image tagging plan`
+
+### What I did
+
+- Added ticket script:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/06-resolve-host-image-tags.sh`
+- Added generated decision artifact:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/06-host-image-tagging-plan.md`
+- Read the actual git remote from this repo:
+  - `git@github.com:wesen/wesen-os`
+- Derived the canonical image repository from that remote:
+  - `ghcr.io/wesen/wesen-os`
+- Chose the tag policy:
+  - always publish an immutable full-SHA tag
+  - optionally publish a short-SHA convenience tag
+  - only publish the mutable `main` tag from the default branch
+  - deploy Kubernetes using image digests rather than mutable tags
+
+### Why
+
+- The GHCR workflow and the later K3s manifests need a shared answer to “what image name are we talking about?”
+- Tag policy is part of rollback design. If immutable tags do not exist, you lose straightforward traceability.
+- It is safer to reserve moving tags like `main` for the default branch than to let arbitrary branches overwrite a shared mutable reference.
+
+### What worked
+
+- The repo remote resolved cleanly to `wesen/wesen-os`.
+- The tagging policy fits the deployment guide that was already drafted:
+  - canonical repo: `ghcr.io/wesen/wesen-os`
+  - immutable tag: `:sha-<full-sha>`
+  - convenience tag: `:sha-<short-sha>`
+  - mutable default-branch tag: `:main`
+- The generated artifact also captured the suggested OCI labels for the future workflow:
+  - `org.opencontainers.image.source`
+  - `org.opencontainers.image.revision`
+  - `org.opencontainers.image.title`
+
+### What didn't work
+
+- Nothing failed technically in this step; the real risk was ambiguity, not a command error.
+- The only non-final aspect is that the `main` tag cannot be demonstrated from this task branch because the current branch is:
+  - `task/os-openai-app-server`
+
+### What I learned
+
+- The simplest workable rule set is also the most operationally useful:
+  - immutable tags for traceability
+  - one carefully controlled mutable tag for convenience
+  - digest pinning for actual deployment
+- A branch-scoped preview tag is still useful for non-main testing, but it should be clearly separate from `main`.
+
+### What was tricky to build
+
+- The subtlety here was deciding what belongs in the naming policy versus the deployment policy. Tags are useful for publishing and discovery, but actual Kubernetes rollout should use image digests after push. If those concerns get conflated, people start deploying mutable tags directly, which makes rollback and incident analysis harder.
+- The other subtlety was deriving the canonical image repository from the repo’s real GitHub origin rather than hardcoding it in prose. That keeps the ticket artifact grounded in actual repo state and gives the future CI workflow something deterministic to mirror.
+
+### What warrants a second pair of eyes
+
+- Whether we want to keep both full-SHA and short-SHA tags, or collapse to just full-SHA plus digest.
+- Whether preview branches should publish branch-scoped tags at all, or whether preview image publishing should wait until the GHCR workflow is stable.
+- The OCI label set is intentionally minimal; we may want to add creation timestamp/provenance labels in the GHCR workflow step.
+
+### What should be done in the future
+
+- Reuse this naming policy in the GHCR workflow so the implementation matches the ticket decision.
+- Emit OCI labels and capture the pushed digest in the workflow output.
+- Use the digest, not the mutable tag, once K3s manifests are added.
+
+### Code review instructions
+
+- Start with:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/06-resolve-host-image-tags.sh`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/06-host-image-tagging-plan.md`
+- Validate with:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/06-resolve-host-image-tags.sh`
+- Confirm the derived repository matches `git remote get-url origin`.
+
+### Technical details
+
+- Current repo remote:
+
+```text
+git@github.com:wesen/wesen-os
+```
+
+- Current chosen refs for this branch state:
+  - immutable: `ghcr.io/wesen/wesen-os:sha-<full-sha>`
+  - convenience: `ghcr.io/wesen/wesen-os:sha-<short-sha>`
+  - preview: `ghcr.io/wesen/wesen-os:branch-<sanitized-branch>-<short-sha>`
+  - default-branch mutable tag later: `ghcr.io/wesen/wesen-os:main`
+
 ## 2026-03-29: reMarkable Delivery
 
 After the ticket content was written, I bundled the main deliverables into a single PDF for reMarkable delivery:

@@ -32,7 +32,7 @@
 - [x] Add a `.dockerignore`.
 - [x] Add a repo-local image build helper script under this ticket.
 - [x] Produce deterministic frontend builds for `apps/os-launcher`.
-- [ ] Decide final image naming:
+- [x] Decide final image naming:
   - `ghcr.io/wesen/wesen-os:<git-sha>`
   - `ghcr.io/wesen/wesen-os:main`
   - release tags later
