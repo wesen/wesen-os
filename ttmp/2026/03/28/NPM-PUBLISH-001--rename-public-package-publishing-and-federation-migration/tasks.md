@@ -178,6 +178,7 @@
   - install from another repo
   - install in Actions
   - workflow file must first exist on the default branch so GitHub Actions can register and dispatch it
+  - first successful real canary publish happened on 2026-03-29 for `os-shell-stack` as `0.1.0-canary.2`; remaining work is the post-publish validation matrix above
 - [ ] Publish the first full frontend package set to GitHub Packages.
 - [ ] Tag the release and record the exact published package/version matrix in the ticket.
 

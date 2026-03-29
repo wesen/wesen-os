@@ -1293,3 +1293,110 @@ The key result is that the failure is reproducible locally in a detached `origin
 - The Actions workflow step being unblocked is:
   - `Typecheck selected package set`
   - in `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/.github/workflows/publish-github-package-canary.yml`
+
+## Step 17: Publish The First Real `os-shell-stack` Canary Set
+
+Once the `os-repl` package-local typecheck issue was fixed, I pushed the frontend branch and re-ran the real GitHub Actions canary workflow against that branch instead of guessing about the next blocker locally. This step was the first end-to-end proof that the ordered package-set pipeline can really publish to GitHub Packages.
+
+The result is the first successful real canary publish for the frontend dependency chain. The workflow finished all stages, including package-set typecheck, package-set tests, dist build, pack smoke, and actual `npm publish` operations to GitHub Packages for the full `os-shell-stack`.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 16)
+
+**Assistant interpretation:** Continue the work after the local repro by applying the fix to the real release path and determining whether the actual canary publish now succeeds.
+
+**Inferred user intent:** Move from local diagnosis to externally verified release progress and keep the ticket diary accurate as each blocker is cleared.
+
+### What I did
+
+- Pushed the `go-go-os-frontend` branch update containing `115ef34` to:
+  - `origin/task/js-runtime-manager`
+- Dispatched the real canary workflow against that branch:
+  - `gh workflow run publish-github-package-canary --ref task/js-runtime-manager -f package_set=os-shell-stack -f npm_tag=canary -f dry_run=false`
+- Watched the run until completion with:
+  - `gh run watch 23710949038`
+- Pulled the run summary and publish log lines after completion.
+
+### Why
+
+- The local reproduction/fix established confidence in the diagnosis, but the real ticket objective is the actual GitHub Packages release path.
+- Running the workflow on the branch after the fix lets us validate the full pipeline without waiting for another merge before learning what the next blocker is.
+
+### What worked
+
+- The exact workflow that failed earlier on `Typecheck selected package set` now passed that step in Actions.
+- The full workflow succeeded end to end:
+  - checkout
+  - dependency install
+  - package-set resolution
+  - package-set typecheck
+  - package-set tests
+  - dist build
+  - pack smoke
+  - publish
+- The successful run was:
+  - `https://github.com/go-go-golems/go-go-os-frontend/actions/runs/23710949038`
+- The published canary package versions were:
+  - `@go-go-golems/os-core@0.1.0-canary.2`
+  - `@go-go-golems/os-chat@0.1.0-canary.2`
+  - `@go-go-golems/os-repl@0.1.0-canary.2`
+  - `@go-go-golems/os-scripting@0.1.0-canary.2`
+  - `@go-go-golems/os-shell@0.1.0-canary.2`
+
+### What didn't work
+
+- No functional blocker remained in this workflow run. The only notable annotation was a GitHub-hosted runner warning about Node.js 20-based action deprecation for:
+  - `actions/checkout@v4`
+  - `actions/setup-node@v4`
+  - `pnpm/action-setup@v4`
+- That warning does not block the current publish pipeline, but it should be cleaned up before GitHub forces JavaScript actions to Node 24 by default.
+
+### What I learned
+
+- The canary publish machinery is now proven as a real GitHub Packages path, not just a local dry-run mechanism.
+- The lockstep version rewrite works in practice for a dependent chain, not just in manifest inspection.
+- The first serious CI blocker after workflow registration was indeed package-local typecheck honesty, and clearing it was enough to unlock the full canary publish.
+
+### What was tricky to build
+
+- The tricky part was sequencing: first prove the failure locally, then fix it narrowly, then rerun the real workflow on the branch that contains the fix.
+- Skipping the local repro would have risked another blind iteration in Actions. Skipping the real rerun would have left us with only local confidence and no proof that publishing actually works.
+
+### What warrants a second pair of eyes
+
+- Verify the resulting packages in GitHub Packages for:
+  - visibility
+  - linked repository metadata
+  - install permissions for downstream repos
+- Review the workflow action versions with the Node 24 migration in mind so the pipeline does not age into a future GitHub-hosted runner failure.
+
+### What should be done in the future
+
+- Validate installation of the published canary packages from another repo and from GitHub Actions in a consuming repo.
+- Confirm package visibility and `Manage Actions access` settings for repos that need to consume these internal packages in CI.
+- Once the validation matrix is complete, decide whether to publish the remaining platform packages as part of the next wave or switch to consumer-mode adoption in `wesen-os`.
+
+### Code review instructions
+
+- Start with:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/.github/workflows/publish-github-package-canary.yml`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/scripts/packages/publish-github-package-set.mjs`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/scripts/packages/publish-github-package.mjs`
+- Validate with:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && gh run view 23710949038 --json url,status,conclusion,jobs,headBranch,headSha`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && gh run view 23710949038 --log | rg "Publishing @|\\+ @go-go-golems/"`
+
+### Technical details
+
+- Successful workflow run:
+  - `https://github.com/go-go-golems/go-go-os-frontend/actions/runs/23710949038`
+- Branch and commit used for the successful run:
+  - branch: `task/js-runtime-manager`
+  - commit: `115ef34bdd982a652480f83a304f32f1b74cb4ae`
+- The workflow published the ordered package set:
+  - `packages/os-core`
+  - `packages/os-chat`
+  - `packages/os-repl`
+  - `packages/os-scripting`
+  - `packages/os-shell`
