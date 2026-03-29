@@ -1993,3 +1993,134 @@ This step turns the new launcher published-mode scaffold into a repeatable CI pa
 - New workflow file:
   - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/.github/workflows/verify-launcher-canary-consumption.yml`
 - There is intentionally no run URL yet for this step because the workflow is not registered on the default branch at the time of writing.
+
+## Step 16: Register The Root Workflow And Get The First Live `wesen-os` Host Consumer Proof Green
+
+This step took the new launcher consumer workflow from "prepared locally" to "executed successfully on `main`." The first host-side failures were not package or build regressions. They were repository-state problems: the root repo had merged submodule SHAs that were not yet reachable on the remotes declared in `.gitmodules`. Once those missing submodule commits were made reachable, the workflow ran all the way through typecheck and build against `0.1.0-canary.4`.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, go ahead"
+
+**Assistant interpretation:** Land the root workflow, run the first real host-side canary consumer proof, and continue debugging until the first authoritative CI result is known.
+
+**Inferred user intent:** Move from local launcher published-mode validation to a real `main`-branch Actions proof in the root repo.
+
+### What I did
+
+- Confirmed the current root branch `task/os-openai-app-server` was already attached to an older, very large PR:
+  - `https://github.com/wesen/wesen-os/pull/4`
+- Checked whether a tiny follow-up branch from `main` was realistic and confirmed it was not because `main` was still pre-rename and pre-`@go-go-golems/*`.
+- Merged PR `wesen/wesen-os#4` so the new root workflow could register on `main`:
+  - merge commit `e555f87413e1f0a6565fddb3610518e6b75b299a`
+- Confirmed GitHub now shows:
+  - `verify-launcher-canary-consumption` as an active workflow
+- Dispatched the first real root workflow run on `main`:
+  - `23713840291`
+- Diagnosed the first failure:
+  - checkout failed because the root repo pinned ARC submodule SHA `02eb36959985a3d0ba18e85f7d1ddf215eaf7883`
+  - `.gitmodules` points that submodule at `go-go-golems/go-go-app-arc-agi`
+  - the required SHA existed only in the local checkout and was not reachable on the remote
+- Pushed the missing ARC submodule SHA to the actual submodule remote on branch:
+  - `task/npm-publish-001-arc-rename`
+- Re-ran the root workflow:
+  - `23713871231`
+- Diagnosed the second failure:
+  - checkout now passed ARC but failed on SQLite submodule SHA `6a373b8348720e46016029d46702f6a9aa8e7e80`
+- Pushed the missing SQLite submodule SHA to the actual submodule remote on branch:
+  - `task/npm-publish-001-sqlite-rename`
+- Re-ran the root workflow a third time:
+  - `23713899050`
+- Confirmed the third run succeeded end to end on `main`:
+  - checkout
+  - dependency install
+  - launcher published-mode typecheck
+  - launcher published-mode build
+
+### Why
+
+- The root workflow could not be dispatched until it existed on the default branch.
+- Once merged, the workflow became a useful repository-integrity check in its own right. It immediately exposed that the merged root tree referenced submodule SHAs GitHub Actions could not actually fetch from the declared remotes.
+- Fixing those missing submodule refs was necessary before any host-side package-consumption result could be trusted.
+
+### What worked
+
+- Merging PR `#4` registered the workflow on `main`.
+- Pushing the missing ARC submodule commit to a branch on `go-go-golems/go-go-app-arc-agi` made the pinned SHA fetchable by GitHub Actions.
+- Pushing the missing SQLite submodule commit to a branch on `go-go-golems/go-go-app-sqlite` did the same for the next checkout failure.
+- The third workflow run succeeded against `0.1.0-canary.4`, proving the root host can now:
+  - rewrite launcher platform deps to published canary versions
+  - install them from GitHub Packages in Actions
+  - typecheck the launcher in published mode
+  - build the launcher in published mode
+
+### What didn't work
+
+- The first live run `23713840291` failed in `Checkout` with:
+  - `Fetched in submodule path 'workspace-links/go-go-app-arc-agi-3', but it did not contain 02eb36959985a3d0ba18e85f7d1ddf215eaf7883. Direct fetching of that commit failed.`
+- The second live run `23713871231` failed in `Checkout` with:
+  - `Fetched in submodule path 'workspace-links/go-go-app-sqlite', but it did not contain 6a373b8348720e46016029d46702f6a9aa8e7e80. Direct fetching of that commit failed.`
+- Those failures were not package-install or build failures. They were submodule object-reachability failures caused by merged root pointers that referenced local-only submodule SHAs.
+
+### What I learned
+
+- A successful root merge is not enough for submodule integrity. Every pinned submodule SHA must be reachable on the exact remote declared in `.gitmodules`, not just present in a local checkout or a different fork remote.
+- The first real `wesen-os` host-side canary consumer proof is now green:
+  - `https://github.com/wesen/wesen-os/actions/runs/23713899050`
+- The migration now has both:
+  - downstream app proof in inventory
+  - host-side launcher proof in `wesen-os`
+
+### What was tricky to build
+
+- The root repo branch that contained the workflow was already tied to a huge historical PR. A small clean PR from `main` was not viable because `main` was still pre-rename and pre-`@go-go-golems/*`.
+- The checkout failures surfaced serially. Fixing ARC only revealed SQLite next.
+- The submodule remotes were not uniform:
+  - ARC used the `go-go-golems` remote declared in `.gitmodules`, not the local `wesen` fork remote
+  - SQLite used the `go-go-golems` remote directly
+  Pushing to the wrong remote would not have fixed GitHub Actions checkout.
+
+### What warrants a second pair of eyes
+
+- Review the merged root workflow run history:
+  - failed run `23713840291`
+  - failed run `23713871231`
+  - successful run `23713899050`
+- Review the root submodule map:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/.gitmodules`
+- Review whether the ARC and SQLite task branches should now be merged to their default branches instead of merely being reachable.
+
+### What should be done in the future
+
+- Merge the ARC and SQLite follow-up branches so the root repo no longer depends on task-branch reachability for those SHAs.
+- Add a lightweight pre-merge validation for root submodule reachability so this class of failure is caught before workflows land on `main`.
+- Decide whether the root workflow should grow from typecheck/build proof into a launcher smoke/runtime proof.
+
+### Code review instructions
+
+- Start with the successful root workflow:
+  - `https://github.com/wesen/wesen-os/actions/runs/23713899050`
+- Then inspect the failure chain:
+  - `https://github.com/wesen/wesen-os/actions/runs/23713840291`
+  - `https://github.com/wesen/wesen-os/actions/runs/23713871231`
+- Then inspect the root workflow definition and submodule map:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/.github/workflows/verify-launcher-canary-consumption.yml`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/.gitmodules`
+
+### Technical details
+
+- Root PR merged:
+  - `https://github.com/wesen/wesen-os/pull/4`
+  - merge commit `e555f87413e1f0a6565fddb3610518e6b75b299a`
+- ARC submodule reachability fix:
+  - pushed local SHA `02eb36959985a3d0ba18e85f7d1ddf215eaf7883`
+  - remote branch `task/npm-publish-001-arc-rename`
+  - repo `go-go-golems/go-go-app-arc-agi`
+- SQLite submodule reachability fix:
+  - pushed local SHA `6a373b8348720e46016029d46702f6a9aa8e7e80`
+  - remote branch `task/npm-publish-001-sqlite-rename`
+  - repo `go-go-golems/go-go-app-sqlite`
+- Root workflow runs:
+  - `23713840291` — failed on missing ARC submodule SHA
+  - `23713871231` — failed on missing SQLite submodule SHA
+  - `23713899050` — succeeded on `main` against `platform_version=0.1.0-canary.4`
