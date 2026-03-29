@@ -172,7 +172,7 @@
 - [ ] Grant `Manage Actions access` to every repo that must install private/internal packages in CI.
   - current evidence:
     - local `gh` auth token lacks package-read scope for registry validation
-    - `go-go-app-inventory` now has a consumer-validation workflow on branch `task/rewrite-runtime`, but it must reach the default branch before GitHub can dispatch it
+    - `go-go-app-inventory` now has a consumer-validation workflow on branch `task/rewrite-runtime`, and draft PR `go-go-app-inventory#5` was opened to land it on the default branch so GitHub can dispatch it
 - [x] Implement a publish workflow that only runs after package build/test/pack smoke checks pass.
 - [x] Broaden the canary publish path to support at least one ordered dependent package chain, not just a single leaf package.
 - [ ] Publish one canary package first and validate:

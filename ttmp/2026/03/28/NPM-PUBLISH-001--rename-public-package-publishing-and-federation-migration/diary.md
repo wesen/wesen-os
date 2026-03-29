@@ -1438,6 +1438,8 @@ This step did not fully close the validation matrix, but it narrowed the open pr
 - Attempted to push the branch and hit an unrelated broken pre-push hook in the inventory repo.
 - Re-pushed with `--no-verify`, then attempted to dispatch the new workflow from the branch.
 - Confirmed GitHub rejected that dispatch with the same workflow-registration pattern seen earlier: the workflow does not exist on the default branch yet, so GitHub returns `404`.
+- Opened a draft PR to land the workflow on the default branch:
+  - `https://github.com/go-go-golems/go-go-app-inventory/pull/5`
 
 ### Why
 
@@ -1514,6 +1516,8 @@ This step did not fully close the validation matrix, but it narrowed the open pr
   - `61c8378b4da16099e74f6db4a4860fc5d4d80b22`
 - Inventory branch:
   - `task/rewrite-runtime`
+- Inventory PR:
+  - `https://github.com/go-go-golems/go-go-app-inventory/pull/5`
 - Exact local install failure:
   - `403 Forbidden - GET https://npm.pkg.github.com/@go-go-golems%2fos-shell - Permission permission_denied: The token provided does not match expected scopes.`
 - Exact inventory pre-push hook failure:
