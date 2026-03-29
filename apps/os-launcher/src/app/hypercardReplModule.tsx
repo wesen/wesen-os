@@ -22,12 +22,12 @@ import {
   selectRuntimeSessionState,
   selectRuntimeSurfaceState,
 } from '@go-go-golems/os-scripting';
-import { inventoryHostContract } from '@go-go-golems/inventory/host';
 import { MacRepl, type ReplEffect, type TerminalLine } from '@go-go-golems/os-repl';
 import { useCallback, useEffect, useMemo } from 'react';
 import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { STACK } from '../domain/stack';
 import { OS_LAUNCHER_VM_PACK_METADATA } from '../domain/vmmeta';
+import { inventoryLocalContract } from './localFederatedAppContracts';
 
 const APP_ID = 'hypercard-repl';
 const CONSOLE_INSTANCE_ID = 'console';
@@ -48,8 +48,8 @@ interface BundleLibraryEntry {
 }
 
 const RUNTIME_BROKER = createRuntimeBroker();
-const INVENTORY_STACK = inventoryHostContract.runtimeBundles[0];
-const INVENTORY_VM_PACK_METADATA = inventoryHostContract.docsMetadata;
+const INVENTORY_STACK = inventoryLocalContract.runtimeBundles[0];
+const INVENTORY_VM_PACK_METADATA = inventoryLocalContract.docsMetadata;
 
 const BUNDLE_LIBRARY: Record<string, BundleLibraryEntry> = {
   inventory: {

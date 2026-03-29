@@ -132,6 +132,9 @@
 - [x] Add a generic host-contract type to `@go-go-golems/os-shell` so remotes and the host share one TypeScript boundary.
 - [x] Switch `apps/os-launcher` to consume the inventory host contract instead of separate `launcher`, `reducers`, and root metadata imports.
 - [x] Update host tests so they enforce the single-entrypoint rule for `inventory`.
+- [x] Centralize launcher-side package touchpoints in one local seam:
+  - `apps/os-launcher/src/app/localFederatedAppContracts.ts`
+  - production launcher files should stop importing `@go-go-golems/inventory/*` directly
 - [x] Record the remaining host/runtime gaps after the contract collapse:
   - static import still exists
   - no dynamic remote loader yet
@@ -170,7 +173,7 @@
 - [x] Decide the eventual exposed Module Federation module name for `inventory`:
   - likely `./host`
   - alternatives only if current tooling forces a different name
-- [ ] Add a launcher-side adapter if needed so the host can consume the same contract from both local package mode and future remote mode.
+- [x] Add a launcher-side adapter so the host can consume the same contract from both local package mode and future remote mode.
 - [ ] Add module federation build configuration there.
 - [ ] Add a stable exposed entrypoint for the host:
   - for example `./launcher`

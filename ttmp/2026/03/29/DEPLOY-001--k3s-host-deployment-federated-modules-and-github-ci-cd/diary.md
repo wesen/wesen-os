@@ -2313,3 +2313,109 @@ The remaining gaps are now clearer than before:
 - there is no object-storage upload flow yet
 
 That is fine. The point of this slice was to create the correct contract boundary before we introduce runtime loading machinery.
+
+## 2026-03-29: Second Federation Code Slice, Centralize The Launcher-Side Seam
+
+The first code slice got the host onto `@go-go-golems/inventory/host`, but the integration knowledge was still spread across several launcher files. That is better than before, but still not the best seam for future remote loading.
+
+So the next step was to move the launcher-side package touchpoint into one local registry/adapter file:
+
+- `apps/os-launcher/src/app/localFederatedAppContracts.ts`
+
+### Why this matters
+
+For future federation, the host should eventually be able to swap:
+
+- “import local package contract”
+
+for:
+
+- “load remote contract from manifest/remote module”
+
+If package knowledge is spread across `modules.tsx`, `store.ts`, `registerAppsBrowserDocs.ts`, `hypercardReplModule.tsx`, `runtimeDebugModule.tsx`, and `taskManagerModule.tsx`, that later swap becomes tedious and error-prone.
+
+By centralizing that package touchpoint into one local adapter file, the host now has a much clearer seam:
+
+- launcher production code reads from `localFederatedAppContracts.ts`
+- that local file is the only production place that imports `@go-go-golems/inventory/host`
+
+That is still not dynamic federation, but it is the correct host-side structure for getting there.
+
+### Files changed
+
+- `apps/os-launcher/src/app/localFederatedAppContracts.ts`
+- `apps/os-launcher/src/app/modules.tsx`
+- `apps/os-launcher/src/app/store.ts`
+- `apps/os-launcher/src/app/registerAppsBrowserDocs.ts`
+- `apps/os-launcher/src/app/hypercardReplModule.tsx`
+- `apps/os-launcher/src/app/runtimeDebugModule.tsx`
+- `apps/os-launcher/src/app/taskManagerModule.tsx`
+- `apps/os-launcher/src/__tests__/launcherHost.test.tsx`
+
+### New local adapter responsibilities
+
+The new file owns these helper surfaces:
+
+- `inventoryLocalContract`
+- `localFederatedAppContracts`
+- `listLocalFederatedLauncherModules()`
+- `collectLocalFederatedSharedReducers()`
+- `listLocalFederatedDocsMounts()`
+- `listLocalFederatedRuntimeBundles()`
+
+That means the rest of the launcher now consumes:
+
+- launcher modules
+- reducers
+- docs mounts
+- runtime bundles
+
+through local helpers instead of importing the inventory package directly.
+
+### One type issue I had to fix
+
+The first version of `listLocalFederatedDocsMounts()` widened metadata to `Record<string, unknown>`. That broke `apps/os-launcher` typecheck because `createVmmetaSurfaceDocsMount()` wants `VmmetaMetadata`, which requires `packId`.
+
+The fix was to keep the local docs-mount metadata typed from the actual inventory contract:
+
+- `metadata: typeof inventoryLocalContract.docsMetadata`
+
+That preserved the concrete metadata shape without inventing a new cross-package docs type in the wrong place.
+
+### Validation
+
+Commands run:
+
+- `npm run typecheck -w apps/os-launcher`
+- `npm run test -w apps/os-launcher -- --run runtimeDebugModule registerAppsBrowserDocs launcherHost`
+- `rg -n "@go-go-golems/inventory(?:/host|/launcher|/reducers|\\b)" apps/os-launcher/src apps/os-launcher/src/__tests__`
+
+Results:
+
+- launcher typecheck passed
+- focused launcher tests passed
+- production launcher imports now point at `localFederatedAppContracts.ts` instead of importing `inventory` directly
+
+There are still a couple of test-only imports of `inventory`, which is acceptable for now. The important change is that the production launcher code now has one local seam where inventory package knowledge lives.
+
+### Ticket helper added
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/27-audit-local-federated-contract-seam.sh`
+
+This helper exists so later documentation can show the exact transition from:
+
+- many production imports of `@go-go-golems/inventory/*`
+
+to:
+
+- one local seam file plus a couple of tests
+
+without relying on memory.
+
+### What should happen next
+
+The next real step should stop being about TypeScript packaging shape and start becoming about runtime behavior:
+
+- define the concrete remote registry format the host will read
+- add a host-side loader interface that can return local contracts now and remote contracts later
+- then wire the first `inventory` remote implementation path on top of that interface

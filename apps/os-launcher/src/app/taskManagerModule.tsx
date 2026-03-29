@@ -10,16 +10,16 @@ import {
   TaskManagerAppWindow,
   unregisterTaskManagerSource,
 } from '@go-go-golems/os-scripting';
-import { inventoryHostContract } from '@go-go-golems/inventory/host';
 import { useEffect, useMemo } from 'react';
 import { useDispatch, useStore } from 'react-redux';
 import { STACK } from '../domain/stack';
+import { listLocalFederatedRuntimeBundles } from './localFederatedAppContracts';
 import { buildJsReplConsoleWindowPayload, JS_SESSION_BROKER } from './jsReplModule';
 
 const TASK_MANAGER_INSTANCE_ID = 'tasks';
 const RUNTIME_TASK_SOURCE_ID = 'runtime-sessions@os-launcher';
 const JS_TASK_SOURCE_ID = 'js-sessions@os-launcher';
-const TASK_MANAGER_BUNDLES = [inventoryHostContract.runtimeBundles[0], STACK];
+const TASK_MANAGER_BUNDLES = [...listLocalFederatedRuntimeBundles(), STACK];
 
 function TaskManagerProviders({ instanceId }: { instanceId: string }) {
   const dispatch = useDispatch();
