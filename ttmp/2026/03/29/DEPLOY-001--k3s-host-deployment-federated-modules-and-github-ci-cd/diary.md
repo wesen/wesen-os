@@ -969,6 +969,113 @@ This is the first point where the deployment story becomes visible as actual clu
 - Current placeholder pull secret:
   - `ghcr-creds`
 
+## 2026-03-29: Task 10, Staging K3s Deploy Workflow
+
+Once the Kustomize base existed, the next missing piece was the deployment action that can take a published image and move it into the cluster. I added that as a manual staging workflow so the first cluster rollout can be deliberate and image-ref-driven instead of coupled to mutable tags.
+
+This keeps the deployment model consistent with the earlier image policy: publish by tag, deploy by explicit image ref or digest.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 4)
+
+**Assistant interpretation:** Keep progressing through the deployment backlog in small verified steps and document each step clearly.
+
+**Inferred user intent:** Turn K3s deployment from a design doc into an executable CI/CD path, while preserving a reviewable trail.
+
+**Commit (code):** `56950b4` — `Add staging K3s deploy workflow`
+
+### What I did
+
+- Added workflow:
+  - `.github/workflows/deploy-host-to-k3s.yml`
+- Added ticket validation script:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/10-check-k3s-deploy-workflow.sh`
+- Added generated workflow check artifact:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/10-k3s-deploy-workflow-check.md`
+- Designed the workflow to:
+  - run manually via `workflow_dispatch`
+  - require an explicit `image_ref`
+  - target the `staging` GitHub environment
+  - decode `KUBECONFIG_B64`
+  - `kubectl apply -k deploy/k8s/wesen-os`
+  - pin the deployment image with `kubectl set image`
+  - wait for rollout completion
+
+### Why
+
+- Publishing an image is only half of delivery; we also need a repeatable deployment path.
+- Requiring an explicit `image_ref` prevents accidental deploys of whatever mutable tag happens to exist at the moment.
+- Using a `staging` environment now creates a natural place to attach environment protection later, even before production rollout exists.
+
+### What worked
+
+- The workflow YAML parsed successfully.
+- The workflow contains the expected cluster-deploy anchors:
+  - environment `staging`
+  - kubeconfig setup
+  - `kubectl apply -k`
+  - `kubectl set image`
+  - `kubectl rollout status`
+- The deployment path is compatible with digest-first rollout because `image_ref` accepts the full reference directly.
+
+### What didn't work
+
+- There was no local syntax failure.
+- The remaining blockers are external/integration-level:
+  - no real `KUBECONFIG_B64` secret has been exercised yet
+  - no published GHCR digest has been wired through this workflow yet
+  - no live cluster rollout has been attempted from Actions yet
+
+### What I learned
+
+- Keeping the workflow manual and image-ref-driven is a good early compromise: it is real deployment automation without forcing a premature auto-deploy policy.
+- `kubectl apply -k` plus `kubectl set image` is enough for the first staging workflow; we do not need a more elaborate release controller yet.
+- GitHub environment wiring is useful even before production exists because it gives the workflow a stable semantic target.
+
+### What was tricky to build
+
+- The important design choice was how to inject the image reference. I avoided making the base Kustomize bundle itself branch- or digest-specific. Instead, the workflow applies the checked-in manifests and then pins the `Deployment` image explicitly. That keeps the manifest base readable while still supporting digest-based rollout.
+- Another subtlety was not to overclaim success. The workflow is structurally valid and operationally plausible, but until a real kubeconfig and GHCR image are used, the remaining risk is credential and cluster integration, not YAML.
+
+### What warrants a second pair of eyes
+
+- Whether `kubectl set image` is the right first deployment mutation strategy or whether we should move to environment-specific overlays sooner.
+- Whether the staging environment should already enforce manual approval in GitHub, not just exist as a named environment.
+- Whether the workflow should run a post-rollout probe against the service or ingress once cluster networking is known.
+
+### What should be done in the future
+
+- Add the real `KUBECONFIG_B64` staging secret.
+- Run the workflow with an actual GHCR image digest after the first publish lands.
+- Decide whether to add environment protection rules for `staging` immediately or reserve that for `production`.
+- Add a smoke/probe step after rollout once the staging ingress host is finalized.
+
+### Code review instructions
+
+- Start with:
+  - `.github/workflows/deploy-host-to-k3s.yml`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/10-check-k3s-deploy-workflow.sh`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/10-k3s-deploy-workflow-check.md`
+- Validate locally with:
+  - `yq eval '.' .github/workflows/deploy-host-to-k3s.yml >/dev/null`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/10-check-k3s-deploy-workflow.sh`
+
+### Technical details
+
+- Current workflow shape:
+
+```text
+checkout
+-> configure kubeconfig from secret
+-> kubectl apply -k deploy/k8s/wesen-os
+-> kubectl set image deployment/wesen-os wesen-os=<image_ref>
+-> kubectl rollout status
+```
+
+- Expected runtime input:
+  - `image_ref`, preferably `ghcr.io/wesen/wesen-os@sha256:...`
+
 ## 2026-03-29: reMarkable Delivery
 
 After the ticket content was written, I bundled the main deliverables into a single PDF for reMarkable delivery:

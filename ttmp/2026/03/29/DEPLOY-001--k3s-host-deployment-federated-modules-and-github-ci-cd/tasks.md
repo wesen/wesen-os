@@ -78,7 +78,7 @@
   - environment variables
   - config file mounted from ConfigMap
   - generated remote registry JSON
-- [ ] Add a GitHub Actions deployment workflow that applies manifests to staging.
+- [x] Add a GitHub Actions deployment workflow that applies manifests to staging.
 - [ ] Add manual approval or environment protection before production rollout.
 
 ## Phase 4: Define The Federation Contract
