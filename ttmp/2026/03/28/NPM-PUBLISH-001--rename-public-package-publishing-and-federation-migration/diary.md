@@ -1170,3 +1170,126 @@ The workflow stopped at that point, so later steps were skipped:
   - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && gh workflow run publish-github-package-canary --ref main -f package_set=os-shell-stack -f npm_tag=canary -f dry_run=false`
   - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && gh run view 23708656354 --json status,conclusion,url,jobs`
   - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && gh run view 23708656354 --log-failed`
+
+## Step 16: Reproduce The CI Typecheck Failure Locally And Fix `os-repl`
+
+I moved from GitHub Actions logs back to a clean local reproduction so the `os-repl` failure could be debugged without waiting on more remote runs. The goal of this step was not just to make the current checkout pass, but to prove that the exact package-local `tsc -b` failure from Actions could be reproduced outside the existing workspace state.
+
+The key result is that the failure is reproducible locally in a detached `origin/main` worktree, and the fix is small and package-local. `os-repl` was missing the same React dev typings already declared by the other React-bearing platform packages, and once those were added the remaining `TS2742` component export errors were resolved by explicit `JSX.Element` return annotations and local React type imports.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, can we reproduce the ptypecheck errors locally? What do you think we shuld do next?"
+
+**Assistant interpretation:** Reproduce the failing CI typecheck locally in a clean environment, determine whether the problem is real or an artifact of the existing workspace, and identify the next engineering step based on the result.
+
+**Inferred user intent:** Remove uncertainty around the Actions failure and keep the ticket moving by fixing the first real CI blocker instead of speculating.
+
+**Commit (code):** `115ef34` — `Fix os-repl package-local React typecheck`
+
+### What I did
+
+- Reused the detached clean worktree already created from `origin/main` at:
+  - `/tmp/os-frontend-worktree-mRrEpT`
+- Re-ran the exact failing package-local command there:
+  - `npm run typecheck -w packages/os-repl`
+- Confirmed the failure matches the GitHub Actions run:
+  - missing `react` declaration file
+  - missing `react-dom/client` declaration file
+  - follow-on `TS2742` portable type-name issues
+- Compared `packages/os-repl/package.json` against the other React-bearing packages:
+  - `packages/os-core/package.json`
+  - `packages/os-chat/package.json`
+  - `packages/os-scripting/package.json`
+- Added package-local dev dependencies to `packages/os-repl/package.json`:
+  - `@types/react`
+  - `@types/react-dom`
+  - `react`
+  - `react-dom`
+- Updated the `os-repl` React components to rely on explicit React type imports instead of implicit global `React.*` names.
+- Added explicit `JSX.Element` return types to the exported components whose inferred types were not portable enough for package-local declaration emit:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-repl/src/MacRepl.tsx`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-repl/src/ReplInputLine.tsx`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-repl/src/WidgetStatusBar.tsx`
+- Validated the fix with:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run typecheck -w packages/os-repl`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && for package_dir in packages/os-core packages/os-chat packages/os-repl packages/os-scripting packages/os-shell; do npm run typecheck -w "$package_dir" || exit 1; done`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && for package_dir in packages/os-core packages/os-chat packages/os-repl packages/os-scripting packages/os-shell; do npm run test -w "$package_dir" || exit 1; done`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && node scripts/packages/publish-github-package-set.mjs os-shell-stack --tag canary --version-suffix canary.local --dry-run`
+
+### Why
+
+- The previous local checkout had passed `npm run typecheck -w packages/os-repl`, which made it unclear whether CI had found a real issue or whether local state was masking it.
+- A clean worktree from `origin/main` is the right reproduction target because it approximates what Actions gets:
+  - fresh checkout
+  - fresh dependency install
+  - no accumulated local artifacts or incidental package state
+- Fixing the first real CI blocker locally before re-running Actions is cheaper and more defensible than pushing speculative changes.
+
+### What worked
+
+- The clean detached worktree reproduced the GitHub Actions failure exactly enough to trust the diagnosis.
+- Adding package-local React dev typings aligned `os-repl` with the other publishable React packages and removed the missing declaration errors.
+- Explicit `JSX.Element` return types removed the portable declaration-name issues that showed up once React types were present.
+- The entire `os-shell-stack` now passes both package-local typecheck and package-local test loops locally.
+
+### What didn't work
+
+- The existing working checkout was not a faithful signal for this bug. Running `npm run typecheck -w packages/os-repl` there passed before the fix, which could have led to a false conclusion that CI was failing for unrelated reasons.
+- A first attempt to clone the repo into a temporary directory was misleading because it did not reproduce the same repo state and package manager structure. That path was discarded in favor of a detached worktree from `origin/main`.
+- The exact local reproduction command that failed in the clean worktree was:
+  - `cd /tmp/os-frontend-worktree-mRrEpT && npm run typecheck -w packages/os-repl`
+- The exact reproduced errors included:
+  - `src/MacRepl.test.tsx(2,21): error TS7016: Could not find a declaration file for module 'react'.`
+  - `src/MacRepl.test.tsx(3,39): error TS7016: Could not find a declaration file for module 'react-dom/client'.`
+  - `src/MacRepl.tsx(293,17): error TS2742: The inferred type of 'MacRepl' cannot be named without a reference to '.pnpm/@types+react@19.2.14/node_modules/@types/react'.`
+
+### What I learned
+
+- The CI failure was real and package-local, not a GitHub-hosted environment fluke.
+- For this repo, a package being React-based in practice is not enough; each publishable package that runs `tsc -b` in isolation needs its own local React type context, even if the workspace already contains React types elsewhere.
+- Once package-local type dependencies are honest, TypeScript starts surfacing the next layer of declaration-emit problems immediately. That is good, because it forces packages toward real publish boundaries instead of relying on monorepo ambient state.
+
+### What was tricky to build
+
+- The sharp edge here was distinguishing “passes in my current checkout” from “passes in a fresh package-local CI environment.” Those are not equivalent in a pnpm monorepo with many sibling packages.
+- The symptom was contradictory evidence:
+  - current checkout passed
+  - Actions failed
+  - package manifest looked incomplete
+- The resolution was to switch to a detached `origin/main` worktree and rerun the exact package-local script there before changing any code. That turned the debugging question from inference into reproduction.
+
+### What warrants a second pair of eyes
+
+- Reviewers should look at whether any other React-bearing packages still rely on incidental root or sibling type availability instead of explicit package-local declarations.
+- Reviewers should also confirm that adding `react` and `react-dom` as `devDependencies` for package-local build/test work is the intended repo policy for all publishable UI packages, because this same pattern likely applies elsewhere.
+
+### What should be done in the future
+
+- Push `115ef34` to the frontend branch and re-run the real `publish-github-package-canary` workflow for `os-shell-stack`.
+- If that Actions run passes the typecheck phase, capture the next real blocker in the diary immediately, whether it appears in tests, dist build, pack smoke, or the actual publish step.
+- Consider a broader audit pass for package-local dev typing parity across all v1 platform packages, not just the ones already exercised by `os-shell-stack`.
+
+### Code review instructions
+
+- Start with:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-repl/package.json`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-repl/src/MacRepl.tsx`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-repl/src/ReplInputLine.tsx`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-repl/src/WidgetStatusBar.tsx`
+- Validate with:
+  - `cd /tmp/os-frontend-worktree-mRrEpT && npm run typecheck -w packages/os-repl`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run typecheck -w packages/os-repl`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && for package_dir in packages/os-core packages/os-chat packages/os-repl packages/os-scripting packages/os-shell; do npm run typecheck -w "$package_dir" || exit 1; done`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && for package_dir in packages/os-core packages/os-chat packages/os-repl packages/os-scripting packages/os-shell; do npm run test -w "$package_dir" || exit 1; done`
+
+### Technical details
+
+- Clean reproduction worktree:
+  - `/tmp/os-frontend-worktree-mRrEpT`
+- The package comparison that led to the fix was:
+  - `os-repl` had no `devDependencies`
+  - `os-core`, `os-chat`, and `os-scripting` already declared `@types/react`, `@types/react-dom`, `react`, and `react-dom`
+- The Actions workflow step being unblocked is:
+  - `Typecheck selected package set`
+  - in `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/.github/workflows/publish-github-package-canary.yml`
