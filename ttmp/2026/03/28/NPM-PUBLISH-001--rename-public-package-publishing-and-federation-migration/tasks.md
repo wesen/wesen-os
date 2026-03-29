@@ -73,6 +73,39 @@
 
 ## Phase 1: Make Packages Actually Publishable
 
+- [x] Phase 1A.0: Rename package directories to match the public package identities:
+  - `packages/engine` -> `packages/os-core`
+  - `packages/desktop-os` -> `packages/os-shell`
+  - `packages/hypercard-runtime` -> `packages/os-scripting`
+  - `packages/ui-runtime` -> `packages/os-ui-cards`
+  - `packages/chat-runtime` -> `packages/os-chat`
+  - `packages/repl` -> `packages/os-repl`
+  - `packages/rich-widgets` -> `packages/os-widgets`
+  - `packages/kanban-runtime` -> `packages/os-kanban`
+  - `packages/confirm-runtime` -> `packages/os-confirm`
+- [x] Phase 1A.0.1: Update all repo-local project references, scripts, and docs in `go-go-os-frontend` to the renamed package folders.
+- [x] Phase 1A.0.2: Update all external consumer path references in `wesen-os`, `go-go-app-inventory`, `go-go-app-sqlite`, and `go-go-app-arc-agi-3`.
+- [x] Phase 1A.0.3: Refresh lockfiles or generated workspace metadata that encode package folder paths.
+- [x] Phase 1A.0.4: Re-run targeted typecheck/build validation after the folder moves and record any fallout.
+- [ ] Phase 1A: Isolate package-local builds from sibling `src/` trees.
+- [ ] Phase 1A.1: Inventory every publish-set package tsconfig/path mapping that points to another package's `src/`.
+- [ ] Phase 1A.2: Decide the build-time resolution policy for workspace package imports:
+  - temporary build-only tsconfig rewrite to `dist/*`
+  - or package-local tsconfig split (`tsconfig.json` for dev, `tsconfig.build.json` for publish)
+  - or another equivalent build-only mechanism
+- [ ] Phase 1A.3: Make `@go-go-golems/os-core` and `@go-go-golems/os-repl` build cleanly into `dist/` with copied runtime assets.
+- [ ] Phase 1A.4: Make `@go-go-golems/os-chat` and `@go-go-golems/os-scripting` build cleanly into `dist/` without source-tree leakage.
+- [ ] Phase 1A.5: Make `@go-go-golems/os-ui-cards`, `@go-go-golems/os-widgets`, `@go-go-golems/os-kanban`, `@go-go-golems/os-confirm`, and `@go-go-golems/os-shell` build cleanly into `dist/` in dependency order.
+- [ ] Phase 1A.6: Add one scripted `build:publish-v1` flow that builds the full v1 package set from a clean state.
+- [ ] Phase 1A.7: Record the exact remaining package-local build failures, if any, with commands and file references.
+- [ ] Phase 1B: Finalize dist entrypoints and shipped assets.
+- [ ] Phase 1B.1: Replace `main`, `types`, and `exports` entries that still point at `src/*` with `dist/*` for the v1 package set.
+- [ ] Phase 1B.2: Ensure all exported subpaths still resolve after the `dist/*` rewrite.
+- [ ] Phase 1B.3: Add explicit asset-copy coverage for:
+  - CSS theme entrypoints
+  - runtime `.vm.js` bootstrap/prelude files
+  - generated JSON metadata if needed
+- [ ] Phase 1C: Tighten published package manifests.
 - [ ] Remove `private: true` from packages that will be published.
 - [ ] Add complete `repository`, `license`, `homepage`, `bugs`, and ownership metadata to each publishable `package.json`.
 - [ ] Replace source-first entrypoints with built artifacts:
@@ -92,6 +125,10 @@
 - [ ] Eliminate `workspace:*` leakage from published dependency manifests.
 - [ ] Add a release-time rewrite/versioning strategy for intra-repo package references.
 - [ ] Verify published packages can be installed in a fresh external fixture with no sibling-repo aliasing.
+- [ ] Phase 1D: Add external-consumer verification.
+- [ ] Phase 1D.1: Add `npm pack` smoke checks for at least `os-core`, `os-repl`, and `os-scripting`.
+- [ ] Phase 1D.2: Add a clean fixture that installs packed tarballs with no workspace links.
+- [ ] Phase 1D.3: Verify at least one downstream package installs against packed platform packages rather than linked source.
 
 ## Phase 2: Replace Local Source Alias Assumptions In Consumers
 

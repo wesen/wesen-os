@@ -172,6 +172,123 @@ The output is intentionally ticket-local documentation rather than a risky packa
 - Add publish metadata and `files` allowlists to the nine v1 platform packages.
 - Choose the workspace-dependency version rewrite strategy before removing `private: true`.
 
+## Step 4: Rename Package Directories To Match Public Package Names
+
+This step renames the `go-go-os-frontend/packages/*` directories so the filesystem layout matches the already-frozen public package names. The goal is to stop carrying the old internal folder names (`engine`, `hypercard-runtime`, `ui-runtime`, and so on) after the package rename is already complete at the manifest/import level.
+
+This is a path migration across multiple repos, not just a local cleanup. The linked app repos, launcher host, docs, project references, and lockfiles all encode the old folder names and need to move together.
+
+### Prompt Context
+
+**User prompt (verbatim):** "can we rename the folders to match package names too?" / "alright do it"
+
+**Assistant interpretation:** Rename the frontend package directories to `os-*` names and fix every live path reference that depends on those folder names.
+
+**Inferred user intent:** Make the repo layout match the published contract so packaging and future maintenance stop mixing old local names with new public package names.
+
+### Planned work
+
+- Rename the nine platform package folders in `workspace-links/go-go-os-frontend/packages/`.
+- Update repo-local TS project references, workspace scripts, and docs inside `go-go-os-frontend`.
+- Update cross-repo path references in `wesen-os`, `go-go-app-inventory`, `go-go-app-sqlite`, and `go-go-app-arc-agi-3`.
+- Refresh any lockfiles or generated metadata that encode the old folder paths.
+- Re-run targeted validation and capture any fallout before moving back to package-local dist builds.
+
+### What I did
+
+- Renamed the nine platform package directories in `workspace-links/go-go-os-frontend/packages/` so the repo layout now matches the public `@go-go-golems/os-*` package identities.
+- Updated repo-local project references, package scripts, Storybook aliases, docs, tests, and helper scripts inside `go-go-os-frontend` to use the new folder names.
+- Updated cross-repo path references in:
+  - `wesen-os`
+  - `go-go-app-inventory`
+  - `go-go-app-sqlite`
+  - `go-go-app-arc-agi-3`
+- Refreshed workspace metadata and lockfiles where needed with `pnpm install` in:
+  - `workspace-links/go-go-os-frontend`
+  - `workspace-links/go-go-app-sqlite`
+  - the root `wesen-os` repo
+- Fixed the direct sibling-source rename leaks that remained after the folder move:
+  - package-local `tsconfig.json` references such as `../engine/src`
+  - `os-ui-cards` and `os-kanban` runtime-registration tests importing old sibling folders directly
+  - `os-repl` Storybook helpers importing `../../rich-widgets/...`
+
+### Why
+
+- The public package rename was already complete at the manifest/import level, but the filesystem still encoded the old internal names. That mismatch made the package graph harder to reason about during publish work.
+- The publish migration now depends on package-local dist builds and cross-repo resolution staying honest. Carrying old folder names would keep leaking the pre-rename mental model into every build/debugging step.
+
+### What worked
+
+- The live codebase no longer references the old package folder names outside excluded directories such as `ttmp`, `node_modules`, and `dist`.
+- `pnpm install` in the root repo re-linked the moved frontend packages so `apps/os-launcher` could resolve the renamed paths again.
+- Targeted validation after the folder move succeeded for:
+  - `cd workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-core`
+  - `cd workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-repl`
+  - `cd apps/os-launcher && npm run typecheck`
+
+### What didn't work
+
+- `npm install` still fails in repos that use `workspace:*`, including:
+  - `workspace-links/go-go-os-frontend`
+  - `workspace-links/go-go-app-inventory`
+  with `EUNSUPPORTEDPROTOCOL Unsupported URL Type "workspace:"`; those repos still need `pnpm install`.
+- `pnpm install` in `workspace-links/go-go-app-inventory` still fails because the inventory repo expects platform packages like `@go-go-golems/os-chat@workspace:*` to exist inside its own workspace:
+  - `ERR_PNPM_WORKSPACE_PKG_NOT_FOUND In apps/inventory: "@go-go-golems/os-chat@workspace:*" is in the dependencies but no package named "@go-go-golems/os-chat" is present in the workspace`
+- `cd workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-ui-cards` still fails, but the failure is now back in the publish-boundary layer rather than the folder-rename layer:
+  - `TS7016` declaration-resolution failures against `@go-go-golems/os-core/dist/*`
+
+### What I learned
+
+- The folder rename itself was mostly mechanical, but it revealed two distinct classes of hidden coupling:
+  - hardcoded filesystem paths across repos and docs
+  - package-local sibling-source imports/references that never went through package names at all
+- Once the root workspace links were refreshed, the launcher path remained stable. That is a good sign that the rename slice is clean and the remaining failures are genuinely about publishability.
+- `go-go-app-inventory` is still structurally tied to a local workspace model for platform packages. That is a separate blocker from folder naming and belongs in the broader package-consumption migration.
+
+### What was tricky to build
+
+- The broad path rewrite was not enough by itself because some test and tsconfig references used sibling relative paths like `../engine/src` and `../../hypercard-runtime/src` instead of `packages/...` paths. Those leaks only surfaced after the folder move broke them.
+- The first launcher typecheck after the rename failed for a misleading reason: the source changes were correct, but the root workspace install layer still pointed at deleted package directories. Re-running `pnpm install` at the root fixed that immediately.
+
+### What warrants a second pair of eyes
+
+- The Storybook alias cleanup in `go-go-os-frontend`, `go-go-app-sqlite`, and `go-go-app-inventory` touched hidden `.storybook` files that the earlier public-package rename had missed.
+- The `os-ui-cards` dist-build failure should be reviewed as the first post-rename packaging blocker. It now points at missing declaration coverage for `os-core/dist` rather than old folder names.
+
+### What should be done in the future
+
+- Fix the `os-core` dist declaration/export shape so dependent packages like `os-chat` and `os-ui-cards` can resolve typed imports from `dist/*`.
+- Decide how `go-go-app-inventory` should consume platform packages during local development, because its current `workspace:*` setup is not independently installable.
+- Continue Phase 1A from the new folder layout instead of carrying more legacy-path compatibility shims.
+
+### Code review instructions
+
+- Start with the package-folder move in `workspace-links/go-go-os-frontend/packages/` and confirm the new names align with the public package identities.
+- Review `workspace-links/go-go-os-frontend/tsconfig.json`, `workspace-links/go-go-os-frontend/package.json`, `workspace-links/go-go-os-frontend/.storybook/*`, and the package-local `tsconfig.json` files for the path/reference rewrite.
+- Then review the cross-repo consumer updates in:
+  - `apps/os-launcher/tsconfig.json`
+  - `workspace-links/go-go-app-inventory/apps/inventory/tsconfig.json`
+  - `workspace-links/go-go-app-sqlite/apps/sqlite/tsconfig.json`
+  - `workspace-links/go-go-app-arc-agi-3/apps/arc-agi-player/tsconfig.json`
+- Validate with:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os && pnpm install`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && pnpm install`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-core`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-repl`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher && npm run typecheck`
+
+### Technical details
+
+- Root relink command:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os && pnpm install`
+- Frontend relink command:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && pnpm install`
+- SQLite relink command:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite && pnpm install`
+- Remaining publish-boundary blocker after the folder rename:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-ui-cards`
+  - current failure: `TS7016` on `@go-go-golems/os-core/dist/*` declarations
+
 ### Code review instructions
 
 - Start with `ttmp/2026/03/28/NPM-PUBLISH-001--rename-public-package-publishing-and-federation-migration/package-identity-matrix.md`.

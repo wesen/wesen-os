@@ -62,9 +62,9 @@ This is the full rich-package reference:
 
 Key files:
 
-- [packages/kanban-runtime/src/index.ts](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/kanban-runtime/src/index.ts)
-- [packages/kanban-runtime/src/runtimeRegistration.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/kanban-runtime/src/runtimeRegistration.tsx)
-- [packages/kanban-runtime/src/packageApi.vm.js](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/kanban-runtime/src/packageApi.vm.js)
+- [packages/os-kanban/src/index.ts](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-kanban/src/index.ts)
+- [packages/os-kanban/src/runtimeRegistration.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-kanban/src/runtimeRegistration.tsx)
+- [packages/os-kanban/src/packageApi.vm.js](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-kanban/src/packageApi.vm.js)
 - [pluginBundle.ts](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/domain/pluginBundle.ts)
 - [vmmeta.ts](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/domain/vmmeta.ts)
 - [registerAppsBrowserDocs.ts](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/registerAppsBrowserDocs.ts)
@@ -233,8 +233,8 @@ Checklist:
 
 Examples:
 
-- [KanbanBoardView.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/KanbanBoardView.tsx)
-- [KanbanHighlights.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/KanbanHighlights.tsx)
+- [KanbanBoardView.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/KanbanBoardView.tsx)
+- [KanbanHighlights.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/KanbanHighlights.tsx)
 
 If the widget family is already generic enough, this may already be done.
 
@@ -246,7 +246,7 @@ This is the real runtime boundary.
 
 Create or update a file like:
 
-- [packages/kanban-runtime/src/runtimeRegistration.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/kanban-runtime/src/runtimeRegistration.tsx)
+- [packages/os-kanban/src/runtimeRegistration.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-kanban/src/runtimeRegistration.tsx)
 
 Responsibilities:
 

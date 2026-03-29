@@ -187,7 +187,7 @@ describe('launcher host wiring', () => {
       new URL('../app/jsReplModule.tsx', import.meta.url),
       new URL('../app/runtimeDebugModule.tsx', import.meta.url),
       new URL('../app/taskManagerModule.tsx', import.meta.url),
-      new URL('../../../../../go-go-os-frontend/packages/rich-widgets/src/launcher/modules.tsx', import.meta.url),
+      new URL('../../../../../go-go-os-frontend/packages/os-widgets/src/launcher/modules.tsx', import.meta.url),
       new URL('../../../../../go-go-app-sqlite/apps/sqlite/src/launcher/module.tsx', import.meta.url),
     ];
     const moduleSources = moduleUrls

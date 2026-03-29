@@ -295,10 +295,10 @@ The Vite config (`apps/os-launcher/vite.config.ts`) defines two critical configu
 
 | Alias | Resolves to |
 |---|---|
-| `@go-go-golems/os-core` | `go-go-os-frontend/packages/engine/src` |
-| `@go-go-golems/os-shell` | `go-go-os-frontend/packages/desktop-os/src` |
-| `@go-go-golems/os-chat` | `go-go-os-frontend/packages/chat-runtime/src` |
-| `@go-go-golems/os-scripting` | `go-go-os-frontend/packages/hypercard-runtime/src` |
+| `@go-go-golems/os-core` | `go-go-os-frontend/packages/os-core/src` |
+| `@go-go-golems/os-shell` | `go-go-os-frontend/packages/os-shell/src` |
+| `@go-go-golems/os-chat` | `go-go-os-frontend/packages/os-chat/src` |
+| `@go-go-golems/os-scripting` | `go-go-os-frontend/packages/os-scripting/src` |
 | `@go-go-golems/inventory/launcher` | `go-go-app-inventory/apps/inventory/src/launcher/public.ts` |
 | `@go-go-golems/inventory/reducers` | `go-go-app-inventory/apps/inventory/src/reducers.ts` |
 | `@go-go-golems/arc-agi-player/launcher` | `go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts` |
