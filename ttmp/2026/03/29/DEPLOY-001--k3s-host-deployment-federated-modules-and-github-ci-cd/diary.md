@@ -2116,3 +2116,81 @@ The docs are better now, but there are still higher-level doc tasks left open:
 - a concrete reference implementation section that points at `draft-review`, `deploy/gitops-targets.json`, `scripts/open_gitops_pr.py`, and the matching GitOps manifests
 
 Those are still worth doing, but the immediate shortcoming that caused confusion in the `wesen-os` rollout path is now addressed directly.
+
+## 2026-03-29: Federation Kickoff, Inventory Contract Audit
+
+With `wesen-os` live on K3s, the deployment half of `DEPLOY-001` is no longer the critical path. I switched the ticket focus to the first real federation step: make one app consumable through a single explicit host contract before introducing runtime remote loading.
+
+### Why start here
+
+The host still consumes app code in a package-linked way. That is expected today, but it is not yet shaped like a future federated remote. The key smell I wanted to remove first was “host reaches into several unrelated public entrypoints for one app.”
+
+`inventory` was already the agreed first remote candidate, so I treated it as the first contract-hardening target.
+
+### Files reviewed in this audit
+
+- `apps/os-launcher/src/app/modules.tsx`
+- `apps/os-launcher/src/app/store.ts`
+- `apps/os-launcher/src/app/registerAppsBrowserDocs.ts`
+- `apps/os-launcher/src/app/hypercardReplModule.tsx`
+- `apps/os-launcher/src/app/runtimeDebugModule.tsx`
+- `apps/os-launcher/src/app/taskManagerModule.tsx`
+- `apps/os-launcher/src/__tests__/launcherHost.test.tsx`
+- `workspace-links/go-go-app-inventory/apps/inventory/package.json`
+- `workspace-links/go-go-app-inventory/apps/inventory/src/index.ts`
+- `workspace-links/go-go-app-inventory/apps/inventory/src/reducers.ts`
+- `workspace-links/go-go-app-inventory/apps/inventory/src/launcher/public.ts`
+- `workspace-links/go-go-app-inventory/apps/inventory/src/domain/vmmeta.ts`
+- `workspace-links/go-go-os-frontend/packages/os-shell/src/index.ts`
+- `workspace-links/go-go-os-frontend/packages/os-shell/src/contracts/launchableAppModule.ts`
+- `workspace-links/go-go-os-frontend/packages/os-shell/src/store/createLauncherStore.ts`
+
+### What I found
+
+The host currently depends on `inventory` through three separate public surfaces:
+
+- `@go-go-golems/inventory/launcher`
+  - for `inventoryLauncherModule`
+  - for `inventoryStack`
+- `@go-go-golems/inventory/reducers`
+  - for `inventoryReducer`
+  - for `salesReducer`
+- `@go-go-golems/inventory`
+  - for `INVENTORY_VM_PACK_METADATA`
+
+That fragmentation shows up in several host files:
+
+- `apps/os-launcher/src/app/modules.tsx`
+- `apps/os-launcher/src/app/store.ts`
+- `apps/os-launcher/src/app/registerAppsBrowserDocs.ts`
+- `apps/os-launcher/src/app/hypercardReplModule.tsx`
+- `apps/os-launcher/src/app/runtimeDebugModule.tsx`
+- `apps/os-launcher/src/app/taskManagerModule.tsx`
+
+This is still a valid package API, but it is the wrong shape for the future remote-loading story. A federated remote wants one stable host-facing contract. The host should not need to know that launcher state, docs metadata, and runtime bundles live behind different import paths.
+
+### Decision for the first implementation slice
+
+The first federation-enabling code change should be deliberately small:
+
+1. add a generic host-contract type to `@go-go-golems/os-shell`
+2. add a dedicated `@go-go-golems/inventory/host` export
+3. move the inventory host-facing values behind one contract object
+4. switch `apps/os-launcher` to consume that contract everywhere
+5. tighten host tests so they enforce the new single-entrypoint rule
+
+That does **not** make inventory a real remote yet. It is still statically linked package code. But it gives us the right abstraction boundary so the later Module Federation loader can replace one import surface instead of many unrelated ones.
+
+### Ticket helper added
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/25-audit-inventory-host-surface.sh`
+
+This helper is intentionally small and boring. Its only job is to capture the current import surface and public exports so later diary/doc updates can compare “before” and “after” without hand-reconstructing the audit.
+
+### What happens next
+
+- update the task board with concrete inventory-federation slices
+- add the shared host-contract type in `os-shell`
+- add the dedicated inventory host export
+- switch the host imports
+- run host tests and typechecks
