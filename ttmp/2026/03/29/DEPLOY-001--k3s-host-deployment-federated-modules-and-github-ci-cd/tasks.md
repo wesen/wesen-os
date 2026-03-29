@@ -68,6 +68,7 @@
 - [x] After the first real host image publish, verify the GHCR package is publicly pullable at the pinned image ref.
 - [ ] Verify K3s can pull the GHCR image using its registry credentials.
 - [ ] Run the new GitOps-PR job on GitHub and verify it opens or updates the expected PR against `wesen/2026-03-27--hetzner-k3s`.
+- [x] Change the required-release-path behavior so missing `GITOPS_PR_TOKEN` fails the workflow instead of silently skipping the GitOps PR step.
 
 ## Phase 3: Define K3s Deployment For The Host
 
@@ -246,6 +247,9 @@
   - publishing to GHCR is not deployment
   - Argo only acts on GitOps repo changes
   - the CI-created GitOps PR is the deployment handoff
+- [x] Update the K3s docs so the initial secret bootstrap for required GitOps PR automation is explicit:
+  - `gh secret set GITOPS_PR_TOKEN --repo <source-repo>`
+  - current example: `gh secret set GITOPS_PR_TOKEN --repo wesen/wesen-os`
 - [x] Update `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/public-repo-ghcr-argocd-deployment-playbook.md` with the same explicit sequence and the one-time `Application` bootstrap step.
 - [ ] Add one concrete reference implementation section in the K3s docs that points at:
   - `draft-review`
