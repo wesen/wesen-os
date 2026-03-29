@@ -99,9 +99,9 @@
 - [x] Phase 1A.6: Add one scripted `build:publish-v1` flow that builds the full v1 package set from a clean state.
 - [x] Phase 1A.7: Record the exact remaining package-local build failures, if any, with commands and file references.
 - [ ] Phase 1B: Finalize dist entrypoints and shipped assets.
-- [ ] Phase 1B.1: Replace `main`, `types`, and `exports` entries that still point at `src/*` with `dist/*` for the v1 package set.
+- [x] Phase 1B.1: Generate publish-ready `dist/package.json` entrypoints that rewrite `main`, `types`, and `exports` from `src/*` to built artifacts for the v1 package set while leaving workspace-root manifests source-first for local dev.
 - [ ] Phase 1B.2: Ensure all exported subpaths still resolve after the `dist/*` rewrite.
-- [ ] Phase 1B.3: Add explicit asset-copy coverage for:
+- [x] Phase 1B.3: Add explicit asset-copy coverage for:
   - CSS theme entrypoints
   - runtime `.vm.js` bootstrap/prelude files
   - generated JSON metadata if needed
@@ -122,11 +122,11 @@
 - [ ] Add pack/install smoke tests that consume packed tarballs rather than workspace source.
 - [ ] Add an API-surface audit for each package so only supported exports remain public.
 - [ ] Decide `peerDependencies` versus `dependencies` policy for shared React and Redux packages.
-- [ ] Eliminate `workspace:*` leakage from published dependency manifests.
+- [x] Eliminate `workspace:*` leakage from staged published dependency manifests.
 - [ ] Add a release-time rewrite/versioning strategy for intra-repo package references.
 - [ ] Verify published packages can be installed in a fresh external fixture with no sibling-repo aliasing.
 - [ ] Phase 1D: Add external-consumer verification.
-- [ ] Phase 1D.1: Add `npm pack` smoke checks for at least `os-core`, `os-repl`, and `os-scripting`.
+- [x] Phase 1D.1: Add `npm pack` smoke checks for at least `os-core`, `os-repl`, and `os-scripting`.
 - [ ] Phase 1D.2: Add a clean fixture that installs packed tarballs with no workspace links.
 - [ ] Phase 1D.3: Verify at least one downstream package installs against packed platform packages rather than linked source.
 

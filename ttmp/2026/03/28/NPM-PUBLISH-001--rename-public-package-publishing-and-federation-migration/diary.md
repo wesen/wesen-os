@@ -543,3 +543,89 @@ The helper did not finish publishability by itself. It validated cleanly on `os-
 - Observed good outputs:
   - `Copied 10 asset file(s) into dist.` for `os-core`
   - `Copied 1 asset file(s) into dist.` for `os-repl`
+
+## Step 7: Stage Publish Manifests In `dist/` And Add Pack Smoke Checks
+
+This step starts the publish-manifest layer without breaking the linked-workspace developer flow. Instead of flipping the live package manifests from `src/*` to `dist/*` immediately, the shared dist-build helper now writes a publish-ready `dist/package.json` for each package. That staged manifest rewrites runtime entrypoints to built `.js`, types to `.d.ts`, and `workspace:*` package references to concrete versions.
+
+That keeps the root workspace packages source-first for local development while still producing package roots that can be packed and installed like published artifacts.
+
+### What I did
+
+- Extended `workspace-links/go-go-os-frontend/scripts/packages/build-dist.mjs` to write `dist/package.json` after each successful dist build.
+- Rewrote staged publish-manifest fields inside `dist/package.json`:
+  - `exports`
+  - `main`
+  - `types`
+  - `dependencies`
+  - `peerDependencies`
+  - `optionalDependencies`
+- Kept the live workspace manifests unchanged so linked consumers do not silently switch to built artifacts during day-to-day development.
+- Added `dist/.npmignore` generation to exclude `*.test.js` and `*.test.d.ts` from packed tarballs.
+- Added `workspace-links/go-go-os-frontend/scripts/packages/pack-smoke.mjs` to run `npm pack --json` against staged package roots and fail if test artifacts leak into the tarball.
+- Added `pack:smoke-v1` to `workspace-links/go-go-os-frontend/package.json` for the first publish canaries:
+  - `packages/os-core`
+  - `packages/os-repl`
+  - `packages/os-scripting`
+
+### Why
+
+- Flipping the live package manifests to `dist/*` right now would force linked consumers like `apps/os-launcher` onto built artifacts and degrade the current source-linked local workflow before Phase 2 is ready.
+- The staged manifest approach gives the migration a publishable artifact boundary now, without pretending the consumer side has already finished its local-dev versus published-package resolution split.
+- Rewriting `workspace:*` versions in the staged manifests is necessary for any real pack/install verification.
+
+### What worked
+
+- `build:publish-v1` still passes end-to-end after the staged manifest generation was added.
+- The staged manifests now produce publish-style package roots such as:
+  - `packages/os-core/dist/package.json`
+  - `packages/os-repl/dist/package.json`
+  - `packages/os-scripting/dist/package.json`
+- The staged manifests now rewrite internal workspace dependencies to concrete versions, for example:
+  - `@go-go-golems/os-scripting` -> `@go-go-golems/os-core: "0.1.0"`
+  - `@go-go-golems/os-widgets` -> `@go-go-golems/os-shell: "0.1.0"` in `peerDependencies`
+- `npm pack` now succeeds against the staged package roots for the first canaries, and the resulting tarballs do not contain test artifacts.
+- The scripted smoke check now passes:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run pack:smoke-v1`
+
+### What didn't work
+
+- Running `npm run build:dist -w packages/os-widgets` in isolation after changing the helper still failed until `os-shell` had been rebuilt first, because the dist-build path still depends on real package order for transitive package consumers.
+- That is acceptable for the current migration slice because `build:publish-v1` already encodes the correct order, but it means “standalone package dist build from arbitrary stale dependency state” is still not a supported contract.
+
+### What I learned
+
+- The right short-term publish boundary is not “change every live manifest now.” It is “generate the publish manifest in `dist/` and treat that as the artifact contract.”
+- `workspace:*` leakage is best solved at the staged manifest boundary for now, because that is the manifest that `npm pack` and later publish workflows should consume.
+- `.npmignore` at the staged package root is a simple way to keep test outputs out of tarballs without having to finish a broader `files` allowlist design first.
+
+### What warrants a second pair of eyes
+
+- The staged manifest approach is intentionally conservative; reviewers should confirm that preserving source-first live manifests is the right tradeoff until the consumer-side resolution split lands.
+- The dependency-order sensitivity around `os-widgets` should be reviewed so future validation scripts do not accidentally imply arbitrary out-of-order package dist builds are supported.
+
+### What should be done in the future
+
+- Expand the staged-pack smoke coverage to more v1 packages after deciding which ones should be the next canaries.
+- Add a clean external fixture install that consumes the packed tarballs with no workspace links.
+- Fill in the remaining publish metadata (`repository`, `homepage`, `bugs`, `license`, ownership) before GitHub Packages publishing.
+
+### Code review instructions
+
+- Start with `workspace-links/go-go-os-frontend/scripts/packages/build-dist.mjs`.
+- Then review `workspace-links/go-go-os-frontend/scripts/packages/pack-smoke.mjs`.
+- Then review the new `pack:smoke-v1` script in `workspace-links/go-go-os-frontend/package.json`.
+- Validate with:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:publish-v1`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run pack:smoke-v1`
+
+### Technical details
+
+- Key staged outputs now written by `build:dist`:
+  - `dist/package.json`
+  - `dist/.npmignore`
+  - `dist/README.md` when a package-level README exists
+- First smoke-packed tarballs:
+  - `@go-go-golems/os-core@0.1.0`
+  - `@go-go-golems/os-repl@0.1.0`
+  - `@go-go-golems/os-scripting@0.1.0`
