@@ -44,19 +44,19 @@
 
 ## Phase 2: Publish The Host Image To GHCR
 
-- [ ] Add a GitHub Actions workflow that:
+- [x] Add a GitHub Actions workflow that:
   - checks out submodules
   - installs Node dependencies
   - builds the launcher
   - builds the Docker image
   - pushes to GHCR
-- [ ] Use immutable tags keyed by git SHA.
-- [ ] Optionally add mutable tags:
+- [x] Use immutable tags keyed by git SHA.
+- [x] Optionally add mutable tags:
   - `main`
   - `staging`
   - `latest` only if explicitly desired
-- [ ] Add provenance/metadata labels.
-- [ ] Decide whether production deploys use tags or digests:
+- [x] Add provenance/metadata labels.
+- [x] Decide whether production deploys use tags or digests:
   - recommended: digests for deployment manifests
 - [ ] Verify K3s can pull the GHCR image using its registry credentials.
 

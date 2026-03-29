@@ -723,6 +723,128 @@ wesen-os-launcher wesen-os-launcher \
   --profile-registries /config/profiles.runtime.yaml
 ```
 
+## 2026-03-29: Task 8, GHCR Host Publish Workflow
+
+With Phase 1 closed, I moved into Phase 2 and added the first real GitHub Actions workflow for building and publishing the host image. The workflow is intentionally safe: it can publish automatically on `main`, but manual dispatches default to build-only unless `push_image` is explicitly enabled.
+
+This task is the point where the Dockerfile, image naming decision, and runtime contract all become operationally relevant. The workflow now encodes those earlier decisions instead of leaving them as ticket prose only.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 4)
+
+**Assistant interpretation:** Keep executing the deployment plan incrementally, committing and documenting each step in a way that can be retraced later.
+
+**Inferred user intent:** Turn the deployment ticket into working automation, not just architecture notes.
+
+**Commit (code):** `da33d21` — `Add GHCR host publish workflow`
+
+### What I did
+
+- Added workflow:
+  - `.github/workflows/publish-host-image.yml`
+- Added ticket validation script:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/08-check-host-publish-workflow.sh`
+- Added generated workflow check artifact:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/08-host-publish-workflow-check.md`
+- Designed the workflow to:
+  - check out submodules recursively
+  - install dependencies with `pnpm`
+  - build the launcher binary
+  - derive GHCR tags/labels
+  - build the Docker image
+  - optionally push to GHCR
+- Added tag policy directly to the workflow:
+  - immutable `sha-...` tags
+  - mutable `main` tag only on the default branch
+- Added OCI labels:
+  - `org.opencontainers.image.source`
+  - `org.opencontainers.image.revision`
+  - `org.opencontainers.image.title`
+- Validated the workflow YAML locally with `yq`.
+
+### Why
+
+- The host image now has a local build and smoke path; the next logical step is to make image publishing reproducible in CI.
+- The workflow is the first place where all earlier deployment decisions converge:
+  - repo-local workspace
+  - Dockerfile
+  - deterministic launcher build
+  - GHCR naming
+  - digest-oriented deployment policy
+- Making manual dispatches build-only by default reduces the chance of accidental registry writes while the workflow is still being hardened.
+
+### What worked
+
+- The workflow YAML parsed cleanly.
+- The expected action chain is present:
+  - `actions/checkout@v4`
+  - `pnpm/action-setup@v4`
+  - `actions/setup-node@v4`
+  - `docker/login-action@v3`
+  - `docker/metadata-action@v5`
+  - `docker/build-push-action@v6`
+- The workflow encodes the chosen tag policy directly, rather than requiring downstream readers to infer it from ticket docs.
+- The build/push step is gated behind:
+  - `github.event_name == 'push' || inputs.push_image == true`
+
+### What didn't work
+
+- There was no technical failure in this slice.
+- The one unresolved item is not workflow syntax but external infrastructure:
+  - we have not yet proven that K3s can pull from GHCR with the target credentials
+
+### What I learned
+
+- The workflow can stay relatively simple because the Dockerfile already encapsulates the combined host build.
+- A guarded manual-dispatch path is useful during early deployment work: it gives us a CI build/test surface before we enable more routine registry writes.
+- The ticket-side validation script is a worthwhile pattern even for YAML-only changes because it leaves behind an artifact showing exactly what was added.
+
+### What was tricky to build
+
+- The main design choice was balancing safety with real automation. A workflow that always pushes on manual dispatch is too easy to misuse while the pipeline is still evolving, but a workflow that never pushes manually is awkward for branch testing. The current compromise is deliberate: manual dispatch defaults to build-only, while `main` pushes publish automatically.
+- The other subtlety was keeping tag policy consistent with the earlier naming decision. It is easy for the workflow to drift into one-off tag choices unless the immutable SHA tag, `main` tag, and digest-oriented deployment rule are all encoded together.
+
+### What warrants a second pair of eyes
+
+- Whether the path filters on the workflow are too broad or too narrow.
+- Whether we want to add an explicit smoke or container run step inside this workflow before the first real push.
+- Whether preview branch publishing should eventually get a dedicated branch-scoped tag path rather than manual build-only testing.
+
+### What should be done in the future
+
+- Merge and run the workflow on GitHub.
+- Verify the first published digest in GHCR.
+- Prove K3s can authenticate to GHCR and pull that image.
+- Consider adding a container smoke step inside the workflow once the first publish is stable.
+
+### Code review instructions
+
+- Start with:
+  - `.github/workflows/publish-host-image.yml`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/08-check-host-publish-workflow.sh`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/08-host-publish-workflow-check.md`
+- Validate locally with:
+  - `yq eval '.' .github/workflows/publish-host-image.yml >/dev/null`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/08-check-host-publish-workflow.sh`
+
+### Technical details
+
+- Current workflow shape:
+
+```text
+checkout recursive
+-> setup pnpm + node
+-> pnpm install --frozen-lockfile
+-> npm run launcher:binary:build
+-> docker metadata
+-> docker build/push
+```
+
+- Current encoded image refs:
+  - immutable: `ghcr.io/wesen/wesen-os:sha-<sha>`
+  - mutable on default branch: `ghcr.io/wesen/wesen-os:main`
+
 ## 2026-03-29: reMarkable Delivery
 
 After the ticket content was written, I bundled the main deliverables into a single PDF for reMarkable delivery:
