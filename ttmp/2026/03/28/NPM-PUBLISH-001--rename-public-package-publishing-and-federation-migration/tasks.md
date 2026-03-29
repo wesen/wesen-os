@@ -171,6 +171,7 @@
 - [x] Decide whether packages inherit access from linked repositories or use explicit package permissions.
 - [ ] Grant `Manage Actions access` to every repo that must install private/internal packages in CI.
 - [x] Implement a publish workflow that only runs after package build/test/pack smoke checks pass.
+- [x] Broaden the canary publish path to support at least one ordered dependent package chain, not just a single leaf package.
 - [ ] Publish one canary package first and validate:
   - package visibility
   - package metadata

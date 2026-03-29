@@ -977,3 +977,68 @@ This step closes the remaining blocker between "we can publish `os-core`" and "w
 - Validation commands:
   - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-shell && node scripts/packages/publish-github-package.mjs packages/os-shell --version-suffix canary.local --manifest-only`
   - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run install:smoke-v1`
+
+## Step 13: Broaden Canary Publishing To An Ordered Package Set
+
+This step upgrades the GitHub Packages canary workflow from a single-package proof to a dependency-aware publish path. `os-core` was a good first registry proof, but it does not exercise the real dependency ordering problem. `os-shell` does, because it depends on `os-core` and `os-scripting`, and `os-scripting` depends on further platform packages.
+
+### What I did
+
+- Added `workspace-links/go-go-os-frontend/scripts/packages/package-sets.mjs` to define named ordered publish sets:
+  - `os-core`
+  - `os-shell-stack`
+- Added `workspace-links/go-go-os-frontend/scripts/packages/publish-github-package-set.mjs` to publish a whole named set in order by delegating to `publish-github-package.mjs`.
+- Updated `.github/workflows/publish-github-package-canary.yml` so the workflow now accepts `package_set` rather than only a single package directory.
+- Added a workflow-resolved package chain for `os-shell-stack`:
+  - `packages/os-core`
+  - `packages/os-chat`
+  - `packages/os-repl`
+  - `packages/os-scripting`
+  - `packages/os-shell`
+- Updated the workflow to:
+  - typecheck each package in the set
+  - test each package in the set
+  - build `dist/` for each package in the set
+  - run pack smoke across the whole set
+  - publish the whole set in dependency order
+
+### Why
+
+- A real canary publish of `os-shell` cannot be treated as a standalone action once internal package versions are rewritten to the same canary suffix. Consumers of `os-shell@0.1.0-canary.*` will also need the matching canary versions of its internal platform dependencies.
+- The workflow therefore had to evolve from "canary publish a leaf package" to "canary publish a coherent dependency chain."
+
+### What worked
+
+- A local dry-run of the full `os-shell-stack` publish set succeeded in order:
+  - `os-core`
+  - `os-chat`
+  - `os-repl`
+  - `os-scripting`
+  - `os-shell`
+- The dry-run proved that each package:
+  - had valid staged publish artifacts
+  - could be stamped with the same canary suffix
+  - could run `npm publish --dry-run` against `https://npm.pkg.github.com`
+- The workflow now has a practical bridge between the first single-package proof and the later full publish-set release work.
+
+### What I learned
+
+- The right unit for the next publish checkpoint is not "the next package alphabetically." It is "the smallest coherent dependency chain that proves ordered package publishing."
+- A named package-set layer is a cleaner interface than trying to encode dependency ordering directly inside the workflow YAML.
+
+### What warrants a second pair of eyes
+
+- The package-set definitions are currently static and hand-maintained. That is appropriate for the current small publish wave, but if the package graph grows or versioning becomes independent, the release tooling may need a graph-aware resolver.
+- The workflow now duplicates the package-set membership in YAML resolution logic and in the JavaScript helper layer. That is acceptable for now but may be worth consolidating later if more sets are added.
+
+### What should be done in the future
+
+- Run the first real GitHub Actions canary publish for `os-shell-stack` and verify the resulting packages on GitHub Packages.
+- After that, decide whether the next expansion should be:
+  - the rest of the platform publish wave
+  - or published-package consumption mode in `wesen-os`
+
+### Technical details
+
+- Validation command:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:publish-v1 && node scripts/packages/publish-github-package-set.mjs os-shell-stack --tag canary --version-suffix canary.local --dry-run`
