@@ -93,8 +93,8 @@
   - temporary build-only tsconfig rewrite to `dist/*`
   - or package-local tsconfig split (`tsconfig.json` for dev, `tsconfig.build.json` for publish)
   - or another equivalent build-only mechanism
-- [ ] Phase 1A.3: Make `@go-go-golems/os-core` and `@go-go-golems/os-repl` build cleanly into `dist/` with copied runtime assets.
-- [ ] Phase 1A.4: Make `@go-go-golems/os-chat` and `@go-go-golems/os-scripting` build cleanly into `dist/` without source-tree leakage.
+- [x] Phase 1A.3: Make `@go-go-golems/os-core` and `@go-go-golems/os-repl` build cleanly into `dist/` with copied runtime assets.
+- [x] Phase 1A.4: Make `@go-go-golems/os-chat` and `@go-go-golems/os-scripting` build cleanly into `dist/` without source-tree leakage.
 - [ ] Phase 1A.5: Make `@go-go-golems/os-ui-cards`, `@go-go-golems/os-widgets`, `@go-go-golems/os-kanban`, `@go-go-golems/os-confirm`, and `@go-go-golems/os-shell` build cleanly into `dist/` in dependency order.
 - [ ] Phase 1A.6: Add one scripted `build:publish-v1` flow that builds the full v1 package set from a clean state.
 - [ ] Phase 1A.7: Record the exact remaining package-local build failures, if any, with commands and file references.

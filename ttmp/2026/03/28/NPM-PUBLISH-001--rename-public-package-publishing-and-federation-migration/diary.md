@@ -289,6 +289,110 @@ This is a path migration across multiple repos, not just a local cleanup. The li
   - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-ui-cards`
   - current failure: `TS7016` on `@go-go-golems/os-core/dist/*` declarations
 
+## Step 5: Fix Dist-Build Incremental State And Recover `os-scripting` Assets
+
+This step moved the packaging work forward again after the folder-rename checkpoint. The immediate issue was that `build:dist` could succeed while silently omitting declaration files because TypeScript was reusing stale `.tsbuildinfo` state from prior temp builds. After fixing that, the build surfaced a second problem: the folder-rename sweep had accidentally removed `os-scripting` VM fixture files and raw-import typings, and had also over-rewritten a few internal `src/repl` imports.
+
+The result is a much better packaging baseline: `os-core`, `os-chat`, `os-repl`, `os-scripting`, and `os-ui-cards` now build cleanly with `build:dist`, and the full `build:publish-v1` flow has advanced to the next real source-first resolution blocker in `os-widgets`.
+
+### Prompt Context
+
+**User prompt (verbatim):** "alright, add all the tasks necessary and then work on it one by one, committing at appropriate intervals, and keeping a diary."
+
+**Assistant interpretation:** Continue past the folder rename into the next packaging blockers, keeping the task board and diary in sync and checkpointing the work in focused commits.
+
+**Inferred user intent:** Keep pushing the migration forward in bounded technical slices rather than stopping after each narrow cleanup.
+
+### What I did
+
+- Traced the missing-declaration failure in `os-ui-cards` back to stale temp incremental state from `.tsconfig.build-dist.tmp.tsbuildinfo`.
+- Updated `workspace-links/go-go-os-frontend/scripts/packages/build-dist.mjs` so dist builds:
+  - write to an explicit temp `.tsbuildinfo` path
+  - delete that temp build-info file before the build
+  - delete that temp build-info file after the build
+- Verified the fix by showing that a clean `os-core` compile emits `.d.ts` files again once the temp build-info state is removed.
+- Restored the accidentally removed `os-scripting` files from the pre-rename tree:
+  - `src/raw-imports.d.ts`
+  - `src/plugin-runtime/**/*.vm.js`
+  - `src/runtime-host/fixtures/*.vm.js`
+  - `src/runtime-packages/ui.package.vm.js`
+- Repaired the internal `os-scripting` source imports that were wrongly rewritten from local `src/repl/*` to non-existent `src/os-repl/*`.
+- Re-ran package-local dist builds and the aggregate publish flow.
+
+### Why
+
+- A dist build that emits JS but not declarations is worse than a hard failure because it leaves downstream packages resolving to JS-only artifacts with `any` types.
+- The missing `os-scripting` VM fixtures and raw-import declarations were direct regressions from the folder rename and had to be restored before any meaningful packaging validation could continue.
+
+### What worked
+
+- The temp build-info cleanup fixed declaration emission for `os-core`.
+- These package-local dist builds now pass:
+  - `cd workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-core`
+  - `cd workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-chat`
+  - `cd workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-repl`
+  - `cd workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-scripting`
+  - `cd workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-ui-cards`
+- The aggregate `build:publish-v1` flow now advances through:
+  - `os-core`
+  - `os-chat`
+  - `os-repl`
+  - `os-scripting`
+  - `os-ui-cards`
+
+### What didn't work
+
+- The full publish build still stops in `os-widgets`:
+  - `cd workspace-links/go-go-os-frontend && npm run build:publish-v1`
+  - current failure: `../os-scripting/src/plugin-runtime/runtimeService.ts(12,34): error TS2307: Cannot find module './stack-bootstrap.vm.js?raw'...`
+- That failure now points at a later source-first resolution path, likely through `os-widgets` importing `os-shell`, whose current package metadata still exports `src/*` and pulls `os-scripting/src` back into the build.
+
+### What I learned
+
+- The temp `.tsbuildinfo` files produced by the dist helper are part of the build contract. If they are not cleaned, they can make dist builds look green while emitting incomplete artifacts.
+- The folder rename did not just break path strings. It also exposed how many runtime asset files in `os-scripting` are essential to tests, stories, and raw bundle imports.
+- The next blocker is no longer “does dist build work at all?” It is now “how do workspace package imports resolve to built artifacts transitively instead of falling back to `src/*` package metadata?”
+
+### What was tricky to build
+
+- The misleading part was that `os-core` already appeared to build successfully, so the missing declarations looked like a package-resolution bug at first. It only became obvious after checking emitted files directly and noticing that TypeScript was leaving behind `.d.ts.map` files without the matching `.d.ts` outputs under stale incremental state.
+- The rename regression in `os-scripting` came from two different failure modes at once:
+  - asset files had disappeared from the moved package tree
+  - internal local imports had been rewritten as if `src/repl` were another package folder
+
+### What warrants a second pair of eyes
+
+- The restored `os-scripting` asset set should be compared with the pre-rename tree to confirm nothing else runtime-relevant was dropped.
+- The new `build-dist.mjs` cleanup behavior should be reviewed for any package that intentionally depends on persistent incremental state, although dist-builds should not.
+
+### What should be done in the future
+
+- Fix the next transitive source-first boundary so `os-widgets` can build without pulling `os-scripting/src` through `os-shell`.
+- Then continue the full `build:publish-v1` flow through `os-kanban`, `os-confirm`, and `os-shell`.
+- After the whole v1 set builds cleanly, switch the package manifests from `src/*` exports to `dist/*`.
+
+### Code review instructions
+
+- Start with `workspace-links/go-go-os-frontend/scripts/packages/build-dist.mjs`.
+- Then review the restored raw-import/runtime asset files under `workspace-links/go-go-os-frontend/packages/os-scripting/src/`.
+- Then review the internal import repairs in:
+  - `workspace-links/go-go-os-frontend/packages/os-scripting/src/hypercard/debug/jsSessionDebugRegistry.ts`
+  - `workspace-links/go-go-os-frontend/packages/os-scripting/src/hypercard/task-manager/jsSessionSource.ts`
+  - `workspace-links/go-go-os-frontend/packages/os-scripting/src/runtime-host/RuntimeSurfaceSessionHost.rerender.test.tsx`
+- Validate with:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-scripting`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-ui-cards`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:publish-v1`
+
+### Technical details
+
+- Temp build-info files observed before the fix:
+  - `packages/*/.tsconfig.build-dist.tmp.tsbuildinfo`
+- Direct confirmation command used to isolate the declaration-emission problem:
+  - `cd .../packages/os-core && rm -rf dist tsconfig.tsbuildinfo && npm exec -- tsc -p tsconfig.json --listEmittedFiles`
+- Current aggregate build blocker after this step:
+  - `os-widgets` pulls `os-shell`/`os-scripting` back through source-first package metadata during `build:publish-v1`
+
 ### Code review instructions
 
 - Start with `ttmp/2026/03/28/NPM-PUBLISH-001--rename-public-package-publishing-and-federation-migration/package-identity-matrix.md`.
