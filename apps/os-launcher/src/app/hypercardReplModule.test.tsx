@@ -1,4 +1,4 @@
-import { formatAppKey } from '@hypercard/desktop-os';
+import { formatAppKey } from '@go-go-golems/os-shell';
 import { describe, expect, it } from 'vitest';
 
 describe('hypercardReplLauncherModule', async () => {

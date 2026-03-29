@@ -3,8 +3,8 @@ import {
   clearTaskManagerSources,
   HYPERCARD_TASK_MANAGER_APP_ID,
   listTaskManagerSources,
-} from '@hypercard/hypercard-runtime';
-import { formatAppKey } from '@hypercard/desktop-os';
+} from '@go-go-golems/os-scripting';
+import { formatAppKey } from '@go-go-golems/os-shell';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { Provider } from 'react-redux';

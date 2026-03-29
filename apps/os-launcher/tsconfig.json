@@ -11,17 +11,17 @@
     "baseUrl": ".",
     "outDir": "dist",
     "paths": {
-      "@hypercard/repl": [
+      "@go-go-golems/os-repl": [
         "../../workspace-links/go-go-os-frontend/packages/repl/src/index.ts"
       ],
-      "@hypercard/repl/*": [
+      "@go-go-golems/os-repl/*": [
         "../../workspace-links/go-go-os-frontend/packages/repl/src/*"
       ],
-      "@hypercard/arc-agi-player/launcher": [
+      "@go-go-golems/arc-agi-player/launcher": [
         "../../workspace-links/go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts",
         "./src/app/shims/arcAgiPlayerLauncher.ts"
       ],
-      "@hypercard/sqlite/launcher": [
+      "@go-go-golems/sqlite/launcher": [
         "../../workspace-links/go-go-app-sqlite/apps/sqlite/src/launcher/public.ts",
         "./src/app/shims/sqliteLauncher.ts"
       ]

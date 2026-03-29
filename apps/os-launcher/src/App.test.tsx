@@ -6,7 +6,7 @@ describe('App runtime registration', () => {
   });
 
   it('registers ui and kanban runtime packages before rendering the desktop shell', async () => {
-    const runtime = await import('@hypercard/hypercard-runtime');
+    const runtime = await import('@go-go-golems/os-scripting');
     runtime.clearRuntimePackages();
     runtime.clearRuntimeSurfaceTypes();
 

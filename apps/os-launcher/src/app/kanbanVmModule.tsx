@@ -1,7 +1,7 @@
-import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
-import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
-import type { DesktopContribution, WindowContentAdapter } from '@hypercard/engine/desktop-react';
-import { RuntimeSurfaceSessionHost } from '@hypercard/hypercard-runtime';
+import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@go-go-golems/os-shell';
+import { openWindow, type OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
+import type { DesktopContribution, WindowContentAdapter } from '@go-go-golems/os-core/desktop-react';
+import { RuntimeSurfaceSessionHost } from '@go-go-golems/os-scripting';
 import type { ReactNode } from 'react';
 import { useDispatch } from 'react-redux';
 import { STACK } from '../domain/stack';

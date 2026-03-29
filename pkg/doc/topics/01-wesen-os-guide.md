@@ -291,17 +291,17 @@ npm run launcher:binary:build
 
 The Vite config (`apps/os-launcher/vite.config.ts`) defines two critical configurations:
 
-**Aliases** map `@hypercard/*` package imports to source directories in sibling repositories:
+**Aliases** map `@go-go-golems/*` package imports to source directories in sibling repositories:
 
 | Alias | Resolves to |
 |---|---|
-| `@hypercard/engine` | `go-go-os-frontend/packages/engine/src` |
-| `@hypercard/desktop-os` | `go-go-os-frontend/packages/desktop-os/src` |
-| `@hypercard/chat-runtime` | `go-go-os-frontend/packages/chat-runtime/src` |
-| `@hypercard/hypercard-runtime` | `go-go-os-frontend/packages/hypercard-runtime/src` |
-| `@hypercard/inventory/launcher` | `go-go-app-inventory/apps/inventory/src/launcher/public.ts` |
-| `@hypercard/inventory/reducers` | `go-go-app-inventory/apps/inventory/src/reducers.ts` |
-| `@hypercard/arc-agi-player/launcher` | `go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts` |
+| `@go-go-golems/os-core` | `go-go-os-frontend/packages/engine/src` |
+| `@go-go-golems/os-shell` | `go-go-os-frontend/packages/desktop-os/src` |
+| `@go-go-golems/os-chat` | `go-go-os-frontend/packages/chat-runtime/src` |
+| `@go-go-golems/os-scripting` | `go-go-os-frontend/packages/hypercard-runtime/src` |
+| `@go-go-golems/inventory/launcher` | `go-go-app-inventory/apps/inventory/src/launcher/public.ts` |
+| `@go-go-golems/inventory/reducers` | `go-go-app-inventory/apps/inventory/src/reducers.ts` |
+| `@go-go-golems/arc-agi-player/launcher` | `go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts` |
 
 **Proxies** forward API requests from the Vite dev server to the backend:
 

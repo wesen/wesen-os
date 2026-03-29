@@ -1,10 +1,10 @@
-import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
+import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@go-go-golems/os-shell';
 import {
   createJsReplDriver,
   createJsSessionBroker,
   registerJsSessionDebugSource,
-} from '@hypercard/hypercard-runtime';
-import { MacRepl, type TerminalLine } from '@hypercard/repl';
+} from '@go-go-golems/os-scripting';
+import { MacRepl, type TerminalLine } from '@go-go-golems/os-repl';
 import { useMemo } from 'react';
 
 const APP_ID = 'js-repl';

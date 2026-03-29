@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { KANBAN_RUNTIME_DOCS_METADATA } from '@hypercard/kanban-runtime';
-import { INVENTORY_VM_PACK_METADATA } from '@hypercard/inventory';
-import { UI_RUNTIME_DOCS_METADATA } from '@hypercard/ui-runtime';
+import { KANBAN_RUNTIME_DOCS_METADATA } from '@go-go-golems/os-kanban';
+import { INVENTORY_VM_PACK_METADATA } from '@go-go-golems/inventory';
+import { UI_RUNTIME_DOCS_METADATA } from '@go-go-golems/os-ui-cards';
 import { OS_LAUNCHER_VM_PACK_METADATA } from '../domain/vmmeta';
 
 const register = vi.fn();
 const createVmmetaSurfaceTypeDocsMount = vi.fn((metadata) => ({ mountPath: () => `/docs/objects/surface-type/${metadata.packId}` }));
 const createVmmetaSurfaceDocsMount = vi.fn((owner) => ({ mountPath: () => `/docs/objects/surface/${owner}` }));
 
-vi.mock('@hypercard/apps-browser', () => ({
+vi.mock('@go-go-golems/apps-browser', () => ({
   docsRegistry: { register },
   createVmmetaSurfaceTypeDocsMount,
   createVmmetaSurfaceDocsMount,

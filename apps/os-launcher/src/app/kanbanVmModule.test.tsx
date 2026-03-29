@@ -1,5 +1,5 @@
-import { formatAppKey } from '@hypercard/desktop-os';
-import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import { formatAppKey } from '@go-go-golems/os-shell';
+import type { OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
 import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -15,8 +15,8 @@ vi.mock('react-redux', () => ({
   useDispatch: () => mockDispatch,
 }));
 
-vi.mock('@hypercard/hypercard-runtime', async () => {
-  const actual = await vi.importActual<typeof import('@hypercard/hypercard-runtime')>('@hypercard/hypercard-runtime');
+vi.mock('@go-go-golems/os-scripting', async () => {
+  const actual = await vi.importActual<typeof import('@go-go-golems/os-scripting')>('@go-go-golems/os-scripting');
   return {
     ...actual,
     RuntimeSurfaceSessionHost: mockRuntimeSurfaceSessionHost,

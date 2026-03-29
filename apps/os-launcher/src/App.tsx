@@ -1,6 +1,6 @@
-import { buildLauncherContributions, createRenderAppWindow, type LauncherHostContext } from '@hypercard/desktop-os';
-import { closeWindow as closeWindowAction, openWindow as openWindowAction } from '@hypercard/engine/desktop-core';
-import { DesktopShell } from '@hypercard/engine/desktop-react';
+import { buildLauncherContributions, createRenderAppWindow, type LauncherHostContext } from '@go-go-golems/os-shell';
+import { closeWindow as closeWindowAction, openWindow as openWindowAction } from '@go-go-golems/os-core/desktop-core';
+import { DesktopShell } from '@go-go-golems/os-core/desktop-react';
 import { useMemo } from 'react';
 import { useDispatch, useStore } from 'react-redux';
 import { registerRuntimePackages } from './app/registerRuntimePackages';

@@ -521,8 +521,8 @@ task-runner-repo/
 
 ```tsx
 // apps/task-runner/src/launcher/module.tsx
-import type { LaunchableAppModule, LaunchReason } from '@hypercard/desktop-os';
-import type { OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import type { LaunchableAppModule, LaunchReason } from '@go-go-golems/os-shell';
+import type { OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
 import type { ReactNode } from 'react';
 import { TaskRunnerWindow } from './renderTaskRunner';
 
@@ -650,7 +650,7 @@ export {};
 Edit `wesen-os/apps/os-launcher/src/app/modules.tsx`:
 
 ```tsx
-import { taskRunnerLauncherModule } from '@hypercard/task-runner/launcher';
+import { taskRunnerLauncherModule } from '@go-go-golems/task-runner/launcher';
 
 export const launcherModules: LaunchableAppModule[] = [
   inventoryLauncherModule,
@@ -665,15 +665,15 @@ export const launcherModules: LaunchableAppModule[] = [
 Edit `wesen-os/apps/os-launcher/vite.config.ts` to add aliases in the `resolve.alias` section:
 
 ```ts
-'@hypercard/task-runner/launcher': path.resolve(
+'@go-go-golems/task-runner/launcher': path.resolve(
   workspaceRoot,
   'task-runner-repo/apps/task-runner/src/launcher/public.ts',
 ),
-'@hypercard/task-runner/reducers': path.resolve(
+'@go-go-golems/task-runner/reducers': path.resolve(
   workspaceRoot,
   'task-runner-repo/apps/task-runner/src/reducers.ts',
 ),
-'@hypercard/task-runner': path.resolve(
+'@go-go-golems/task-runner': path.resolve(
   workspaceRoot,
   'task-runner-repo/apps/task-runner/src',
 ),
@@ -695,7 +695,7 @@ Add proxy rules in the `server.proxy` section of `vite.config.ts`:
 If your app exports domain reducers that other modules need, add them in `wesen-os/apps/os-launcher/src/app/store.ts`:
 
 ```ts
-import { tasksReducer } from '@hypercard/task-runner/reducers';
+import { tasksReducer } from '@go-go-golems/task-runner/reducers';
 
 export const { store } = createLauncherStore(launcherModules, {
   sharedReducers: {
@@ -729,7 +729,7 @@ At this point you have a complete working app with backend and frontend. Phases 
 
 ```ts
 // apps/task-runner/src/domain/stack.ts
-import type { StackDefinition } from '@hypercard/hypercard-runtime';
+import type { StackDefinition } from '@go-go-golems/os-scripting';
 import bundleCode from './pluginBundle.vm.js?raw';
 
 export const TASK_RUNNER_STACK: StackDefinition = {
@@ -858,7 +858,7 @@ Update your module to support card windows via a window content adapter:
 
 ```tsx
 // In module.tsx, add to createContributions:
-import { PluginCardSessionHost } from '@hypercard/hypercard-runtime';
+import { PluginCardSessionHost } from '@go-go-golems/os-scripting';
 import { TASK_RUNNER_STACK } from '../domain/stack';
 
 createContributions: (ctx): DesktopContribution[] => [{
@@ -927,8 +927,8 @@ In your frontend module's setup, ensure the hypercard timeline module is registe
 import {
   ensureChatModulesRegistered,
   registerChatRuntimeModule,
-} from '@hypercard/chat-runtime';
-import { registerHypercardTimelineModule } from '@hypercard/hypercard-runtime';
+} from '@go-go-golems/os-chat';
+import { registerHypercardTimelineModule } from '@go-go-golems/os-scripting';
 
 // Call during module initialization (e.g., in onRegister or at module scope):
 registerChatRuntimeModule({
@@ -1038,7 +1038,7 @@ For module contract tests:
 
 ```ts
 import { taskRunnerLauncherModule } from './module';
-import { assertValidManifest } from '@hypercard/desktop-os';
+import { assertValidManifest } from '@go-go-golems/os-shell';
 
 test('manifest is valid', () => {
   assertValidManifest(taskRunnerLauncherModule.manifest);
@@ -1112,7 +1112,7 @@ The inventory app is the most complete implementation. Here's how it maps to eac
 
 **Frontend (Phase 2):** `go-go-app-inventory/apps/inventory/src/launcher/module.tsx` defines the launcher module. The massive `renderInventoryApp.tsx` (1000+ lines) implements all window types, contributions, chat integration, card adapters, context menus, and debug tools.
 
-**Registration (Phase 3):** Imported in `wesen-os/apps/os-launcher/src/app/modules.tsx`. Vite aliases for `@hypercard/inventory/launcher`, `@hypercard/inventory/reducers`, and `@hypercard/inventory`. Shared reducers `inventory` and `sales` in `store.ts`.
+**Registration (Phase 3):** Imported in `wesen-os/apps/os-launcher/src/app/modules.tsx`. Vite aliases for `@go-go-golems/inventory/launcher`, `@go-go-golems/inventory/reducers`, and `@go-go-golems/inventory`. Shared reducers `inventory` and `sales` in `store.ts`.
 
 **VM Cards (Phase 4):** Stack defined in `apps/inventory/src/domain/stack.ts`. Plugin bundle in `apps/inventory/src/domain/pluginBundle.vm.js`. Domain intents like `inventory/updateQty`, `inventory/saveItem` match the inventory reducer.
 

@@ -9,16 +9,16 @@ const inventoryBackendTarget = process.env.INVENTORY_CHAT_BACKEND ?? 'http://127
 const hasArcAgiPlayerRepo = existsSync(path.resolve(linkedReposRoot, 'go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts'));
 const hasSQLiteRepo = existsSync(path.resolve(linkedReposRoot, 'go-go-app-sqlite/apps/sqlite/src/launcher/public.ts'));
 const workspacePackageExcludes = [
-  '@hypercard/apps-browser',
-  '@hypercard/book-tracker-debug',
-  '@hypercard/chat-runtime',
-  '@hypercard/crm',
-  '@hypercard/desktop-os',
-  '@hypercard/engine',
-  '@hypercard/hypercard-runtime',
-  '@hypercard/hypercard-tools',
-  '@hypercard/inventory',
-  '@hypercard/todo',
+  '@go-go-golems/apps-browser',
+  '@go-go-golems/book-tracker-debug',
+  '@go-go-golems/os-chat',
+  '@go-go-golems/crm',
+  '@go-go-golems/os-shell',
+  '@go-go-golems/os-core',
+  '@go-go-golems/os-scripting',
+  '@go-go-golems/hypercard-tools',
+  '@go-go-golems/inventory',
+  '@go-go-golems/todo',
 ];
 
 type PackageExports = string | Record<string, string>;
@@ -68,7 +68,7 @@ function collectWorkspacePackageAliases(): AliasEntry[] {
     };
 
     const packageName = String(packageJson.name ?? '').trim();
-    if (!packageName.startsWith('@hypercard/')) {
+    if (!packageName.startsWith('@go-go-golems/')) {
       continue;
     }
 

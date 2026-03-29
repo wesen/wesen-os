@@ -1,5 +1,5 @@
-import type { LaunchableAppModule, LaunchReason } from '@hypercard/desktop-os';
-import { openWindow } from '@hypercard/engine/desktop-core';
+import type { LaunchableAppModule, LaunchReason } from '@go-go-golems/os-shell';
+import { openWindow } from '@go-go-golems/os-core/desktop-core';
 import {
   buildTaskManagerWindowPayload,
   createJsSessionTaskManagerSource,
@@ -9,8 +9,8 @@ import {
   registerTaskManagerSource,
   TaskManagerAppWindow,
   unregisterTaskManagerSource,
-} from '@hypercard/hypercard-runtime';
-import { inventoryStack } from '@hypercard/inventory/launcher';
+} from '@go-go-golems/os-scripting';
+import { inventoryStack } from '@go-go-golems/inventory/launcher';
 import { useEffect, useMemo } from 'react';
 import { useDispatch, useStore } from 'react-redux';
 import { STACK } from '../domain/stack';

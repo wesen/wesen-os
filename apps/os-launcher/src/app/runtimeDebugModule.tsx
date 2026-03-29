@@ -1,12 +1,12 @@
-import type { RuntimeBundleDefinition } from '@hypercard/engine';
-import type { LaunchableAppModule, LaunchReason } from '@hypercard/desktop-os';
+import type { RuntimeBundleDefinition } from '@go-go-golems/os-core';
+import type { LaunchableAppModule, LaunchReason } from '@go-go-golems/os-shell';
 import {
   buildRuntimeDebugWindowPayload,
   HYPERCARD_RUNTIME_DEBUG_APP_ID,
   registerRuntimeDebugStacks,
   RuntimeDebugAppWindow,
-} from '@hypercard/hypercard-runtime';
-import { inventoryStack } from '@hypercard/inventory/launcher';
+} from '@go-go-golems/os-scripting';
+import { inventoryStack } from '@go-go-golems/inventory/launcher';
 import type { ReactNode } from 'react';
 import { STACK } from '../domain/stack';
 

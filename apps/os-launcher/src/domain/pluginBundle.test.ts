@@ -6,9 +6,9 @@ import {
   clearRuntimeSurfaceTypes,
   registerRuntimePackage,
   registerRuntimeSurfaceType,
-} from '@hypercard/hypercard-runtime';
-import { KANBAN_RUNTIME_PACKAGE, KANBAN_V1_RUNTIME_SURFACE_TYPE } from '@hypercard/kanban-runtime';
-import { UI_CARD_V1_RUNTIME_SURFACE_TYPE, UI_RUNTIME_PACKAGE } from '@hypercard/ui-runtime';
+} from '@go-go-golems/os-scripting';
+import { KANBAN_RUNTIME_PACKAGE, KANBAN_V1_RUNTIME_SURFACE_TYPE } from '@go-go-golems/os-kanban';
+import { UI_CARD_V1_RUNTIME_SURFACE_TYPE, UI_RUNTIME_PACKAGE } from '@go-go-golems/os-ui-cards';
 import { OS_LAUNCHER_PLUGIN_BUNDLE } from './pluginBundle';
 import { KANBAN_VM_CARD_META, OS_LAUNCHER_VM_PACK_METADATA } from './vmmeta';
 

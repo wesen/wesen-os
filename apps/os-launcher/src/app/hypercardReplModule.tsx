@@ -1,14 +1,14 @@
-import { formatAppKey, parseAppKey, type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
+import { formatAppKey, parseAppKey, type LaunchableAppModule, type LaunchReason } from '@go-go-golems/os-shell';
 import {
   showToast,
   type RuntimeBundleDefinition,
-} from '@hypercard/engine';
+} from '@go-go-golems/os-core';
 import {
   closeWindow,
   openWindow,
   selectFocusedWindowId,
   type OpenWindowPayload,
-} from '@hypercard/engine/desktop-core';
+} from '@go-go-golems/os-core/desktop-core';
 import {
   createHypercardReplDriver,
   createRuntimeBroker,
@@ -21,10 +21,10 @@ import {
   selectRuntimeSession,
   selectRuntimeSessionState,
   selectRuntimeSurfaceState,
-} from '@hypercard/hypercard-runtime';
-import { INVENTORY_VM_PACK_METADATA } from '@hypercard/inventory';
-import { inventoryStack } from '@hypercard/inventory/launcher';
-import { MacRepl, type ReplEffect, type TerminalLine } from '@hypercard/repl';
+} from '@go-go-golems/os-scripting';
+import { INVENTORY_VM_PACK_METADATA } from '@go-go-golems/inventory';
+import { inventoryStack } from '@go-go-golems/inventory/launcher';
+import { MacRepl, type ReplEffect, type TerminalLine } from '@go-go-golems/os-repl';
 import { useCallback, useEffect, useMemo } from 'react';
 import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { STACK } from '../domain/stack';

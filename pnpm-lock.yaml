@@ -50,48 +50,48 @@ importers:
       '@codemirror/view':
         specifier: ^6.39.14
         version: 6.39.16
-      '@hypercard/apps-browser':
+      '@go-go-golems/apps-browser':
         specifier: workspace:*
         version: link:../../workspace-links/go-go-os-frontend/apps/apps-browser
-      '@hypercard/book-tracker-debug':
+      '@go-go-golems/book-tracker-debug':
         specifier: workspace:*
         version: link:../../workspace-links/go-go-os-frontend/apps/book-tracker-debug
-      '@hypercard/chat-runtime':
-        specifier: workspace:*
-        version: link:../../workspace-links/go-go-os-frontend/packages/chat-runtime
-      '@hypercard/crm':
+      '@go-go-golems/crm':
         specifier: workspace:*
         version: link:../../workspace-links/go-go-os-frontend/apps/crm
-      '@hypercard/desktop-os':
-        specifier: workspace:*
-        version: link:../../workspace-links/go-go-os-frontend/packages/desktop-os
-      '@hypercard/engine':
-        specifier: workspace:*
-        version: link:../../workspace-links/go-go-os-frontend/packages/engine
-      '@hypercard/hypercard-runtime':
-        specifier: workspace:*
-        version: link:../../workspace-links/go-go-os-frontend/packages/hypercard-runtime
-      '@hypercard/hypercard-tools':
+      '@go-go-golems/hypercard-tools':
         specifier: workspace:*
         version: link:../../workspace-links/go-go-os-frontend/apps/hypercard-tools
-      '@hypercard/inventory':
+      '@go-go-golems/inventory':
         specifier: workspace:*
         version: link:../../workspace-links/go-go-app-inventory/apps/inventory
-      '@hypercard/kanban-runtime':
+      '@go-go-golems/os-chat':
+        specifier: workspace:*
+        version: link:../../workspace-links/go-go-os-frontend/packages/chat-runtime
+      '@go-go-golems/os-core':
+        specifier: workspace:*
+        version: link:../../workspace-links/go-go-os-frontend/packages/engine
+      '@go-go-golems/os-kanban':
         specifier: workspace:*
         version: link:../../workspace-links/go-go-os-frontend/packages/kanban-runtime
-      '@hypercard/repl':
+      '@go-go-golems/os-repl':
         specifier: workspace:*
         version: link:../../workspace-links/go-go-os-frontend/packages/repl
-      '@hypercard/rich-widgets':
+      '@go-go-golems/os-scripting':
         specifier: workspace:*
-        version: link:../../workspace-links/go-go-os-frontend/packages/rich-widgets
-      '@hypercard/todo':
+        version: link:../../workspace-links/go-go-os-frontend/packages/hypercard-runtime
+      '@go-go-golems/os-shell':
         specifier: workspace:*
-        version: link:../../workspace-links/go-go-os-frontend/apps/todo
-      '@hypercard/ui-runtime':
+        version: link:../../workspace-links/go-go-os-frontend/packages/desktop-os
+      '@go-go-golems/os-ui-cards':
         specifier: workspace:*
         version: link:../../workspace-links/go-go-os-frontend/packages/ui-runtime
+      '@go-go-golems/os-widgets':
+        specifier: workspace:*
+        version: link:../../workspace-links/go-go-os-frontend/packages/rich-widgets
+      '@go-go-golems/todo':
+        specifier: workspace:*
+        version: link:../../workspace-links/go-go-os-frontend/apps/todo
       '@jitl/quickjs-ffi-types':
         specifier: ^0.31.0
         version: 0.31.0
@@ -501,15 +501,15 @@ importers:
 
   workspace-links/go-go-app-arc-agi-3/apps/arc-agi-player:
     dependencies:
-      '@hypercard/desktop-os':
-        specifier: workspace:*
-        version: link:../../../go-go-os-frontend/packages/desktop-os
-      '@hypercard/engine':
+      '@go-go-golems/os-core':
         specifier: workspace:*
         version: link:../../../go-go-os-frontend/packages/engine
-      '@hypercard/hypercard-runtime':
+      '@go-go-golems/os-scripting':
         specifier: workspace:*
         version: link:../../../go-go-os-frontend/packages/hypercard-runtime
+      '@go-go-golems/os-shell':
+        specifier: workspace:*
+        version: link:../../../go-go-os-frontend/packages/desktop-os
       '@reduxjs/toolkit':
         specifier: ^2.5.0
         version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
@@ -580,16 +580,16 @@ importers:
       '@codemirror/view':
         specifier: ^6.39.14
         version: 6.39.16
-      '@hypercard/chat-runtime':
+      '@go-go-golems/os-chat':
         specifier: workspace:*
         version: link:../../../go-go-os-frontend/packages/chat-runtime
-      '@hypercard/hypercard-runtime':
-        specifier: workspace:*
-        version: link:../../../go-go-os-frontend/packages/hypercard-runtime
-      '@hypercard/kanban-runtime':
+      '@go-go-golems/os-kanban':
         specifier: workspace:*
         version: link:../../../go-go-os-frontend/packages/kanban-runtime
-      '@hypercard/ui-runtime':
+      '@go-go-golems/os-scripting':
+        specifier: workspace:*
+        version: link:../../../go-go-os-frontend/packages/hypercard-runtime
+      '@go-go-golems/os-ui-cards':
         specifier: workspace:*
         version: link:../../../go-go-os-frontend/packages/ui-runtime
       '@reduxjs/toolkit':
@@ -659,15 +659,15 @@ importers:
 
   workspace-links/go-go-app-sqlite/apps/sqlite:
     dependencies:
-      '@hypercard/desktop-os':
-        specifier: workspace:*
-        version: link:../../../go-go-os-frontend/packages/desktop-os
-      '@hypercard/engine':
+      '@go-go-golems/os-core':
         specifier: workspace:*
         version: link:../../../go-go-os-frontend/packages/engine
-      '@hypercard/hypercard-runtime':
+      '@go-go-golems/os-scripting':
         specifier: workspace:*
         version: link:../../../go-go-os-frontend/packages/hypercard-runtime
+      '@go-go-golems/os-shell':
+        specifier: workspace:*
+        version: link:../../../go-go-os-frontend/packages/desktop-os
       '@reduxjs/toolkit':
         specifier: ^2.5.0
         version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
@@ -723,18 +723,18 @@ importers:
 
   workspace-links/go-go-os-frontend/apps/apps-browser:
     dependencies:
-      '@hypercard/chat-runtime':
+      '@go-go-golems/os-chat':
         specifier: workspace:*
         version: link:../../packages/chat-runtime
-      '@hypercard/desktop-os':
-        specifier: workspace:*
-        version: link:../../packages/desktop-os
-      '@hypercard/engine':
+      '@go-go-golems/os-core':
         specifier: workspace:*
         version: link:../../packages/engine
-      '@hypercard/hypercard-runtime':
+      '@go-go-golems/os-scripting':
         specifier: workspace:*
         version: link:../../packages/hypercard-runtime
+      '@go-go-golems/os-shell':
+        specifier: workspace:*
+        version: link:../../packages/desktop-os
       '@reduxjs/toolkit':
         specifier: ^2.5.0
         version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
@@ -778,15 +778,15 @@ importers:
 
   workspace-links/go-go-os-frontend/apps/book-tracker-debug:
     dependencies:
-      '@hypercard/desktop-os':
-        specifier: workspace:*
-        version: link:../../packages/desktop-os
-      '@hypercard/engine':
+      '@go-go-golems/os-core':
         specifier: workspace:*
         version: link:../../packages/engine
-      '@hypercard/hypercard-runtime':
+      '@go-go-golems/os-scripting':
         specifier: workspace:*
         version: link:../../packages/hypercard-runtime
+      '@go-go-golems/os-shell':
+        specifier: workspace:*
+        version: link:../../packages/desktop-os
       '@reduxjs/toolkit':
         specifier: ^2.5.0
         version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
@@ -818,18 +818,18 @@ importers:
 
   workspace-links/go-go-os-frontend/apps/crm:
     dependencies:
-      '@hypercard/chat-runtime':
+      '@go-go-golems/os-chat':
         specifier: workspace:*
         version: link:../../packages/chat-runtime
-      '@hypercard/desktop-os':
-        specifier: workspace:*
-        version: link:../../packages/desktop-os
-      '@hypercard/engine':
+      '@go-go-golems/os-core':
         specifier: workspace:*
         version: link:../../packages/engine
-      '@hypercard/hypercard-runtime':
+      '@go-go-golems/os-scripting':
         specifier: workspace:*
         version: link:../../packages/hypercard-runtime
+      '@go-go-golems/os-shell':
+        specifier: workspace:*
+        version: link:../../packages/desktop-os
       '@reduxjs/toolkit':
         specifier: ^2.5.0
         version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
@@ -861,15 +861,15 @@ importers:
 
   workspace-links/go-go-os-frontend/apps/hypercard-tools:
     dependencies:
-      '@hypercard/desktop-os':
-        specifier: workspace:*
-        version: link:../../packages/desktop-os
-      '@hypercard/engine':
+      '@go-go-golems/os-core':
         specifier: workspace:*
         version: link:../../packages/engine
-      '@hypercard/hypercard-runtime':
+      '@go-go-golems/os-scripting':
         specifier: workspace:*
         version: link:../../packages/hypercard-runtime
+      '@go-go-golems/os-shell':
+        specifier: workspace:*
+        version: link:../../packages/desktop-os
       '@reduxjs/toolkit':
         specifier: ^2.5.0
         version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
@@ -895,15 +895,15 @@ importers:
 
   workspace-links/go-go-os-frontend/apps/todo:
     dependencies:
-      '@hypercard/desktop-os':
-        specifier: workspace:*
-        version: link:../../packages/desktop-os
-      '@hypercard/engine':
+      '@go-go-golems/os-core':
         specifier: workspace:*
         version: link:../../packages/engine
-      '@hypercard/hypercard-runtime':
+      '@go-go-golems/os-scripting':
         specifier: workspace:*
         version: link:../../packages/hypercard-runtime
+      '@go-go-golems/os-shell':
+        specifier: workspace:*
+        version: link:../../packages/desktop-os
       '@reduxjs/toolkit':
         specifier: ^2.5.0
         version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
@@ -950,7 +950,7 @@ importers:
       '@codemirror/lint':
         specifier: ^6.8.5
         version: 6.9.5
-      '@hypercard/engine':
+      '@go-go-golems/os-core':
         specifier: workspace:*
         version: link:../engine
       '@lezer/common':
@@ -996,7 +996,7 @@ importers:
 
   workspace-links/go-go-os-frontend/packages/confirm-runtime:
     dependencies:
-      '@hypercard/engine':
+      '@go-go-golems/os-core':
         specifier: workspace:*
         version: link:../engine
       react-redux:
@@ -1018,10 +1018,10 @@ importers:
 
   workspace-links/go-go-os-frontend/packages/desktop-os:
     dependencies:
-      '@hypercard/engine':
+      '@go-go-golems/os-core':
         specifier: workspace:*
         version: link:../engine
-      '@hypercard/hypercard-runtime':
+      '@go-go-golems/os-scripting':
         specifier: workspace:*
         version: link:../hypercard-runtime
       '@reduxjs/toolkit':
@@ -1098,13 +1098,13 @@ importers:
       '@codemirror/view':
         specifier: ^6.39.15
         version: 6.39.16
-      '@hypercard/chat-runtime':
+      '@go-go-golems/os-chat':
         specifier: workspace:*
         version: link:../chat-runtime
-      '@hypercard/engine':
+      '@go-go-golems/os-core':
         specifier: workspace:*
         version: link:../engine
-      '@hypercard/repl':
+      '@go-go-golems/os-repl':
         specifier: workspace:*
         version: link:../repl
       '@jitl/quickjs-ffi-types':
@@ -1153,18 +1153,18 @@ importers:
 
   workspace-links/go-go-os-frontend/packages/kanban-runtime:
     dependencies:
-      '@hypercard/engine':
+      '@go-go-golems/os-core':
         specifier: workspace:*
         version: link:../engine
-      '@hypercard/hypercard-runtime':
+      '@go-go-golems/os-scripting':
         specifier: workspace:*
         version: link:../hypercard-runtime
-      '@hypercard/rich-widgets':
-        specifier: workspace:*
-        version: link:../rich-widgets
-      '@hypercard/ui-runtime':
+      '@go-go-golems/os-ui-cards':
         specifier: workspace:*
         version: link:../ui-runtime
+      '@go-go-golems/os-widgets':
+        specifier: workspace:*
+        version: link:../rich-widgets
       '@reduxjs/toolkit':
         specifier: ^2.0.0
         version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
@@ -1202,15 +1202,15 @@ importers:
 
   workspace-links/go-go-os-frontend/packages/rich-widgets:
     dependencies:
-      '@hypercard/desktop-os':
-        specifier: workspace:*
-        version: link:../desktop-os
-      '@hypercard/engine':
+      '@go-go-golems/os-core':
         specifier: workspace:*
         version: link:../engine
-      '@hypercard/repl':
+      '@go-go-golems/os-repl':
         specifier: workspace:*
         version: link:../repl
+      '@go-go-golems/os-shell':
+        specifier: workspace:*
+        version: link:../desktop-os
       '@reduxjs/toolkit':
         specifier: ^2.0.0
         version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
@@ -1233,10 +1233,10 @@ importers:
 
   workspace-links/go-go-os-frontend/packages/ui-runtime:
     dependencies:
-      '@hypercard/engine':
+      '@go-go-golems/os-core':
         specifier: workspace:*
         version: link:../engine
-      '@hypercard/hypercard-runtime':
+      '@go-go-golems/os-scripting':
         specifier: workspace:*
         version: link:../hypercard-runtime
       '@reduxjs/toolkit':

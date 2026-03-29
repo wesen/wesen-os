@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { docsRegistry } from '@hypercard/apps-browser';
+import { docsRegistry } from '@go-go-golems/apps-browser';
 import { registerAppsBrowserDocs } from './registerAppsBrowserDocs';
 
 describe('registerAppsBrowserDocs integration', () => {

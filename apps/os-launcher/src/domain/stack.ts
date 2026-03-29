@@ -1,4 +1,4 @@
-import type { RuntimeSurfaceMeta, RuntimeBundleDefinition } from '@hypercard/engine';
+import type { RuntimeSurfaceMeta, RuntimeBundleDefinition } from '@go-go-golems/os-core';
 import { OS_LAUNCHER_PLUGIN_BUNDLE } from './pluginBundle';
 import { KANBAN_VM_CARD_META } from './vmmeta';
 

@@ -1,5 +1,5 @@
-import { formatAppKey, parseAppKey, type LauncherHostContext } from '@hypercard/desktop-os';
-import { openWindow } from '@hypercard/engine/desktop-core';
+import { formatAppKey, parseAppKey, type LauncherHostContext } from '@go-go-golems/os-shell';
+import { openWindow } from '@go-go-golems/os-core/desktop-core';
 import type { ReactElement, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -25,8 +25,8 @@ vi.mock('react-redux', () => ({
   useDispatch: () => mockDispatch,
 }));
 
-vi.mock('@hypercard/chat-runtime', async () => {
-  const actual = await vi.importActual<typeof import('@hypercard/chat-runtime')>('@hypercard/chat-runtime');
+vi.mock('@go-go-golems/os-chat', async () => {
+  const actual = await vi.importActual<typeof import('@go-go-golems/os-chat')>('@go-go-golems/os-chat');
   return {
     ...actual,
     ChatConversationWindow: mockChatConversationWindow,

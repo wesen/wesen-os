@@ -7,8 +7,8 @@ import {
   formatAppKey,
   type LaunchableAppModule,
   parseAppKey,
-} from '@hypercard/desktop-os';
-import { type DesktopCommandContext, routeContributionCommand } from '@hypercard/engine/desktop-react';
+} from '@go-go-golems/os-shell';
+import { type DesktopCommandContext, routeContributionCommand } from '@go-go-golems/os-core/desktop-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { launcherModules } from '../app/modules';
@@ -167,10 +167,10 @@ describe('launcher host wiring', () => {
     const moduleSource = readFileSync(new URL('../app/modules.tsx', import.meta.url), 'utf8');
     const storeSource = readFileSync(new URL('../app/store.ts', import.meta.url), 'utf8');
 
-    expect(moduleSource).toContain("@hypercard/inventory/launcher");
-    expect(storeSource).toContain("@hypercard/inventory/reducers");
-    expect(moduleSource).not.toContain('@hypercard/inventory/src/');
-    expect(storeSource).not.toContain('@hypercard/inventory/src/');
+    expect(moduleSource).toContain("@go-go-golems/inventory/launcher");
+    expect(storeSource).toContain("@go-go-golems/inventory/reducers");
+    expect(moduleSource).not.toContain('@go-go-golems/inventory/src/');
+    expect(storeSource).not.toContain('@go-go-golems/inventory/src/');
   });
 
   it('prevents placeholder module labels from being reintroduced', () => {

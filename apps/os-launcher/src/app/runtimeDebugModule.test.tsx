@@ -1,11 +1,11 @@
 import {
   clearRegisteredRuntimeDebugStacks,
   HYPERCARD_RUNTIME_DEBUG_APP_ID,
-} from '@hypercard/hypercard-runtime';
-import { formatAppKey } from '@hypercard/desktop-os';
+} from '@go-go-golems/os-scripting';
+import { formatAppKey } from '@go-go-golems/os-shell';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@hypercard/inventory/launcher', () => ({
+vi.mock('@go-go-golems/inventory/launcher', () => ({
   inventoryStack: {
     id: 'inventory',
     title: 'Shop Inventory',
