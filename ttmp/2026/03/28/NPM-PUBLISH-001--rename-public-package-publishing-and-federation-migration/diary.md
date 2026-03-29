@@ -1087,3 +1087,86 @@ This step was the first attempt to leave local dry-runs and use the real GitHub 
   - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && git push origin HEAD:refs/heads/task/js-runtime-manager`
   - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && gh workflow run publish-github-package-canary.yml --ref task/js-runtime-manager -f package_set=os-shell-stack -f npm_tag=canary -f dry_run=false`
   - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && gh workflow list`
+
+## Step 15: Retry The Real Canary Publish After PR 17 Merged
+
+This step happened after PR 17 landed on `main`. That merge removed the workflow-registration blocker, so the next job was to retry the real Actions-driven canary publish and capture the first actual pipeline failure inside the workflow itself.
+
+### What I did
+
+- Fetched `origin/main` in `go-go-os-frontend` and verified that PR 17 had been merged.
+- Verified that GitHub Actions now recognizes the new workflow:
+  - `go-go-os-platform-ci`
+  - `publish-github-package-canary`
+- Dispatched the real canary publish workflow on `main` with:
+  - `package_set=os-shell-stack`
+  - `npm_tag=canary`
+  - `dry_run=false`
+- Watched the live run and then pulled the failed-step logs after the run completed.
+
+### What worked
+
+- The workflow was successfully registered after merge and became dispatchable.
+- The real run started on `main` and got through:
+  - checkout
+  - pnpm setup
+  - Node setup
+  - dependency install
+  - package-set resolution
+- This proves the previous blocker really was GitHub workflow registration, not the dispatch command or repository permissions.
+
+### What didn't work
+
+- The first real canary run failed in `Typecheck selected package set`.
+- The failing package was `@go-go-golems/os-repl`.
+- The exact failing run was:
+  - `https://github.com/go-go-golems/go-go-os-frontend/actions/runs/23708656354`
+
+### Exact failure
+
+- `src/MacRepl.test.tsx(2,21): error TS7016: Could not find a declaration file for module 'react'.`
+- `src/MacRepl.test.tsx(3,39): error TS7016: Could not find a declaration file for module 'react-dom/client'.`
+- `src/MacRepl.tsx(1,82): error TS7016: Could not find a declaration file for module 'react'.`
+- additional follow-on failures:
+  - implicit `any` parameters in `MacRepl.tsx`
+  - `TS2742` portable-type-name issues for React component inference
+
+The workflow stopped at that point, so later steps were skipped:
+
+- package tests
+- dist build
+- pack smoke
+- publish
+
+### Why it failed
+
+- The first real workflow run exposed a CI/package-manifest gap that local dry-runs had not forced yet.
+- `os-repl` runs `tsc -b` as its package-local typecheck, but unlike the other React-bearing platform packages, it does not declare the `@types/react` and `@types/react-dom` dev dependencies its own package build relies on.
+- Once the workflow started typechecking the ordered package set inside CI, that missing package-local type environment became visible immediately.
+
+### What I learned
+
+- The Actions pipeline is now past the GitHub-registration stage and into real package-level validation. That is good progress, even though the run failed.
+- The next class of blockers is now "package-local CI honesty":
+  - does each package declare the type dependencies it needs to run `tsc -b` in isolation?
+- Local release dry-runs are still necessary, but they are not a substitute for CI runs that exercise the package-local scripts exactly as Actions will execute them.
+
+### What warrants a second pair of eyes
+
+- `os-repl` is likely not the only package that depends on root-installed or sibling-provided type packages implicitly. Reviewers should treat this as a sign to audit package-local React type dependencies across the publish set, not as an isolated one-off.
+- The workflow currently typechecks package sources before the dist build. That is the right order for catching manifest/typing honesty issues, but it means CI will continue to surface these gaps until every package can stand on its own.
+
+### What should be done in the future
+
+- Fix `os-repl` so its package-local typecheck passes in CI.
+- Re-run the `publish-github-package-canary` workflow for `os-shell-stack`.
+- Once the run gets past package typecheck, continue capturing the next real blocker, whether it is in tests, pack smoke, publish, or GitHub Packages access.
+
+### Technical details
+
+- Commands used:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && git fetch origin`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && gh workflow list`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && gh workflow run publish-github-package-canary --ref main -f package_set=os-shell-stack -f npm_tag=canary -f dry_run=false`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && gh run view 23708656354 --json status,conclusion,url,jobs`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && gh run view 23708656354 --log-failed`
