@@ -85,7 +85,7 @@
 
 ## Phase 3B: Move Canonical Host GitOps Into Hetzner K3s Repo
 
-- [ ] Push the Hetzner K3s repo branch that contains the new `wesen-os` package and Argo `Application`, then open a PR there.
+- [x] Push the Hetzner K3s repo branch that contains the new `wesen-os` package and Argo `Application`, then open a PR there.
 - [x] Add a `wesen-os` Kustomize package under:
   - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/`
 - [x] Normalize that package to repo conventions:

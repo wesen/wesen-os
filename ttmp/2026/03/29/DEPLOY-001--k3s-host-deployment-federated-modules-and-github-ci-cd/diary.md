@@ -1560,3 +1560,61 @@ The first version of the helper script wrote an incomplete artifact because `gh`
 - push the current `task/os-openai-app-server` branch
 - open the `wesen-os` PR for the host deployment work
 - create a corresponding branch in the Hetzner K3s repo so the canonical GitOps package and Argo `Application` are reviewable there too
+
+## 2026-03-29: Opened The Source And GitOps PRs
+
+With the workflow-registration gap confirmed, I moved the work into reviewable GitHub state instead of leaving it stranded locally.
+
+### Branches pushed
+
+- source repo:
+  - `task/os-openai-app-server`
+- Hetzner K3s repo:
+  - `task/deploy-001-wesen-os-gitops`
+
+### PRs opened
+
+- `wesen/wesen-os#5`
+  - `https://github.com/wesen/wesen-os/pull/5`
+- `wesen/2026-03-27--hetzner-k3s#5`
+  - `https://github.com/wesen/2026-03-27--hetzner-k3s/pull/5`
+
+I also added a ticket helper that snapshots both PRs:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/15-check-deploy-prs.sh`
+
+with the captured output stored in:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/15-deploy-pr-check.md`
+
+### Why this split matters
+
+The two PRs serve different purposes and should stay separate:
+
+- `wesen-os` owns:
+  - host image build
+  - GHCR publish workflow
+  - repo-local deployment docs and ticket artifacts
+  - transitional source-repo Kubernetes examples
+- `2026-03-27--hetzner-k3s` owns:
+  - canonical cluster Kustomize package
+  - Argo CD `Application`
+  - eventual immutable image pin used by the cluster
+
+That is the architecture we want later anyway, so it is better to make the review split explicit now.
+
+### Current PR state at creation time
+
+Both PRs came up clean immediately:
+
+- `wesen/wesen-os#5`
+  - `mergeStateStatus: CLEAN`
+- `wesen/2026-03-27--hetzner-k3s#5`
+  - `mergeStateStatus: CLEAN`
+
+### What should happen next
+
+- merge `wesen/wesen-os#5` so GitHub registers `publish-host-image.yml`
+- run the first real host image publish from GitHub Actions
+- verify the published GHCR image is publicly pullable
+- then update the Hetzner K3s package from the provisional `:main` image tag to an immutable digest or pinned SHA ref
