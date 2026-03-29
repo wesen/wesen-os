@@ -1,0 +1,146 @@
+== OpenAI App Server Gap Scan ==
+root=/home/manuel/workspaces/2026-03-02/os-openai-app-server
+timestamp=2026-03-02T16:56:52-05:00
+
+-- codexrpc transport implementations --
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client.go
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/errors.go
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/initialize.go
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/memory_transport.go
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/protocol.go
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/reliability_test.go
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/retry.go
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads.go
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads_test.go
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/transport.go
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/transport_stdio.go
+
+-- websocket mentions in codexrpc package (should be empty if no ws transport exists) --
+
+-- command flags advertising stdio|websocket --
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_read_command.go:67:			fields.New("transport", fields.TypeString, fields.WithDefault(defaults.Transport), fields.WithHelp("Transport backend: stdio|websocket")),
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_list_command.go:66:			fields.New("transport", fields.TypeString, fields.WithDefault(defaults.Transport), fields.WithHelp("Transport backend: stdio|websocket")),
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command.go:149:			fields.New("transport", fields.TypeString, fields.WithDefault(defaults.Transport), fields.WithHelp("Transport backend: stdio|websocket")),
+
+-- command constructors enforcing stdio only --
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_read_command.go:35:	if s.Transport != "stdio" {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_read_command.go:36:		return nil, fmt.Errorf("unsupported transport %q", s.Transport)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_list_command.go:34:	if s.Transport != "stdio" {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_list_command.go:35:		return nil, fmt.Errorf("unsupported transport %q", s.Transport)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command.go:106:	if s.Transport != "stdio" {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command.go:107:		return nil, fmt.Errorf("unsupported transport %q", s.Transport)
+
+-- handshake and request methods currently wired --
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_list_command_test.go:17:		case "initialize":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_list_command_test.go:19:		case "thread/list":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_list_command_test.go:27:		if err := c.Connect(ctx, map[string]any{"clientInfo": map[string]any{"name": "test"}}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_list_command_test.go:55:		t.Fatalf("expected at least three outbound messages (initialize, initialized, thread/list), got %d", len(sent))
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_list_command_test.go:57:	if sent[0].Method != "initialize" || sent[1].Method != "initialized" || sent[2].Method != "thread/list" {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_read_command.go:54:	if err := client.Connect(ctx, initParams); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_read_command.go:70:			fields.New("opt-out-notification-methods", fields.TypeString, fields.WithDefault(strings.Join(defaults.OptOutNotificationMethods, ",")), fields.WithHelp("Comma-separated initialize.capabilities.optOutNotificationMethods")),
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_list_command.go:53:	if err := client.Connect(ctx, initParams); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_list_command.go:69:			fields.New("opt-out-notification-methods", fields.TypeString, fields.WithDefault(strings.Join(defaults.OptOutNotificationMethods, ",")), fields.WithHelp("Comma-separated initialize.capabilities.optOutNotificationMethods")),
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads_test.go:14:		case "initialize":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads_test.go:16:		case "thread/read":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads_test.go:27:	if err := client.Connect(ctx, map[string]any{"clientInfo": map[string]any{"name": "test"}}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads_test.go:28:		t.Fatalf("Connect() error = %v", err)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads_test.go:47:		case "initialize":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads_test.go:49:		case "thread/read":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads_test.go:60:	if err := client.Connect(ctx, map[string]any{"clientInfo": map[string]any{"name": "test"}}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads_test.go:61:		t.Fatalf("Connect() error = %v", err)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads_test.go:77:		case "initialize":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads_test.go:79:		case "thread/read":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads_test.go:90:	if err := client.Connect(ctx, map[string]any{"clientInfo": map[string]any{"name": "test"}}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads_test.go:91:		t.Fatalf("Connect() error = %v", err)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads_test.go:98:	if !strings.Contains(err.Error(), "unexpected thread/read result payload") {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:20:session.request("thread/list", { limit: 1 }).then((r) => {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:32:		case "initialize":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:34:		case "thread/list":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:42:		if err := c.Connect(ctx, map[string]any{"clientInfo": map[string]any{"name": "test"}}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:72:	if sent[0].Method != "initialize" || sent[1].Method != "initialized" || sent[2].Method != "thread/list" {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:85:  if (evt.method === "thread/started") {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:89:session.request("thread/list", { limit: 1 }).then(() => {});
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:98:		case "initialize":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:100:		case "thread/list":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:102:			mem.Push(&codexrpc.Message{Method: "thread/started", Params: []byte(`{"id":"thread-1"}`)})
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:109:		if err := c.Connect(ctx, map[string]any{"clientInfo": map[string]any{"name": "test"}}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:143:session.request("thread/list", { limit: 1 }).then((r) => {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:154:		case "initialize":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:156:		case "thread/list":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:164:		if err := c.Connect(ctx, map[string]any{"clientInfo": map[string]any{"name": "test"}}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:212:session.request("thread/list", { limit: 1 }).then(() => {});
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:221:		case "initialize":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:223:		case "thread/list":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command_test.go:232:		if err := c.Connect(ctx, map[string]any{"clientInfo": map[string]any{"name": "test"}}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads.go:42:	resp, err := c.Request(ctx, "thread/list", params)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads.go:60:	return nil, fmt.Errorf("codexrpc: unexpected thread/list result payload")
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads.go:68:	resp, err := c.Request(ctx, "thread/read", params)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads.go:73:		return nil, fmt.Errorf("codexrpc: empty thread/read result payload")
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/threads.go:88:	return nil, fmt.Errorf("codexrpc: unexpected thread/read result payload")
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/runtime_test.go:278:		"thread/start":   1,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/runtime_test.go:279:		"thread/list":    1,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/runtime_test.go:280:		"thread/read":    1,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/runtime_test.go:281:		"turn/start":     2,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/runtime_test.go:303:		case "thread/read":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/runtime_test.go:310:		case "turn/start":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/runtime_test.go:333:		t.Fatalf("thread/read wrapper did not normalize params correctly: %#v", reqs)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/runtime_test.go:336:		t.Fatalf("turn/start wrapper did not inject thread ids correctly: %#v", reqs)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/runtime_test.go:360:        if (evt.method === "thread/started") {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/runtime_test.go:370:	if err := rt.EmitRPCNotification("thread/started", map[string]any{"id": "thread-1"}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/runtime_test.go:613:	if emitErr := rt.EmitRPCNotification("thread/started", map[string]any{"id": "thread-1"}); emitErr != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/runtime_test.go:790:      session.request("thread/list", { limit: 1 }).then(
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command.go:126:	if err := client.Connect(ctx, initParams); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_run_command.go:152:			fields.New("opt-out-notification-methods", fields.TypeString, fields.WithDefault(strings.Join(defaults.OptOutNotificationMethods, ",")), fields.WithHelp("Comma-separated initialize.capabilities.optOutNotificationMethods")),
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/reliability_test.go:45:		case "initialize":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/reliability_test.go:47:		case "thread/list":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/reliability_test.go:62:	if err := c.Connect(ctx, map[string]any{"clientInfo": map[string]any{"name": "test"}}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/reliability_test.go:63:		t.Fatalf("Connect() error = %v", err)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/reliability_test.go:66:	_, err := c.RequestWithRetry(ctx, "thread/list", map[string]any{"limit": 1}, RetryPolicy{
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/reliability_test.go:84:		case "initialize":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/reliability_test.go:86:		case "thread/list":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/reliability_test.go:97:	if err := c.Connect(ctx, map[string]any{"clientInfo": map[string]any{"name": "test"}}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/reliability_test.go:98:		t.Fatalf("Connect() error = %v", err)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/reliability_test.go:101:	_, err := c.RequestWithRetry(ctx, "thread/list", map[string]any{"limit": 1}, RetryPolicy{
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_state_replay_command_test.go:19:  {"method":"thread/started","params":{"thread":{"id":"thread-1","status":"active","cwd":"/repo","model":"gpt-5"}}},
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/harness_state_replay_command_test.go:20:  {"method":"turn/started","params":{"threadId":"thread-1","turn":{"id":"turn-1","status":"inProgress"}}},
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client.go:96:func (c *Client) Connect(ctx context.Context, initializeParams any) error {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client.go:97:	if _, err := c.Request(ctx, "initialize", initializeParams); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client.go:100:	if err := c.Notify(ctx, "initialized", map[string]any{}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client.go:149:		if method == "initialize" {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client.go:172:	if method == "initialized" {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client.go:338:	case "initialize":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client.go:354:	case "initialized":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/module_codex.go:60:		return rt.rpcRequestPromiseFrom(vm, "thread/start", exportArg(call, 0))
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/module_codex.go:63:		return rt.rpcRequestPromiseFrom(vm, "thread/list", exportArg(call, 0))
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/module_codex.go:66:		return rt.rpcRequestPromiseFrom(vm, "thread/read", normalizeThreadReadParams(call))
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/js/module_codex.go:138:		return requestWithThreadID(rt, vm, "turn/start", threadID, call)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_read_command_test.go:16:		case "initialize":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_read_command_test.go:18:		case "thread/read":
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_read_command_test.go:26:		if err := c.Connect(ctx, map[string]any{"clientInfo": map[string]any{"name": "test"}}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_read_command_test.go:54:		t.Fatalf("expected at least three outbound messages (initialize, initialized, thread/read), got %d", len(sent))
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_read_command_test.go:56:	if sent[0].Method != "initialize" || sent[1].Method != "initialized" || sent[2].Method != "thread/read" {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/cmd/openai-app-server/thread_read_command_test.go:62:		t.Fatalf("unmarshal thread/read params: %v", err)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:82:		if msg.Method == "initialize" {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:93:	if err := c.Connect(ctx, map[string]any{"clientInfo": map[string]any{"name": "test"}}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:94:		t.Fatalf("Connect() error = %v", err)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:101:	if sent[0].Method != "initialize" {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:102:		t.Fatalf("first message must be initialize, got %q", sent[0].Method)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:104:	if sent[1].Method != "initialized" {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:105:		t.Fatalf("second message must be initialized, got %q", sent[1].Method)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:117:	_, err := c.Request(ctx, "thread/list", map[string]any{"limit": 10})
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:130:		if msg.Method == "initialize" {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:141:	if err := c.Connect(ctx, map[string]any{"clientInfo": map[string]any{"name": "test"}}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:142:		t.Fatalf("Connect() error = %v", err)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:145:	_, err := c.Request(ctx, "initialize", map[string]any{})
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:162:	ft.push(&Message{Method: "thread/started", Params: []byte(`{"id":"thread-1"}`)})
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:166:		if method != "thread/started" {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:177:		if msg.Method == "initialize" {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:187:	if err := c.Connect(ctx, map[string]any{"clientInfo": map[string]any{"name": "test"}}); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/client_test.go:188:		t.Fatalf("Connect() error = %v", err)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/errors.go:10:	ErrInitializeAlreadyDone = errors.New("codexrpc: initialize already completed")
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/openai-app-server/pkg/codexrpc/errors.go:11:	ErrInitializedOutOfOrder = errors.New("codexrpc: initialized notification out of order")
+
+-- basic go test smoke (codexrpc + command package) --
+ok  	github.com/go-go-golems/openai-app-server/pkg/codexrpc	0.005s
+ok  	github.com/go-go-golems/openai-app-server/cmd/openai-app-server	1.123s

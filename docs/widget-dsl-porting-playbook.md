@@ -48,17 +48,17 @@ The current implementation spans two repos inside the `wesen-os` workspace:
 
 The relevant paths are:
 
-- `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/KanbanBoardView.tsx`
-- `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/KanbanHeaderBar.tsx`
-- `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/KanbanFilterBar.tsx`
-- `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/KanbanLaneView.tsx`
-- `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/KanbanStatusBar.tsx`
-- `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/KanbanHighlights.tsx`
-- `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/types.ts`
-- `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/kanbanState.ts`
-- `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/runtime.ts`
-- `workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/plugin-runtime/stack-bootstrap.vm.js`
-- `workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/runtime-packs/kanbanV1Pack.tsx`
+- `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/KanbanBoardView.tsx`
+- `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/KanbanHeaderBar.tsx`
+- `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/KanbanFilterBar.tsx`
+- `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/KanbanLaneView.tsx`
+- `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/KanbanStatusBar.tsx`
+- `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/KanbanHighlights.tsx`
+- `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/types.ts`
+- `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/kanbanState.ts`
+- `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/runtime.ts`
+- `workspace-links/go-go-os-frontend/packages/os-scripting/src/plugin-runtime/stack-bootstrap.vm.js`
+- `workspace-links/go-go-os-frontend/packages/os-scripting/src/runtime-packs/kanbanV1Pack.tsx`
 - `apps/os-launcher/src/domain/vm/00-runtimePrelude.vm.js`
 - `apps/os-launcher/src/domain/vm/docs/kanban-pack.docs.vm.js`
 - `apps/os-launcher/src/domain/vm/cards/kanbanIncidentCommand.vm.js`
@@ -204,8 +204,8 @@ This layer owns types, serializable state, reducers, selectors, and helper funct
 
 Kanban examples:
 
-- `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/types.ts`
-- `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/kanbanState.ts`
+- `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/types.ts`
+- `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/kanbanState.ts`
 
 What belongs here:
 
@@ -253,7 +253,7 @@ This layer defines the VM-visible node schema and maps it to host widgets.
 
 Kanban example:
 
-- `workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/runtime-packs/kanbanV1Pack.tsx`
+- `workspace-links/go-go-os-frontend/packages/os-scripting/src/runtime-packs/kanbanV1Pack.tsx`
 
 Responsibilities:
 
@@ -510,9 +510,9 @@ Why:
 
 Kanban examples:
 
-- `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/KanbanHighlights.stories.tsx`
-- `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/KanbanBoardView.stories.tsx`
-- `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/KanbanTaskModal.stories.tsx`
+- `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/KanbanHighlights.stories.tsx`
+- `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/KanbanBoardView.stories.tsx`
+- `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/KanbanTaskModal.stories.tsx`
 
 For future ports, require stories that prove:
 
@@ -557,7 +557,7 @@ Those host widgets still exist, but the DSL should speak domain concepts first.
 
 ### Phase 7: Add helpers in `stack-bootstrap.vm.js`
 
-The VM authoring surface comes from `workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/plugin-runtime/stack-bootstrap.vm.js`.
+The VM authoring surface comes from `workspace-links/go-go-os-frontend/packages/os-scripting/src/plugin-runtime/stack-bootstrap.vm.js`.
 
 For a new pack, you need:
 
@@ -680,9 +680,9 @@ Kanban-related validation commands commonly used:
 ```bash
 cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend
 npm run storybook:check
-npm run typecheck -w packages/hypercard-runtime
-npx vitest run packages/hypercard-runtime/src/runtime-packs/runtimePackRegistry.test.tsx
-npx vitest run packages/hypercard-runtime/src/plugin-runtime/runtimeService.integration.test.ts
+npm run typecheck -w packages/os-scripting
+npx vitest run packages/os-scripting/src/runtime-packs/runtimePackRegistry.test.tsx
+npx vitest run packages/os-scripting/src/plugin-runtime/runtimeService.integration.test.ts
 ```
 
 ### Phase 12: Migrate existing consumers
@@ -939,13 +939,13 @@ That is the pattern to copy.
 If you need to re-open the main seams quickly:
 
 - VM helper surface:
-  - `workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/plugin-runtime/stack-bootstrap.vm.js`
+  - `workspace-links/go-go-os-frontend/packages/os-scripting/src/plugin-runtime/stack-bootstrap.vm.js`
 - Pack validator and renderer:
-  - `workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/runtime-packs/kanbanV1Pack.tsx`
+  - `workspace-links/go-go-os-frontend/packages/os-scripting/src/runtime-packs/kanbanV1Pack.tsx`
 - Host view assembly:
-  - `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/KanbanBoardView.tsx`
+  - `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/KanbanBoardView.tsx`
 - Host subwidgets:
-  - `workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/`
+  - `workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/`
 - VM docs:
   - `apps/os-launcher/src/domain/vm/docs/kanban-pack.docs.vm.js`
 - VM examples:

@@ -88,7 +88,7 @@ Create a minimal launcher module. This example creates a "hello-world" app that 
 **Step 1:** Create the module file at `apps/<your-app>/src/launcher/module.tsx`:
 
 ```tsx
-import type { LaunchableAppModule } from '@hypercard/desktop-os';
+import type { LaunchableAppModule } from '@go-go-golems/os-shell';
 import type { ReactNode } from 'react';
 
 function HelloWindow({ instanceId }: { instanceId: string }) {
@@ -133,7 +133,7 @@ export { helloLauncherModule } from './module';
 **Step 3:** Register in `wesen-os/apps/os-launcher/src/app/modules.tsx`:
 
 ```tsx
-import { helloLauncherModule } from '@hypercard/hello-world/launcher';
+import { helloLauncherModule } from '@go-go-golems/hello-world/launcher';
 
 export const launcherModules: LaunchableAppModule[] = [
   // ... existing modules
@@ -144,11 +144,11 @@ export const launcherModules: LaunchableAppModule[] = [
 **Step 4:** Add Vite alias in `wesen-os/apps/os-launcher/vite.config.ts`:
 
 ```ts
-'@hypercard/hello-world/launcher': path.resolve(
+'@go-go-golems/hello-world/launcher': path.resolve(
   workspaceRoot,
   'my-app-repo/apps/hello-world/src/launcher/public.ts',
 ),
-'@hypercard/hello-world': path.resolve(
+'@go-go-golems/hello-world': path.resolve(
   workspaceRoot,
   'my-app-repo/apps/hello-world/src',
 ),
@@ -171,7 +171,7 @@ Start the Vite dev server. Your app icon appears on the desktop. Click it to ope
 
 ## The LaunchableAppModule Contract
 
-Every frontend app module implements this interface from `@hypercard/desktop-os`:
+Every frontend app module implements this interface from `@go-go-golems/os-shell`:
 
 ```ts
 interface LaunchableAppModule {
@@ -528,7 +528,7 @@ function MyAppWindow({ windowId }: { windowId: string }) {
 Add your import to `wesen-os/apps/os-launcher/src/app/modules.tsx`:
 
 ```tsx
-import { myAppLauncherModule } from '@hypercard/my-app/launcher';
+import { myAppLauncherModule } from '@go-go-golems/my-app/launcher';
 
 export const launcherModules: LaunchableAppModule[] = [
   inventoryLauncherModule,
@@ -546,13 +546,13 @@ Add aliases in `wesen-os/apps/os-launcher/vite.config.ts` for all import paths y
 
 ```ts
 // Subpath exports (launcher must use these specific paths)
-'@hypercard/my-app/launcher': path.resolve(
+'@go-go-golems/my-app/launcher': path.resolve(
   workspaceRoot, 'my-app-repo/apps/my-app/src/launcher/public.ts'),
-'@hypercard/my-app/reducers': path.resolve(
+'@go-go-golems/my-app/reducers': path.resolve(
   workspaceRoot, 'my-app-repo/apps/my-app/src/reducers.ts'),
 
 // Full package (for internal imports within the launcher)
-'@hypercard/my-app': path.resolve(
+'@go-go-golems/my-app': path.resolve(
   workspaceRoot, 'my-app-repo/apps/my-app/src'),
 ```
 
@@ -563,7 +563,7 @@ Add aliases in `wesen-os/apps/os-launcher/vite.config.ts` for all import paths y
 If your app has domain reducers that other modules or chat runtime features need, add them to `sharedReducers` in `wesen-os/apps/os-launcher/src/app/store.ts`:
 
 ```ts
-import { myDomainReducer } from '@hypercard/my-app/reducers';
+import { myDomainReducer } from '@go-go-golems/my-app/reducers';
 
 export const { store } = createLauncherStore(launcherModules, {
   sharedReducers: {
@@ -600,7 +600,7 @@ server: {
 
 ### createLauncherStore
 
-`createLauncherStore` from `@hypercard/desktop-os` merges three categories of reducers:
+`createLauncherStore` from `@go-go-golems/os-shell` merges three categories of reducers:
 
 1. **Engine core reducers** (always present): `windowing`, `notifications`, `debug`, `pluginCardRuntime`, `hypercardArtifacts`.
 2. **Shared reducers** (from `store.ts`): domain data like `inventory`, `sales`, `contacts`, `tasks`.
@@ -624,10 +624,10 @@ function MyComponent() {
 }
 ```
 
-For type-safe access, `@hypercard/desktop-os` provides helper selectors:
+For type-safe access, `@go-go-golems/os-shell` provides helper selectors:
 
 ```ts
-import { selectModuleState, createModuleSelector } from '@hypercard/desktop-os';
+import { selectModuleState, createModuleSelector } from '@go-go-golems/os-shell';
 
 // Read raw module state
 const state = selectModuleState(rootState, 'app_my_app');
@@ -645,7 +645,7 @@ This section covers how frontend modules interact with the HyperCard runtime for
 A stack is a TypeScript object that defines the cards available in a HyperCard session:
 
 ```ts
-import type { StackDefinition } from '@hypercard/hypercard-runtime';
+import type { StackDefinition } from '@go-go-golems/os-scripting';
 import bundleCode from './pluginBundle.vm.js?raw';
 
 export const MY_STACK: StackDefinition = {
@@ -826,7 +826,7 @@ Multi-window module with bridge middleware. Key file: `go-go-app-arc-agi-3/apps/
 
 ### Todo / CRM / Book Tracker
 
-Simpler modules using the HyperCard engine DSL. These use `createDSLApp` from `@hypercard/engine` for stack-based card apps with shared selectors and actions.
+Simpler modules using the HyperCard engine DSL. These use `createDSLApp` from `@go-go-golems/os-core` for stack-based card apps with shared selectors and actions.
 
 **Patterns demonstrated:**
 - Singleton window with `dedupeKey`.

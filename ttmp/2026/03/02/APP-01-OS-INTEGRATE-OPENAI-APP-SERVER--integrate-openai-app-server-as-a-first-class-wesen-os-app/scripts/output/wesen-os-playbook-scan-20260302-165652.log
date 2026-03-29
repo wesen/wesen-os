@@ -1,0 +1,211 @@
+== wesen-os / go-go-os Integration Playbook Scan ==
+root=/home/manuel/workspaces/2026-03-02/os-openai-app-server
+timestamp=2026-03-02T16:56:54-05:00
+
+-- canonical playbooks and guides --
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/docs/startup-playbook.md
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/pkg/doc/topics/01-wesen-os-guide.md
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/pkg/doc/topics/02-backend-developer-guide.md
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/pkg/doc/topics/03-frontend-developer-guide.md
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/pkg/doc/tutorials/01-building-a-full-app.md
+
+-- inventory integration exemplars --
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/module.tsx
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/pkg/backendmodule/module.go
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/pkg/backendmodule/reflection.go
+
+-- backendhost integration contract anchors --
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/module.go:20:type AppBackendModule interface {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/module.go:29:// ReflectiveAppBackendModule is an optional interface for modules that expose
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/module.go:31:type ReflectiveAppBackendModule interface {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/module.go:35:// DocumentableAppBackendModule is an optional interface for modules that expose
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/module.go:37:type DocumentableAppBackendModule interface {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/manifest_endpoint.go:38:func RegisterAppsManifestEndpoint(mux *http.ServeMux, registry *ModuleRegistry) {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/manifest_endpoint.go:61:			if _, ok := module.(ReflectiveAppBackendModule); ok {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/manifest_endpoint.go:68:			if documentable, ok := module.(DocumentableAppBackendModule); ok {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/manifest_endpoint.go:105:		reflective, ok := module.(ReflectiveAppBackendModule)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/routes.go:18:func ValidateAppID(appID string) error {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/routes.go:31:	if err := ValidateAppID(id); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/routes.go:37:func MountNamespacedRoutes(parent *http.ServeMux, appID string, mount func(mux *http.ServeMux) error) error {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/routes.go:58:func GuardNoLegacyAliases(paths []string) error {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/registry.go:26:		if err := ValidateAppID(appID); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/backendhost_test.go:110:func TestMountNamespacedRoutes_MountsUnderAppPrefix(t *testing.T) {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/backendhost_test.go:112:	err := MountNamespacedRoutes(mux, "inventory", func(sub *http.ServeMux) error {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/backendhost_test.go:127:func TestMountNamespacedRoutes_PrefixRootRedirectStaysNamespaced(t *testing.T) {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/backendhost_test.go:129:	err := MountNamespacedRoutes(mux, "inventory", func(sub *http.ServeMux) error {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/backendhost_test.go:144:func TestGuardNoLegacyAliases_FailsForForbiddenPaths(t *testing.T) {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/backendhost_test.go:145:	err := GuardNoLegacyAliases([]string{"/chat", "/api/apps/inventory/chat"})
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/backendhost_test.go:190:func TestRegisterAppsManifestEndpoint_ReturnsManifestAndHealth(t *testing.T) {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/backendhost_test.go:215:	RegisterAppsManifestEndpoint(mux, registry)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/backendhost_test.go:239:func TestRegisterAppsManifestEndpoint_ModuleReflectionRoute_ReturnsPayload(t *testing.T) {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/backendhost_test.go:260:	RegisterAppsManifestEndpoint(mux, registry)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/backendhost_test.go:275:func TestRegisterAppsManifestEndpoint_ModuleReflectionRoute_NotImplemented(t *testing.T) {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-backend/pkg/backendhost/backendhost_test.go:284:	RegisterAppsManifestEndpoint(mux, registry)
+
+-- wesen-os launcher composition anchors --
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/cmd/wesen-os-launcher/docs_endpoint.go:97:func registerOSHelpEndpoint(mux *http.ServeMux, store *docmw.DocStore) {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/cmd/wesen-os-launcher/docs_endpoint.go:143:func registerOSDocsEndpoint(
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/cmd/wesen-os-launcher/main.go:314:	moduleRegistry, err := backendhost.NewModuleRegistry(modules...)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/cmd/wesen-os-launcher/main.go:322:	if err := lifecycle.Startup(ctx, backendhost.StartupOptions{
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/cmd/wesen-os-launcher/main.go:330:	backendhost.RegisterAppsManifestEndpoint(appMux, moduleRegistry)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/cmd/wesen-os-launcher/main.go:332:	registerOSHelpEndpoint(appMux, launcherHelpStore)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/cmd/wesen-os-launcher/main.go:333:	registerOSDocsEndpoint(appMux, moduleRegistry, launcherHelpStore, cfg.Root)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/cmd/wesen-os-launcher/main.go:336:		if err := backendhost.MountNamespacedRoutes(appMux, manifest.AppID, module.MountRoutes); err != nil {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/cmd/wesen-os-launcher/main.go:340:	registerLegacyAliasNotFoundHandlers(appMux)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/cmd/wesen-os-launcher/main.go:471:func registerLegacyAliasNotFoundHandlers(mux *http.ServeMux) {
+
+-- frontend launcher contract + host resolver anchors --
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/registry.ts:1:import { createAppRegistry } from '@hypercard/desktop-os';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/registry.ts:4:export const launcherRegistry = createAppRegistry(launcherModules);
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/store.ts:1:import { createLauncherStore } from '@hypercard/desktop-os';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/store.ts:12:export const { store, createStore: createLauncherAppStore } = createLauncherStore(launcherModules, {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/App.tsx:1:import { buildLauncherContributions, createRenderAppWindow, type LauncherHostContext } from '@hypercard/desktop-os';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/App.tsx:33:      resolveApiBase: (appId) => `/api/apps/${appId}`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/App.tsx:34:      resolveWsBase: (appId) => `/api/apps/${appId}/ws`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/App.tsx:38:  const contributions = useMemo(() => buildLauncherContributions(launcherRegistry, { hostContext }), [hostContext]);
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/store/createLauncherStore.ts:71:export function createLauncherStore(modules: readonly LaunchableAppModule[], options: CreateLauncherStoreOptions = {}) {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/index.ts:21:export { type AppRegistry, createAppRegistry } from './registry/createAppRegistry';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/index.ts:25:  buildLauncherContributions,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/index.ts:26:} from './runtime/buildLauncherContributions';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/index.ts:39:  createLauncherStore,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/index.ts:42:} from './store/createLauncherStore';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:3:  buildLauncherContributions,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:4:  createAppRegistry,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:32:    resolveApiBase: (appId: string) => `/api/apps/${appId}`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:33:    resolveWsBase: (appId: string) => `/api/apps/${appId}/ws`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:41:    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:74:        resolveApiBase: (appId: string) => `/api/apps/${appId}`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:75:        resolveWsBase: (appId: string) => `/api/apps/${appId}/ws`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:90:        resolveApiBase: (appId: string) => `/api/apps/${appId}`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:91:        resolveWsBase: (appId: string) => `/api/apps/${appId}/ws`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:105:        resolveApiBase: (appId: string) => `/api/apps/${appId}`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:106:        resolveWsBase: (appId: string) => `/api/apps/${appId}/ws`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:121:        resolveApiBase: (appId: string) => `/api/apps/${appId}`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:122:        resolveWsBase: (appId: string) => `/api/apps/${appId}/ws`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:155:    expect(() => createAppRegistry([duplicateA, duplicateB])).toThrow(/Duplicate app manifest id/);
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:273:        resolveApiBase: () => '/launcher/api/apps/inventory',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:274:        resolveWsBase: () => '/launcher/api/apps/inventory/ws',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:284:    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:319:    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:362:    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx:409:    const contributions = buildLauncherContributions(launcherRegistry, { hostContext });
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/contracts/launchableAppModule.ts:22:export interface LaunchableAppModule {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherMenuRuntime.test.tsx:38:    resolveApiBase: (appId: string) => `/api/apps/${appId}`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherMenuRuntime.test.tsx:39:    resolveWsBase: (appId: string) => `/api/apps/${appId}/ws`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/contracts/launcherHostContext.ts:8:  resolveApiBase: (appId: string) => string;
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/contracts/launcherHostContext.ts:9:  resolveWsBase: (appId: string) => string;
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherLayout.test.tsx:41:      resolveApiBase: (appId) => `/api/apps/${appId}`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherLayout.test.tsx:42:      resolveWsBase: (appId) => `/api/apps/${appId}/ws`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/contracts/launcherRenderContext.ts:8:  resolveApiBase?: (appId: string) => string;
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/contracts/launcherRenderContext.ts:9:  resolveWsBase?: (appId: string) => string;
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherContextMenu.test.tsx:38:    resolveApiBase: (appId: string) => `/api/apps/${appId}`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherContextMenu.test.tsx:39:    resolveWsBase: (appId: string) => `/api/apps/${appId}/ws`,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/registry/createAppRegistry.ts:22:export function createAppRegistry(modules: readonly LaunchableAppModule[]): AppRegistry {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/runtime/renderAppWindow.ts:4:import type { AppRegistry } from '../registry/createAppRegistry';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/runtime/renderAppWindow.ts:10:  hostContext: Pick<LauncherHostContext, 'dispatch' | 'getState' | 'resolveApiBase' | 'resolveWsBase'>;
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/runtime/renderAppWindow.ts:32:    resolveApiBase: options.hostContext.resolveApiBase,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/runtime/renderAppWindow.ts:33:    resolveWsBase: options.hostContext.resolveWsBase,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/buildLauncherIcons.test.ts:3:import { createAppRegistry } from '../registry/createAppRegistry';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/buildLauncherIcons.test.ts:26:    const registry = createAppRegistry([appModule('inventory'), appModule('todo')]);
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/buildLauncherIcons.test.ts:43:    const registry = createAppRegistry([appModule('inventory'), appModule('todo')]);
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/buildLauncherIcons.test.ts:51:    const registry = createAppRegistry([appModule('inventory'), appModule('todo'), appModule('crm')]);
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/runtime/buildLauncherIcons.ts:2:import type { AppRegistry } from '../registry/createAppRegistry';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/appRegistry.test.ts:4:import { createAppRegistry } from '../registry/createAppRegistry';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/appRegistry.test.ts:43:describe('createAppRegistry', () => {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/appRegistry.test.ts:45:    const registry = createAppRegistry([
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/appRegistry.test.ts:55:    expect(() => createAppRegistry([appModule('inventory'), appModule('inventory')])).toThrow(
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/appRegistry.test.ts:62:      createAppRegistry([
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/appRegistry.test.ts:71:    const registry = createAppRegistry([inventory]);
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/runtime/buildLauncherContributions.ts:9:import type { AppRegistry } from '../registry/createAppRegistry';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/runtime/buildLauncherContributions.ts:44:export function buildLauncherContributions(
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/launcherStore.test.ts:4:import { collectModuleReducers, createLauncherStore, selectModuleState } from '../store/createLauncherStore';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/launcherStore.test.ts:30:describe('createLauncherStore', () => {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/launcherStore.test.ts:33:    const launcher = createLauncherStore([inventoryModule]);
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/launcherStore.test.ts:49:    const launcher = createLauncherStore([inventoryModule], {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/launcherStore.test.ts:87:      createLauncherStore([moduleWithState('inventory', 'app_inventory')], {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/desktop-os/src/__tests__/launcherStore.test.ts:97:      createLauncherStore([], {
+
+-- chat/timeline event-system anchors --
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:8:  EventViewerWindow,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:10:  TimelineDebugWindow,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:139:function buildEventViewerWindowPayload(convId: string): OpenWindowPayload {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:150:function buildTimelineDebugWindowPayload(convId: string): OpenWindowPayload {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:499:          hostContext.openWindow(buildEventViewerWindowPayload(parsed.convId));
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:503:          hostContext.openWindow(buildTimelineDebugWindowPayload(parsed.convId));
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:553:          hostContext.openWindow(buildTimelineDebugWindowPayload(parsed.convId));
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:611:          hostContext.openWindow(buildEventViewerWindowPayload(payload.conversationId));
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:668:        hostContext.openWindow(buildEventViewerWindowPayload(convId));
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:681:        hostContext.openWindow(buildTimelineDebugWindowPayload(convId));
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:806:        ? buildEventViewerWindowPayload(convId)
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:807:        : buildTimelineDebugWindowPayload(convId),
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:927:    dispatch(openWindow(buildEventViewerWindowPayload(convId)));
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:931:    dispatch(openWindow(buildTimelineDebugWindowPayload(convId)));
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:1019:    return <EventViewerWindow conversationId={convId} />;
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-app-inventory/apps/inventory/src/launcher/renderInventoryApp.tsx:1023:    return <TimelineDebugWindow conversationId={convId} />;
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/TimelineDebugWindow.stories.tsx:4:import { TimelineDebugWindow } from './TimelineDebugWindow';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/TimelineDebugWindow.stories.tsx:57:const meta: Meta<typeof TimelineDebugWindow> = {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/TimelineDebugWindow.stories.tsx:58:  title: 'ChatRuntime/Debug/TimelineDebugWindow',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/TimelineDebugWindow.stories.tsx:59:  component: TimelineDebugWindow,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/TimelineDebugWindow.stories.tsx:72:type Story = StoryObj<typeof TimelineDebugWindow>;
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/TimelineDebugWindow.tsx:26:export interface TimelineDebugWindowProps {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/TimelineDebugWindow.tsx:36:export function TimelineDebugWindow({ conversationId, initialSnapshot }: TimelineDebugWindowProps) {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/EventViewerWindow.test.ts:7:} from './EventViewerWindow';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/EventViewerWindow.test.ts:10:describe('EventViewerWindow auto-scroll threshold', () => {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/EventViewerWindow.test.ts:62:describe('EventViewerWindow event-type visibility filters', () => {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/EventViewerWindow.test.ts:139:describe('EventViewerWindow YAML export', () => {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/EventViewerWindow.tsx:31:export interface EventViewerWindowProps {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/EventViewerWindow.tsx:114:export function EventViewerWindow({ conversationId, initialEntries }: EventViewerWindowProps) {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/eventBus.test.ts:68:    const types = ['tool.start', 'hypercard.ready', 'timeline.upsert', 'ws.error', 'custom.thing'];
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/StructuredDataTree.tsx:3: * Used by TimelineDebugWindow to render entity props and full snapshots.
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/timelineDebugModel.ts:5: * for display in the TimelineDebugWindow and for clipboard/YAML export.
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/eventBus.ts:51:  if (type === 'timeline.upsert') {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/EventViewerWindow.stories.tsx:2:import { EventViewerWindow } from './EventViewerWindow';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/EventViewerWindow.stories.tsx:5:const meta: Meta<typeof EventViewerWindow> = {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/EventViewerWindow.stories.tsx:6:  title: 'ChatRuntime/Debug/EventViewerWindow',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/EventViewerWindow.stories.tsx:7:  component: EventViewerWindow,
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/EventViewerWindow.stories.tsx:18:type Story = StoryObj<typeof EventViewerWindow>;
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/EventViewerWindow.stories.tsx:58:      makeEntry('timeline.upsert', { summary: 'upsert hypercard_widget' }),
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/debug/EventViewerWindow.stories.tsx:69:      const types = ['llm.delta', 'llm.delta', 'tool.start', 'tool.result', 'timeline.upsert'];
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/sem/semRegistry.ts:320:  registerSem('timeline.upsert', (ev, ctx) => {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/sem/semRegistry.test.ts:53:  it('routes timeline.upsert entities into conversation-scoped timeline state', () => {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/sem/semRegistry.test.ts:61:          type: 'timeline.upsert',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/sem/semRegistry.test.ts:87:          type: 'timeline.upsert',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/sem/semRegistry.test.ts:195:  it('suppresses empty timeline.upsert message placeholders until text exists', () => {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/sem/semRegistry.test.ts:203:          type: 'timeline.upsert',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/sem/semRegistry.test.ts:231:          type: 'timeline.upsert',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/sem/semRegistry.test.ts:257:          type: 'timeline.upsert',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/sem/semRegistry.test.ts:295:          type: 'timeline.upsert',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/sem/semRegistry.test.ts:324:          type: 'timeline.upsert',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/sem/semRegistry.test.ts:441:          type: 'timeline.upsert',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/sem/semRegistry.test.ts:475:          type: 'timeline.upsert',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/index.ts:8:export * from './debug/EventViewerWindow';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/index.ts:9:export * from './debug/TimelineDebugWindow';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/index.ts:22:export * from './runtime/conversationManager';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/ws/wsManager.test.ts:11:import { WsManager } from './wsManager';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/ws/wsManager.test.ts:55:    const manager = new WsManager();
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/ws/wsManager.test.ts:77:        type: 'timeline.upsert',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/ws/wsManager.test.ts:107:    const manager = new WsManager();
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/ws/wsManager.test.ts:135:    const manager = new WsManager();
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/ws/wsManager.test.ts:163:        type: 'timeline.upsert',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/ws/wsManager.test.ts:205:    const manager = new WsManager();
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/ws/wsManager.test.ts:300:    const manager = new WsManager();
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/ws/wsManager.test.ts:346:        type: 'timeline.upsert',
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/ws/wsManager.ts:107:  dispatch(timelineSlice.actions.mergeSnapshot({ convId, entities }));
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/ws/wsManager.ts:132:class WsManager {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/ws/wsManager.ts:451:export { WsManager };
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/state/timelineSlice.test.ts:324:      timelineSlice.actions.mergeSnapshot({
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/state/timelineSlice.ts:271:    mergeSnapshot(state, action: PayloadAction<ApplySnapshotPayload>) {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/components/ChatConversationWindow.tsx:100:  const { send, connectionStatus, isStreaming } = useConversation(convId, basePrefix, profileScopeKey);
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/runtime/conversationManager.test.ts:21:  WsManager: class {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/runtime/conversationManager.test.ts:27:import { ConversationManager } from './conversationManager';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/runtime/conversationManager.test.ts:29:describe('conversationManager', () => {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/runtime/conversationManager.ts:6:import { WsManager } from '../ws/wsManager';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/runtime/conversationManager.ts:19:  ws: WsManager;
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/runtime/conversationManager.ts:56:    const ws = new WsManager();
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/runtime/conversationManager.ts:114:export const conversationManager = new ConversationManager();
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/runtime/useConversation.ts:10:import { conversationManager } from './conversationManager';
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/runtime/useConversation.ts:72:export function useConversation(convId: string, basePrefix = '', scopeKey?: string): UseConversationResult {
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/runtime/useConversation.ts:120:    conversationManager
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/runtime/useConversation.ts:153:      conversationManager.disconnect(normalizedConvId);
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/go-go-os-frontend/packages/chat-runtime/src/chat/runtime/useConversation.ts:161:        await conversationManager.send(prompt, normalizedConvId, normalizedBasePrefix, {

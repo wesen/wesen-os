@@ -1,8 +1,8 @@
-import { formatAppKey, parseAppKey, type LaunchableAppModule, type LauncherHostContext, type LaunchReason } from '@hypercard/desktop-os';
-import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
-import type { DesktopCommandHandler, DesktopContribution } from '@hypercard/engine/desktop-react';
-import { showToast } from '@hypercard/engine';
-import { ChatConversationWindow, EventViewerWindow, TimelineDebugWindow } from '@hypercard/chat-runtime';
+import { formatAppKey, parseAppKey, type LaunchableAppModule, type LauncherHostContext, type LaunchReason } from '@go-go-golems/os-shell';
+import { openWindow, type OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
+import type { DesktopCommandHandler, DesktopContribution } from '@go-go-golems/os-core/desktop-react';
+import { showToast } from '@go-go-golems/os-core';
+import { ChatConversationWindow, EventViewerWindow, TimelineDebugWindow } from '@go-go-golems/os-chat';
 import { useDispatch } from 'react-redux';
 
 const APP_ID = 'assistant';

@@ -23,7 +23,7 @@ highlight strip that calls out hot issues before the board itself.
 
 const bugTriageBoard = boardById('kanbanBugTriage');
 
-defineCard(
+defineRuntimeSurface(
   bugTriageBoard.id,
   ({ widgets }) => ({
     render({ state }) {

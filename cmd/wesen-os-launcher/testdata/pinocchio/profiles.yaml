@@ -1,0 +1,77 @@
+slug: default
+profiles:
+  default:
+    slug: default
+    display_name: Default
+    description: Baseline assistant profile with no app-specific middleware configuration.
+    extensions:
+      pinocchio.webchat_runtime@v1:
+        system_prompt: You are a helpful inventory assistant.
+
+  inventory:
+    slug: inventory
+    display_name: Inventory
+    description: Tool-first inventory assistant profile.
+    extensions:
+      pinocchio.webchat_runtime@v1:
+        system_prompt: You are an inventory assistant. Be concise, accurate, and tool-first.
+        middlewares:
+          - name: inventory_artifact_policy
+            id: artifact-policy
+          - name: inventory_suggestions_policy
+            id: suggestions-policy
+        tools:
+          - inventory_search_items
+          - inventory_get_item
+          - inventory_low_stock
+          - inventory_report
+          - inventory_update_qty
+          - inventory_record_sale
+
+  analyst:
+    slug: analyst
+    display_name: Analyst
+    description: Analysis-oriented profile for inventory reporting tasks.
+    extensions:
+      pinocchio.webchat_runtime@v1:
+        system_prompt: You are an inventory analyst. Explain results with concise evidence.
+        middlewares:
+          - name: inventory_artifact_policy
+            id: artifact-policy
+          - name: inventory_suggestions_policy
+            id: suggestions-policy
+        tools:
+          - inventory_search_items
+          - inventory_get_item
+          - inventory_low_stock
+          - inventory_report
+          - inventory_update_qty
+          - inventory_record_sale
+
+  planner:
+    slug: planner
+    display_name: Planner
+    description: Planning-focused profile for restock and operations scenarios.
+    extensions:
+      pinocchio.webchat_runtime@v1:
+        system_prompt: You are an inventory operations planner. Prioritize actionable next steps.
+        middlewares:
+          - name: inventory_artifact_policy
+            id: artifact-policy
+          - name: inventory_suggestions_policy
+            id: suggestions-policy
+        tools:
+          - inventory_search_items
+          - inventory_get_item
+          - inventory_low_stock
+          - inventory_report
+          - inventory_update_qty
+          - inventory_record_sale
+
+  assistant:
+    slug: assistant
+    display_name: Assistant
+    description: General-purpose OS assistant profile.
+    extensions:
+      pinocchio.webchat_runtime@v1:
+        system_prompt: You are a helpful OS assistant. Be concise, clear, and direct.

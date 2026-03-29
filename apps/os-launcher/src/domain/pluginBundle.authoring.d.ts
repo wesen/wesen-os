@@ -1,5 +1,5 @@
-declare function defineStackBundle(factory: (api: { ui: any }) => any): void;
-declare function defineCard(cardId: string, definitionOrFactory: any, packId?: string): void;
+declare function defineRuntimeBundle(factory: (api: { ui: any }) => any): void;
+declare function defineRuntimeSurface(surfaceId: string, definitionOrFactory: any, packId: string): void;
 declare function __package__(metadata: any): void;
 declare function __doc__(nameOrMetadata: any, metadata?: any): void;
 declare function __example__(metadata: any): void;

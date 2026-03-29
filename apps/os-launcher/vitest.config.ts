@@ -14,10 +14,10 @@ export default defineConfig({
     dedupe: ['react', 'react-dom'],
     preserveSymlinks: true,
     alias: {
-      '@hypercard/arc-agi-player/launcher': hasArcAgiPlayerRepo
+      '@go-go-golems/arc-agi-player/launcher': hasArcAgiPlayerRepo
         ? path.resolve(linkedReposRoot, 'go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts')
         : path.resolve(__dirname, 'src/app/shims/arcAgiPlayerLauncher.ts'),
-      '@hypercard/sqlite/launcher': hasSQLiteRepo
+      '@go-go-golems/sqlite/launcher': hasSQLiteRepo
         ? path.resolve(linkedReposRoot, 'go-go-app-sqlite/apps/sqlite/src/launcher/public.ts')
         : path.resolve(__dirname, 'src/app/shims/sqliteLauncher.ts'),
     },

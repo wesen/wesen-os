@@ -1,7 +1,7 @@
-import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@hypercard/desktop-os';
-import { openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
-import type { DesktopContribution, WindowContentAdapter } from '@hypercard/engine/desktop-react';
-import { PluginCardSessionHost } from '@hypercard/hypercard-runtime';
+import { formatAppKey, type LaunchableAppModule, type LaunchReason } from '@go-go-golems/os-shell';
+import { openWindow, type OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
+import type { DesktopContribution, WindowContentAdapter } from '@go-go-golems/os-core/desktop-react';
+import { RuntimeSurfaceSessionHost } from '@go-go-golems/os-scripting';
 import type { ReactNode } from 'react';
 import { useDispatch } from 'react-redux';
 import { STACK } from '../domain/stack';
@@ -11,7 +11,7 @@ const BROWSER_INSTANCE_ID = 'library';
 const CARD_SESSION_PREFIX = 'os-launcher-kanban:';
 
 interface KanbanDemoCardMeta {
-  cardId: string;
+  surfaceId: string;
   title: string;
   icon: string;
   description: string;
@@ -19,31 +19,31 @@ interface KanbanDemoCardMeta {
 
 const KANBAN_DEMO_CARDS: KanbanDemoCardMeta[] = [
   {
-    cardId: 'kanbanSprintBoard',
+    surfaceId: 'kanbanSprintBoard',
     title: 'Sprint Board',
     icon: '🏁',
     description: 'Focused on implementation slices and pack migration tasks.',
   },
   {
-    cardId: 'kanbanBugTriage',
+    surfaceId: 'kanbanBugTriage',
     title: 'Bug Triage',
     icon: '🐞',
     description: 'Focused on defects, unknown-pack failures, and runtime host review.',
   },
   {
-    cardId: 'kanbanPersonalPlanner',
+    surfaceId: 'kanbanPersonalPlanner',
     title: 'Personal Planner',
     icon: '🗓️',
     description: 'Focused on personal planning and smoke-testing the VM card path.',
   },
   {
-    cardId: 'kanbanIncidentCommand',
+    surfaceId: 'kanbanIncidentCommand',
     title: 'Incident Command',
     icon: '🚨',
     description: 'Focused on custom incident taxonomy and command-center status metrics.',
   },
   {
-    cardId: 'kanbanReleaseTrain',
+    surfaceId: 'kanbanReleaseTrain',
     title: 'Release Train',
     icon: '🚆',
     description: 'Focused on release gates, blocker tracking, and a filter-free shell layout.',
@@ -74,16 +74,16 @@ function buildBrowserWindowPayload(_reason: LaunchReason): OpenWindowPayload {
 function buildKanbanCardWindowPayload(card: KanbanDemoCardMeta): OpenWindowPayload {
   const instanceId = nextInstanceId();
   return {
-    id: `window:${APP_ID}:${card.cardId}:${instanceId}`,
+    id: `window:${APP_ID}:${card.surfaceId}:${instanceId}`,
     title: card.title,
     icon: card.icon,
     bounds: { x: 214, y: 92, w: 1020, h: 720 },
     content: {
-      kind: 'card',
-      card: {
-        stackId: STACK.id,
-        cardId: card.cardId,
-        cardSessionId: `${CARD_SESSION_PREFIX}${card.cardId}:${instanceId}`,
+      kind: 'surface',
+      surface: {
+        bundleId: STACK.id,
+        surfaceId: card.surfaceId,
+        surfaceSessionId: `${CARD_SESSION_PREFIX}${card.surfaceId}:${instanceId}`,
       },
     },
   };
@@ -93,18 +93,18 @@ function createKanbanVmCardAdapter(): WindowContentAdapter {
   return {
     id: 'kanban-vm.card-window',
     canRender: (window) =>
-      window.content.kind === 'card'
-      && window.content.card?.stackId === STACK.id,
+      window.content.kind === 'surface'
+      && window.content.surface?.bundleId === STACK.id,
     render: (window) => {
-      const cardRef = window.content.card;
+      const cardRef = window.content.surface;
       if (
-        window.content.kind !== 'card'
+        window.content.kind !== 'surface'
         || !cardRef
-        || cardRef.stackId !== STACK.id
+        || cardRef.bundleId !== STACK.id
       ) {
         return null;
       }
-      return <PluginCardSessionHost windowId={window.id} sessionId={cardRef.cardSessionId} stack={STACK} />;
+      return <RuntimeSurfaceSessionHost windowId={window.id} sessionId={cardRef.surfaceSessionId} bundle={STACK} />;
     },
   };
 }
@@ -123,7 +123,7 @@ function KanbanVmBrowserWindow() {
       <div style={{ display: 'grid', gap: 10 }}>
         {KANBAN_DEMO_CARDS.map((card) => (
           <button
-            key={card.cardId}
+            key={card.surfaceId}
             type="button"
             data-part="btn"
             onClick={() => dispatch(openWindow(buildKanbanCardWindowPayload(card)))}

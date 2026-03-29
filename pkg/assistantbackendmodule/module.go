@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	gepprofiles "github.com/go-go-golems/geppetto/pkg/profiles"
+	gepprofiles "github.com/go-go-golems/geppetto/pkg/engineprofiles"
 	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
 	chatservice "github.com/go-go-golems/go-go-os-chat/pkg/chatservice"
 	webchat "github.com/go-go-golems/pinocchio/pkg/webchat"
@@ -21,8 +21,6 @@ type Options struct {
 	RequestResolver     webhttp.ConversationRequestResolver
 	ProfileRegistry     gepprofiles.Registry
 	DefaultRegistrySlug gepprofiles.RegistrySlug
-	WriteActor          string
-	WriteSource         string
 	ContextStore        *AppChatContextStore
 }
 
@@ -47,8 +45,6 @@ func NewModule(opts Options) *Module {
 			ProfileAPI: &chatservice.ProfileAPIOptions{
 				Registry:                        opts.ProfileRegistry,
 				DefaultRegistrySlug:             opts.DefaultRegistrySlug,
-				WriteActor:                      opts.WriteActor,
-				WriteSource:                     opts.WriteSource,
 				EnableCurrentProfileCookieRoute: false,
 			},
 		}),
@@ -128,10 +124,10 @@ type bootstrapAppChatRequest struct {
 }
 
 type bootstrapAppChatResponse struct {
-	ConvID         string                   `json:"conv_id"`
-	AssistantAppID string                   `json:"assistant_app_id"`
-	BasePrefix     string                   `json:"base_prefix"`
-	SubjectApp     bootstrapSubjectApp      `json:"subject_app"`
+	ConvID          string                   `json:"conv_id"`
+	AssistantAppID  string                   `json:"assistant_app_id"`
+	BasePrefix      string                   `json:"base_prefix"`
+	SubjectApp      bootstrapSubjectApp      `json:"subject_app"`
 	AttachedContext bootstrapAttachedContext `json:"attached_context"`
 }
 

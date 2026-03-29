@@ -9,7 +9,7 @@ export const VM_PACK_METADATA = {
       "title": "Bug Triage",
       "icon": "🐞",
       "sourceFile": "src/domain/vm/cards/kanbanBugTriage.vm.js",
-      "source": "// @ts-check\n__card__({\n  id: 'kanbanBugTriage',\n  packId: 'kanban.v1',\n  title: 'Bug Triage',\n  icon: '🐞',\n});\n\n__doc__({\n  name: 'kanbanBugTriage',\n  summary: 'Four-lane bug triage desk with hot-issue highlights and a custom incident taxonomy.',\n  tags: ['demo', 'kanban', 'bugs'],\n  related: ['widgets.kanban.page', 'widgets.kanban.highlights', 'widgets.kanban.filters'],\n});\n\ndoc`\n---\nsymbol: kanbanBugTriage\n---\nThis demo card uses the same board primitive but a different top section: a triage-oriented\nhighlight strip that calls out hot issues before the board itself.\n`;\n\nconst bugTriageBoard = boardById('kanbanBugTriage');\n\ndefineCard(\n  bugTriageBoard.id,\n  ({ widgets }) =\u003e ({\n    render({ state }) {\n      const draft = boardDraft(state);\n      return renderKanbanPage(widgets, bugTriageBoard, state, {\n        highlightItems: [\n          { id: 'hot', label: 'Hot', value: draft.tasks.filter((task) =\u003e task.priority === 'sev1').length, caption: 'Needs triage now', tone: 'danger', trend: [1, 1, 2, 4, 3, 3] },\n          { id: 'queue', label: 'Queue', value: draft.tasks.length, caption: 'Across all lanes', tone: 'accent' },\n          { id: 'verified', label: 'Verified', value: draft.tasks.filter((task) =\u003e task.col === 'verified').length, caption: 'Ready to close', tone: 'success', progress: 0.33 },\n        ],\n      });\n    },\n    handlers: kanbanCardHandlers(bugTriageBoard),\n  }),\n  'kanban.v1',\n);\n",
+      "source": "// @ts-check\n__card__({\n  id: 'kanbanBugTriage',\n  packId: 'kanban.v1',\n  title: 'Bug Triage',\n  icon: '🐞',\n});\n\n__doc__({\n  name: 'kanbanBugTriage',\n  summary: 'Four-lane bug triage desk with hot-issue highlights and a custom incident taxonomy.',\n  tags: ['demo', 'kanban', 'bugs'],\n  related: ['widgets.kanban.page', 'widgets.kanban.highlights', 'widgets.kanban.filters'],\n});\n\ndoc`\n---\nsymbol: kanbanBugTriage\n---\nThis demo card uses the same board primitive but a different top section: a triage-oriented\nhighlight strip that calls out hot issues before the board itself.\n`;\n\nconst bugTriageBoard = boardById('kanbanBugTriage');\n\ndefineRuntimeSurface(\n  bugTriageBoard.id,\n  ({ widgets }) =\u003e ({\n    render({ state }) {\n      const draft = boardDraft(state);\n      return renderKanbanPage(widgets, bugTriageBoard, state, {\n        highlightItems: [\n          { id: 'hot', label: 'Hot', value: draft.tasks.filter((task) =\u003e task.priority === 'sev1').length, caption: 'Needs triage now', tone: 'danger', trend: [1, 1, 2, 4, 3, 3] },\n          { id: 'queue', label: 'Queue', value: draft.tasks.length, caption: 'Across all lanes', tone: 'accent' },\n          { id: 'verified', label: 'Verified', value: draft.tasks.filter((task) =\u003e task.col === 'verified').length, caption: 'Ready to close', tone: 'success', progress: 0.33 },\n        ],\n      });\n    },\n    handlers: kanbanCardHandlers(bugTriageBoard),\n  }),\n  'kanban.v1',\n);\n",
       "handlerNames": null
     },
     {
@@ -18,7 +18,7 @@ export const VM_PACK_METADATA = {
       "title": "Incident Command",
       "icon": "🚨",
       "sourceFile": "src/domain/vm/cards/kanbanIncidentCommand.vm.js",
-      "source": "// @ts-check\n__card__({\n  id: 'kanbanIncidentCommand',\n  packId: 'kanban.v1',\n  title: 'Incident Command',\n  icon: '🚨',\n});\n\n__doc__({\n  name: 'kanbanIncidentCommand',\n  summary: 'Three-lane incident command surface with telemetry highlights and custom status metrics.',\n  tags: ['demo', 'kanban', 'incident'],\n  related: ['widgets.kanban.page', 'widgets.kanban.highlights', 'widgets.kanban.status'],\n});\n\ndoc`\n---\nsymbol: kanbanIncidentCommand\n---\nThis demo card shows the command-center end of the spectrum: telemetry highlights above a denser\nthree-lane board, still authored entirely with semantic Kanban primitives.\n`;\n\nconst incidentCommandBoard = boardById('kanbanIncidentCommand');\n\ndefineCard(\n  incidentCommandBoard.id,\n  ({ widgets }) =\u003e ({\n    render({ state }) {\n      const draft = boardDraft(state);\n      return renderKanbanPage(widgets, incidentCommandBoard, state, {\n        emptyColumnMessage: 'No incidents here',\n        dropHintMessage: 'Move incident',\n        highlightItems: [\n          { id: 'sev1', label: 'SEV-1', value: draft.tasks.filter((task) =\u003e task.priority === 'sev1').length, caption: 'Customer-visible outage', tone: 'danger', trend: [0, 1, 1, 2, 1, 1] },\n          { id: 'mitigation', label: 'Mitigation', value: '74%', caption: 'Rollback progressing', tone: 'warning', progress: 0.74 },\n          { id: 'latency', label: 'Latency', value: '182ms', caption: 'API p95', tone: 'accent', trend: [120, 140, 160, 210, 190, 182] },\n        ],\n        statusMetrics: [\n          { label: 'open', value: draft.tasks.filter((task) =\u003e task.col !== 'resolved').length },\n          { label: 'sev1', value: draft.tasks.filter((task) =\u003e task.priority === 'sev1').length },\n          { label: 'customer', value: draft.tasks.filter((task) =\u003e task.labels.includes('customer')).length },\n        ],\n      });\n    },\n    handlers: kanbanCardHandlers(incidentCommandBoard),\n  }),\n  'kanban.v1',\n);\n",
+      "source": "// @ts-check\n__card__({\n  id: 'kanbanIncidentCommand',\n  packId: 'kanban.v1',\n  title: 'Incident Command',\n  icon: '🚨',\n});\n\n__doc__({\n  name: 'kanbanIncidentCommand',\n  summary: 'Three-lane incident command surface with telemetry highlights and custom status metrics.',\n  tags: ['demo', 'kanban', 'incident'],\n  related: ['widgets.kanban.page', 'widgets.kanban.highlights', 'widgets.kanban.status'],\n});\n\ndoc`\n---\nsymbol: kanbanIncidentCommand\n---\nThis demo card shows the command-center end of the spectrum: telemetry highlights above a denser\nthree-lane board, still authored entirely with semantic Kanban primitives.\n`;\n\nconst incidentCommandBoard = boardById('kanbanIncidentCommand');\n\ndefineRuntimeSurface(\n  incidentCommandBoard.id,\n  ({ widgets }) =\u003e ({\n    render({ state }) {\n      const draft = boardDraft(state);\n      return renderKanbanPage(widgets, incidentCommandBoard, state, {\n        emptyColumnMessage: 'No incidents here',\n        dropHintMessage: 'Move incident',\n        highlightItems: [\n          { id: 'sev1', label: 'SEV-1', value: draft.tasks.filter((task) =\u003e task.priority === 'sev1').length, caption: 'Customer-visible outage', tone: 'danger', trend: [0, 1, 1, 2, 1, 1] },\n          { id: 'mitigation', label: 'Mitigation', value: '74%', caption: 'Rollback progressing', tone: 'warning', progress: 0.74 },\n          { id: 'latency', label: 'Latency', value: '182ms', caption: 'API p95', tone: 'accent', trend: [120, 140, 160, 210, 190, 182] },\n        ],\n        statusMetrics: [\n          { label: 'open', value: draft.tasks.filter((task) =\u003e task.col !== 'resolved').length },\n          { label: 'sev1', value: draft.tasks.filter((task) =\u003e task.priority === 'sev1').length },\n          { label: 'customer', value: draft.tasks.filter((task) =\u003e task.labels.includes('customer')).length },\n        ],\n      });\n    },\n    handlers: kanbanCardHandlers(incidentCommandBoard),\n  }),\n  'kanban.v1',\n);\n",
       "handlerNames": null
     },
     {
@@ -27,7 +27,7 @@ export const VM_PACK_METADATA = {
       "title": "Focus Inbox",
       "icon": "🎯",
       "sourceFile": "src/domain/vm/cards/kanbanPersonalPlanner.vm.js",
-      "source": "// @ts-check\n__card__({\n  id: 'kanbanPersonalPlanner',\n  packId: 'kanban.v1',\n  title: 'Focus Inbox',\n  icon: '🎯',\n});\n\n__doc__({\n  name: 'kanbanPersonalPlanner',\n  summary: 'Single-lane focus inbox demo using the compositional kanban.v1 page DSL.',\n  tags: ['demo', 'kanban', 'personal'],\n  related: ['widgets.kanban.page', 'widgets.kanban.header', 'widgets.kanban.highlights'],\n});\n\ndoc`\n---\nsymbol: kanbanPersonalPlanner\n---\nThis demo card is intentionally minimal: one lane, no filter bar, and only a small focus-oriented\nhighlight strip above the board.\n`;\n\nconst personalPlannerBoard = boardById('kanbanPersonalPlanner');\n\ndefineCard(\n  personalPlannerBoard.id,\n  ({ widgets }) =\u003e ({\n    render({ state }) {\n      return renderKanbanPage(widgets, personalPlannerBoard, state, {\n        showFilters: false,\n        highlightItems: [\n          { id: 'energy', label: 'Energy', value: 'High', caption: 'Good time for deep work', tone: 'success' },\n          { id: 'streak', label: 'Streak', value: '3 days', caption: 'Inbox under five cards', tone: 'accent', trend: [2, 3, 4, 4, 3, 5] },\n        ],\n        statusMetrics: [\n          { label: 'captured', value: boardDraft(state).tasks.length },\n          { label: 'mode', value: 'single-lane' },\n        ],\n      });\n    },\n    handlers: kanbanCardHandlers(personalPlannerBoard),\n  }),\n  'kanban.v1',\n);\n",
+      "source": "// @ts-check\n__card__({\n  id: 'kanbanPersonalPlanner',\n  packId: 'kanban.v1',\n  title: 'Focus Inbox',\n  icon: '🎯',\n});\n\n__doc__({\n  name: 'kanbanPersonalPlanner',\n  summary: 'Single-lane focus inbox demo using the compositional kanban.v1 page DSL.',\n  tags: ['demo', 'kanban', 'personal'],\n  related: ['widgets.kanban.page', 'widgets.kanban.header', 'widgets.kanban.highlights'],\n});\n\ndoc`\n---\nsymbol: kanbanPersonalPlanner\n---\nThis demo card is intentionally minimal: one lane, no filter bar, and only a small focus-oriented\nhighlight strip above the board.\n`;\n\nconst personalPlannerBoard = boardById('kanbanPersonalPlanner');\n\ndefineRuntimeSurface(\n  personalPlannerBoard.id,\n  ({ widgets }) =\u003e ({\n    render({ state }) {\n      return renderKanbanPage(widgets, personalPlannerBoard, state, {\n        showFilters: false,\n        highlightItems: [\n          { id: 'energy', label: 'Energy', value: 'High', caption: 'Good time for deep work', tone: 'success' },\n          { id: 'streak', label: 'Streak', value: '3 days', caption: 'Inbox under five cards', tone: 'accent', trend: [2, 3, 4, 4, 3, 5] },\n        ],\n        statusMetrics: [\n          { label: 'captured', value: boardDraft(state).tasks.length },\n          { label: 'mode', value: 'single-lane' },\n        ],\n      });\n    },\n    handlers: kanbanCardHandlers(personalPlannerBoard),\n  }),\n  'kanban.v1',\n);\n",
       "handlerNames": null
     },
     {
@@ -36,7 +36,7 @@ export const VM_PACK_METADATA = {
       "title": "Release Cutline",
       "icon": "🚀",
       "sourceFile": "src/domain/vm/cards/kanbanReleaseTrain.vm.js",
-      "source": "// @ts-check\n__card__({\n  id: 'kanbanReleaseTrain',\n  packId: 'kanban.v1',\n  title: 'Release Cutline',\n  icon: '🚀',\n});\n\n__doc__({\n  name: 'kanbanReleaseTrain',\n  summary: 'Two-lane release cutline board with launch highlights and custom release taxonomy.',\n  tags: ['demo', 'kanban', 'release'],\n  related: ['widgets.kanban.page', 'widgets.kanban.highlights', 'widgets.kanban.taxonomy'],\n});\n\ndoc`\n---\nsymbol: kanbanReleaseTrain\n---\nThis demo card is intentionally narrow: just two lanes, no filters, and a small launch cutline\nsummary that makes the board feel very different from the sprint or incident examples.\n`;\n\nconst releaseTrainBoard = boardById('kanbanReleaseTrain');\n\ndefineCard(\n  releaseTrainBoard.id,\n  ({ widgets }) =\u003e ({\n    render({ state }) {\n      const draft = boardDraft(state);\n      return renderKanbanPage(widgets, releaseTrainBoard, state, {\n        showFilters: false,\n        title: 'Release Cutline / Q2',\n        subtitle: 'Launch gates, blockers, and rollout checks.',\n        highlightItems: [\n          { id: 'readiness', label: 'Readiness', value: '82%', caption: 'Across platform gates', tone: 'success', progress: 0.82 },\n          { id: 'blockers', label: 'Blockers', value: draft.tasks.filter((task) =\u003e task.priority === 'blocker').length, caption: 'Holding the cut', tone: 'danger' },\n        ],\n        statusMetrics: [\n          { label: 'gates', value: draft.tasks.filter((task) =\u003e task.col === 'gated').length },\n          { label: 'shipping', value: draft.tasks.filter((task) =\u003e task.col === 'shipping').length },\n          { label: 'blockers', value: draft.tasks.filter((task) =\u003e task.priority === 'blocker').length },\n        ],\n      });\n    },\n    handlers: kanbanCardHandlers(releaseTrainBoard),\n  }),\n  'kanban.v1',\n);\n",
+      "source": "// @ts-check\n__card__({\n  id: 'kanbanReleaseTrain',\n  packId: 'kanban.v1',\n  title: 'Release Cutline',\n  icon: '🚀',\n});\n\n__doc__({\n  name: 'kanbanReleaseTrain',\n  summary: 'Two-lane release cutline board with launch highlights and custom release taxonomy.',\n  tags: ['demo', 'kanban', 'release'],\n  related: ['widgets.kanban.page', 'widgets.kanban.highlights', 'widgets.kanban.taxonomy'],\n});\n\ndoc`\n---\nsymbol: kanbanReleaseTrain\n---\nThis demo card is intentionally narrow: just two lanes, no filters, and a small launch cutline\nsummary that makes the board feel very different from the sprint or incident examples.\n`;\n\nconst releaseTrainBoard = boardById('kanbanReleaseTrain');\n\ndefineRuntimeSurface(\n  releaseTrainBoard.id,\n  ({ widgets }) =\u003e ({\n    render({ state }) {\n      const draft = boardDraft(state);\n      return renderKanbanPage(widgets, releaseTrainBoard, state, {\n        showFilters: false,\n        title: 'Release Cutline / Q2',\n        subtitle: 'Launch gates, blockers, and rollout checks.',\n        highlightItems: [\n          { id: 'readiness', label: 'Readiness', value: '82%', caption: 'Across platform gates', tone: 'success', progress: 0.82 },\n          { id: 'blockers', label: 'Blockers', value: draft.tasks.filter((task) =\u003e task.priority === 'blocker').length, caption: 'Holding the cut', tone: 'danger' },\n        ],\n        statusMetrics: [\n          { label: 'gates', value: draft.tasks.filter((task) =\u003e task.col === 'gated').length },\n          { label: 'shipping', value: draft.tasks.filter((task) =\u003e task.col === 'shipping').length },\n          { label: 'blockers', value: draft.tasks.filter((task) =\u003e task.priority === 'blocker').length },\n        ],\n      });\n    },\n    handlers: kanbanCardHandlers(releaseTrainBoard),\n  }),\n  'kanban.v1',\n);\n",
       "handlerNames": null
     },
     {
@@ -45,117 +45,12 @@ export const VM_PACK_METADATA = {
       "title": "Sprint Board",
       "icon": "🏁",
       "sourceFile": "src/domain/vm/cards/kanbanSprintBoard.vm.js",
-      "source": "// @ts-check\n__card__({\n  id: 'kanbanSprintBoard',\n  packId: 'kanban.v1',\n  title: 'Sprint Board',\n  icon: '🏁',\n});\n\n__doc__({\n  name: 'kanbanSprintBoard',\n  summary: 'Five-lane sprint radar demo for the compositional kanban.v1 page DSL.',\n  tags: ['demo', 'kanban', 'sprint'],\n  related: ['widgets.kanban.page', 'widgets.kanban.highlights', 'widgets.kanban.board'],\n});\n\ndoc`\n---\nsymbol: kanbanSprintBoard\n---\nThis demo card uses the page-style DSL to build a denser sprint radar with an idea lane and a\nsummary highlight strip above the board.\n`;\n\nconst sprintBoard = boardById('kanbanSprintBoard');\n\ndefineCard(\n  sprintBoard.id,\n  ({ widgets }) =\u003e ({\n    render({ state }) {\n      const draft = boardDraft(state);\n      return renderKanbanPage(widgets, sprintBoard, state, {\n        highlightItems: [\n          { id: 'committed', label: 'Committed', value: '34 pts', caption: 'Sprint 12', tone: 'accent', trend: [22, 24, 26, 29, 31, 34] },\n          { id: 'blocked', label: 'Blocked', value: draft.tasks.filter((task) =\u003e task.priority === 'high').length, caption: 'Need review attention', tone: 'warning', progress: 0.22 },\n          { id: 'done', label: 'Done', value: draft.tasks.filter((task) =\u003e task.col === 'done').length, caption: 'Already shipped', tone: 'success', progress: 0.61 },\n        ],\n      });\n    },\n    handlers: kanbanCardHandlers(sprintBoard),\n  }),\n  'kanban.v1',\n);\n",
+      "source": "// @ts-check\n__card__({\n  id: 'kanbanSprintBoard',\n  packId: 'kanban.v1',\n  title: 'Sprint Board',\n  icon: '🏁',\n});\n\n__doc__({\n  name: 'kanbanSprintBoard',\n  summary: 'Five-lane sprint radar demo for the compositional kanban.v1 page DSL.',\n  tags: ['demo', 'kanban', 'sprint'],\n  related: ['widgets.kanban.page', 'widgets.kanban.highlights', 'widgets.kanban.board'],\n});\n\ndoc`\n---\nsymbol: kanbanSprintBoard\n---\nThis demo card uses the page-style DSL to build a denser sprint radar with an idea lane and a\nsummary highlight strip above the board.\n`;\n\nconst sprintBoard = boardById('kanbanSprintBoard');\n\ndefineRuntimeSurface(\n  sprintBoard.id,\n  ({ widgets }) =\u003e ({\n    render({ state }) {\n      const draft = boardDraft(state);\n      return renderKanbanPage(widgets, sprintBoard, state, {\n        highlightItems: [\n          { id: 'committed', label: 'Committed', value: '34 pts', caption: 'Sprint 12', tone: 'accent', trend: [22, 24, 26, 29, 31, 34] },\n          { id: 'blocked', label: 'Blocked', value: draft.tasks.filter((task) =\u003e task.priority === 'high').length, caption: 'Need review attention', tone: 'warning', progress: 0.22 },\n          { id: 'done', label: 'Done', value: draft.tasks.filter((task) =\u003e task.col === 'done').length, caption: 'Already shipped', tone: 'success', progress: 0.61 },\n        ],\n      });\n    },\n    handlers: kanbanCardHandlers(sprintBoard),\n  }),\n  'kanban.v1',\n);\n",
       "handlerNames": null
     }
   ],
   "docs": {
     "files": [
-      {
-        "package": {
-          "name": "kanban.v1",
-          "title": "Kanban Runtime Pack",
-          "category": "runtime-pack",
-          "version": "1",
-          "description": "Structured Kanban shell runtime pack for HyperCard VM-authored cards.",
-          "prose": "The Kanban runtime pack exposes a compositional page contract. A VM card composes\nwidgets.kanban.page(...) from smaller semantic widgets such as taxonomy, header, optional\nhighlights, optional filters, board, and optional status nodes. The VM remains responsible for\nsemantic state and handler wiring. The host remains responsible for rendering, drag/drop behavior,\nand modal UI.",
-          "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js"
-        },
-        "symbols": [
-          {
-            "name": "widgets.kanban.page",
-            "summary": "Compose the root page for a Kanban runtime tree.",
-            "returns": {},
-            "tags": [
-              "dsl",
-              "kanban",
-              "runtime-pack"
-            ],
-            "prose": "Use widgets.kanban.page(...) as the root return value from a kanban.v1 card render function.\nPass child nodes in a component-like style: taxonomy, header, optional highlights, optional\nfilters, board, and optional status nodes.",
-            "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
-            "line": 21
-          },
-          {
-            "name": "widgets.kanban.taxonomy",
-            "summary": "Describe the available issue types, priorities, and labels for a Kanban shell.",
-            "returns": {},
-            "tags": [
-              "dsl",
-              "kanban",
-              "taxonomy"
-            ],
-            "prose": "Use widgets.kanban.taxonomy({...}) to register descriptor-driven issue systems. This is the main\nreplacement for hardcoded bug/feature/tag enums.",
-            "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
-            "line": 35
-          },
-          {
-            "name": "widgets.kanban.header",
-            "summary": "Describe the shell header with title, subtitle, search state, and primary action wiring.",
-            "returns": {},
-            "tags": [
-              "dsl",
-              "kanban",
-              "shell"
-            ],
-            "prose": "Use widgets.kanban.header({...}) to configure page title text, search query, and the primary\naction button. Typical cards wire the primary action back to openTaskEditor.",
-            "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
-            "line": 48
-          },
-          {
-            "name": "widgets.kanban.highlights",
-            "summary": "Describe a row of summary cards with metrics, captions, progress, or sparklines.",
-            "returns": {},
-            "tags": [
-              "dsl",
-              "kanban",
-              "summary"
-            ],
-            "prose": "Use widgets.kanban.highlights({...}) to render summary cards above the board. This is the main\nmechanism for making Kanban pages feel different without escaping the semantic DSL.",
-            "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
-            "line": 61
-          },
-          {
-            "name": "widgets.kanban.filters",
-            "summary": "Describe the optional filter bar for issue-type and priority filtering.",
-            "returns": {},
-            "tags": [
-              "dsl",
-              "kanban",
-              "filters"
-            ],
-            "prose": "Use widgets.kanban.filters({...}) when the board should expose issue-type and priority filters. If\nthe card omits this node, the host page will not render the filter bar.",
-            "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
-            "line": 74
-          },
-          {
-            "name": "widgets.kanban.board",
-            "summary": "Describe the core board state, task list, lane list, editing state, and event bindings.",
-            "returns": {},
-            "tags": [
-              "dsl",
-              "kanban",
-              "board"
-            ],
-            "prose": "Use widgets.kanban.board({...}) to provide columns, tasks, collapsed state, editing state, and\nboard interaction handlers. This node is still semantic data, not a host component escape hatch.",
-            "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
-            "line": 87
-          },
-          {
-            "name": "widgets.kanban.status",
-            "summary": "Describe optional footer metrics for the shell.",
-            "returns": {},
-            "tags": [
-              "dsl",
-              "kanban",
-              "status"
-            ],
-            "prose": "Use widgets.kanban.status({...}) when the page should render explicit footer metrics. Cards may\nomit this node entirely, or provide custom metrics that match their own domain vocabulary.",
-            "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
-            "line": 100
-          }
-        ],
-        "file_path": "src/domain/vm/docs/kanban-pack.docs.vm.js"
-      },
       {
         "symbols": [
           {
@@ -272,17 +167,6 @@ export const VM_PACK_METADATA = {
         "file_path": "src/domain/vm/cards/kanbanSprintBoard.vm.js"
       }
     ],
-    "by_package": {
-      "kanban.v1": {
-        "name": "kanban.v1",
-        "title": "Kanban Runtime Pack",
-        "category": "runtime-pack",
-        "version": "1",
-        "description": "Structured Kanban shell runtime pack for HyperCard VM-authored cards.",
-        "prose": "The Kanban runtime pack exposes a compositional page contract. A VM card composes\nwidgets.kanban.page(...) from smaller semantic widgets such as taxonomy, header, optional\nhighlights, optional filters, board, and optional status nodes. The VM remains responsible for\nsemantic state and handler wiring. The host remains responsible for rendering, drag/drop behavior,\nand modal UI.",
-        "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js"
-      }
-    },
     "by_symbol": {
       "kanbanBugTriage": {
         "name": "kanbanBugTriage",
@@ -373,97 +257,6 @@ export const VM_PACK_METADATA = {
         "prose": "This demo card uses the page-style DSL to build a denser sprint radar with an idea lane and a\nsummary highlight strip above the board.",
         "source_file": "src/domain/vm/cards/kanbanSprintBoard.vm.js",
         "line": 9
-      },
-      "widgets.kanban.board": {
-        "name": "widgets.kanban.board",
-        "summary": "Describe the core board state, task list, lane list, editing state, and event bindings.",
-        "returns": {},
-        "tags": [
-          "dsl",
-          "kanban",
-          "board"
-        ],
-        "prose": "Use widgets.kanban.board({...}) to provide columns, tasks, collapsed state, editing state, and\nboard interaction handlers. This node is still semantic data, not a host component escape hatch.",
-        "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
-        "line": 87
-      },
-      "widgets.kanban.filters": {
-        "name": "widgets.kanban.filters",
-        "summary": "Describe the optional filter bar for issue-type and priority filtering.",
-        "returns": {},
-        "tags": [
-          "dsl",
-          "kanban",
-          "filters"
-        ],
-        "prose": "Use widgets.kanban.filters({...}) when the board should expose issue-type and priority filters. If\nthe card omits this node, the host page will not render the filter bar.",
-        "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
-        "line": 74
-      },
-      "widgets.kanban.header": {
-        "name": "widgets.kanban.header",
-        "summary": "Describe the shell header with title, subtitle, search state, and primary action wiring.",
-        "returns": {},
-        "tags": [
-          "dsl",
-          "kanban",
-          "shell"
-        ],
-        "prose": "Use widgets.kanban.header({...}) to configure page title text, search query, and the primary\naction button. Typical cards wire the primary action back to openTaskEditor.",
-        "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
-        "line": 48
-      },
-      "widgets.kanban.highlights": {
-        "name": "widgets.kanban.highlights",
-        "summary": "Describe a row of summary cards with metrics, captions, progress, or sparklines.",
-        "returns": {},
-        "tags": [
-          "dsl",
-          "kanban",
-          "summary"
-        ],
-        "prose": "Use widgets.kanban.highlights({...}) to render summary cards above the board. This is the main\nmechanism for making Kanban pages feel different without escaping the semantic DSL.",
-        "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
-        "line": 61
-      },
-      "widgets.kanban.page": {
-        "name": "widgets.kanban.page",
-        "summary": "Compose the root page for a Kanban runtime tree.",
-        "returns": {},
-        "tags": [
-          "dsl",
-          "kanban",
-          "runtime-pack"
-        ],
-        "prose": "Use widgets.kanban.page(...) as the root return value from a kanban.v1 card render function.\nPass child nodes in a component-like style: taxonomy, header, optional highlights, optional\nfilters, board, and optional status nodes.",
-        "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
-        "line": 21
-      },
-      "widgets.kanban.status": {
-        "name": "widgets.kanban.status",
-        "summary": "Describe optional footer metrics for the shell.",
-        "returns": {},
-        "tags": [
-          "dsl",
-          "kanban",
-          "status"
-        ],
-        "prose": "Use widgets.kanban.status({...}) when the page should render explicit footer metrics. Cards may\nomit this node entirely, or provide custom metrics that match their own domain vocabulary.",
-        "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
-        "line": 100
-      },
-      "widgets.kanban.taxonomy": {
-        "name": "widgets.kanban.taxonomy",
-        "summary": "Describe the available issue types, priorities, and labels for a Kanban shell.",
-        "returns": {},
-        "tags": [
-          "dsl",
-          "kanban",
-          "taxonomy"
-        ],
-        "prose": "Use widgets.kanban.taxonomy({...}) to register descriptor-driven issue systems. This is the main\nreplacement for hardcoded bug/feature/tag enums.",
-        "source_file": "src/domain/vm/docs/kanban-pack.docs.vm.js",
-        "line": 35
       }
     }
   }

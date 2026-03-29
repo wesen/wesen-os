@@ -23,7 +23,7 @@ three-lane board, still authored entirely with semantic Kanban primitives.
 
 const incidentCommandBoard = boardById('kanbanIncidentCommand');
 
-defineCard(
+defineRuntimeSurface(
   incidentCommandBoard.id,
   ({ widgets }) => ({
     render({ state }) {

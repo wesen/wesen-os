@@ -1,4 +1,5 @@
 // @ts-check
+// Bundle-local Kanban demo helpers. Public DSL APIs belong to runtime packages (`ui`, `kanban`).
 const FILTER_DEFAULTS = {
   filterType: null,
   filterPriority: null,
@@ -82,7 +83,7 @@ const KANBAN_BOARDS = [
       { id: 'sprint-0', col: 'ideas', title: 'Explore debugger source jumpbacks', desc: 'Could become the follow-up after moving Stacks & Cards.', type: 'feature', labels: ['frontend'], priority: 'low' },
       { id: 'sprint-1', col: 'backlog', title: 'Document runtime pack registration split', desc: 'Break the app-level registration work into reviewable phases.', type: 'task', labels: ['docs'], priority: 'medium' },
       { id: 'sprint-2', col: 'ready', title: 'Wire kanban authoring examples', desc: 'Add inventory prompt examples and artifact fixtures.', type: 'feature', labels: ['backend'], priority: 'high' },
-      { id: 'sprint-3', col: 'doing', title: 'Validate VM session list behavior', desc: 'Open demo cards through PluginCardSessionHost and verify they appear as runtime sessions.', type: 'bug', labels: ['urgent'], priority: 'high' },
+      { id: 'sprint-3', col: 'doing', title: 'Validate VM session list behavior', desc: 'Open demo cards through RuntimeSurfaceSessionHost and verify they appear as runtime sessions.', type: 'bug', labels: ['urgent'], priority: 'high' },
       { id: 'sprint-4', col: 'doing', title: 'Tighten pack validator around page children', desc: 'Reject invalid node mixes before render.', type: 'task', labels: ['backend'], priority: 'medium' },
       { id: 'sprint-5', col: 'done', title: 'Extract KanbanBoardView', desc: 'Reuse the host-rendered board view from the pack renderer.', type: 'task', labels: ['frontend'], priority: 'low' },
     ],

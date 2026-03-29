@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { focusWindow, openWindow, type OpenWindowPayload } from '@hypercard/engine/desktop-core';
+import { focusWindow, openWindow, type OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { Provider } from 'react-redux';

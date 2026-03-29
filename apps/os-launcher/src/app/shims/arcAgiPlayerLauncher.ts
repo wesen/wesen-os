@@ -1,3 +1,3 @@
-import type { LaunchableAppModule } from '@hypercard/desktop-os';
+import type { LaunchableAppModule } from '@go-go-golems/os-shell';
 
 export const arcPlayerLauncherModule: LaunchableAppModule | null = null;

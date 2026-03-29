@@ -23,7 +23,7 @@ highlight strip above the board.
 
 const personalPlannerBoard = boardById('kanbanPersonalPlanner');
 
-defineCard(
+defineRuntimeSurface(
   personalPlannerBoard.id,
   ({ widgets }) => ({
     render({ state }) {

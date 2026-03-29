@@ -1,9 +1,9 @@
-import { createLauncherStore } from '@hypercard/desktop-os';
-import { booksReducer } from '@hypercard/book-tracker-debug/reducers';
-import { chatProfilesReducer, chatSessionReducer, chatWindowReducer, timelineReducer } from '@hypercard/chat-runtime';
-import { activitiesReducer, companiesReducer, contactsReducer, dealsReducer } from '@hypercard/crm/reducers';
-import { inventoryReducer, salesReducer } from '@hypercard/inventory/reducers';
-import { tasksReducer } from '@hypercard/todo/reducers';
+import { createLauncherStore } from '@go-go-golems/os-shell';
+import { booksReducer } from '@go-go-golems/book-tracker-debug/reducers';
+import { chatProfilesReducer, chatSessionReducer, chatWindowReducer, timelineReducer } from '@go-go-golems/os-chat';
+import { activitiesReducer, companiesReducer, contactsReducer, dealsReducer } from '@go-go-golems/crm/reducers';
+import { inventoryReducer, salesReducer } from '@go-go-golems/inventory/reducers';
+import { tasksReducer } from '@go-go-golems/todo/reducers';
 import { launcherModules } from './modules';
 
 export const { store, createStore: createLauncherAppStore } = createLauncherStore(launcherModules, {

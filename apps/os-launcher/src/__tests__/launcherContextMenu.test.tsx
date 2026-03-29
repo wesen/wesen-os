@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { openWindow } from '@hypercard/engine/desktop-core';
+import { openWindow } from '@go-go-golems/os-core/desktop-core';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { Provider } from 'react-redux';

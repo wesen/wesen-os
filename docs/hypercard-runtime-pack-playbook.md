@@ -1,11 +1,11 @@
-# HyperCard Runtime Pack Playbook
+# HyperCard Runtime Package Playbook
 
-This is the canonical developer playbook for building and registering a HyperCard runtime pack in
+This is the canonical developer playbook for building and registering a HyperCard runtime package in
 the current `wesen-os` workspace.
 
 Use this guide when you need to do one or more of these:
 
-- create a new VM-visible runtime pack like `kanban.v1`
+- create a new VM-visible runtime package that contributes a surface type like `kanban.v1`
 - move an existing app from a monolithic `pluginBundle.vm.js` to split VM source files
 - expose a new DSL in QuickJS
 - register a host-side validator and renderer for a pack
@@ -29,7 +29,7 @@ Read these alongside this guide:
 - [docs-source-mount-playbook.md](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/docs/docs-source-mount-playbook.md)
   How generated pack/card docs are mounted into the docs browser.
 
-This guide answers: “How do I build and register a runtime pack end to end?”
+This guide answers: “How do I build and register a runtime package end to end?”
 
 ## The Short Version
 
@@ -51,7 +51,7 @@ There are currently two useful reference shapes.
 
 ### `kanban.v1`
 
-This is the full rich-pack reference:
+This is the full rich-package reference:
 
 - pack-specific renderer/validator
 - custom `widgets.kanban.*` DSL
@@ -62,9 +62,9 @@ This is the full rich-pack reference:
 
 Key files:
 
-- [runtimePackRegistry.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/runtime-packs/runtimePackRegistry.tsx)
-- [kanbanV1Pack.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/runtime-packs/kanbanV1Pack.tsx)
-- [stack-bootstrap.vm.js](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/plugin-runtime/stack-bootstrap.vm.js)
+- [packages/os-kanban/src/index.ts](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-kanban/src/index.ts)
+- [packages/os-kanban/src/runtimeRegistration.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-kanban/src/runtimeRegistration.tsx)
+- [packages/os-kanban/src/packageApi.vm.js](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-kanban/src/packageApi.vm.js)
 - [pluginBundle.ts](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/domain/pluginBundle.ts)
 - [vmmeta.ts](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/domain/vmmeta.ts)
 - [registerAppsBrowserDocs.ts](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/registerAppsBrowserDocs.ts)
@@ -87,12 +87,13 @@ Key files:
 
 ```text
 host widget family
-  -> pack renderer + validator
-  -> runtime pack registry
+  -> package-owned renderer + validator
+  -> runtime package registry
+  -> runtime surface-type registry
   -> QuickJS bootstrap helpers
-  -> authored VM cards
+  -> authored VM surfaces
   -> vmmeta generate
-  -> stack metadata with pack/source
+  -> bundle metadata with surface/source
   -> docs mounts + runtime debug + editor
 ```
 
@@ -100,23 +101,24 @@ More explicitly:
 
 ```text
 React widgets
-  -> runtime-pack renderer
-  -> registerRuntimePack(packId)
-  -> VM card returns structured tree
-  -> runtime validates tree for that pack
+  -> runtime package owns surface-type renderer
+  -> registerRuntimePackage(packageId)
+  -> registerRuntimeSurfaceType(surfaceTypeId)
+  -> VM surface returns structured tree
+  -> runtime validates tree for that surface type
   -> host renders tree
-  -> vmmeta extracts docs/source from card files
-  -> stack exposes source metadata
-  -> docs browser mounts pack/card docs
+  -> vmmeta extracts docs/source from surface files
+  -> bundle exposes source metadata
+  -> docs browser mounts package/surface docs
 ```
 
 ## Concepts
 
-### Runtime pack
+### Runtime package
 
-A runtime pack is one coherent contract:
+A runtime package is one coherent contract:
 
-- pack ID
+- package ID
 - VM DSL surface
 - tree schema
 - validator
@@ -126,17 +128,33 @@ A runtime pack is one coherent contract:
 
 Examples:
 
+- `ui`
+- `kanban`
+
+Those packages may contribute one or more runtime surface types such as:
+
 - `ui.card.v1`
 - `kanban.v1`
 
-### Stack bundle
+### Runtime surface type
 
-A stack bundle is one authored VM program loaded into QuickJS through:
+A runtime surface type is the render contract for a structured tree returned by a runtime surface.
 
-- `defineStackBundle(...)`
-- zero or more `defineCard(...)` calls
+Examples:
 
-The runtime reads bundle metadata through `__stackHost.getMeta()`.
+- `ui.card.v1`
+- `kanban.v1`
+
+This is the thing the host-side validator and renderer actually interpret.
+
+### Runtime bundle
+
+A runtime bundle is one authored VM program loaded into QuickJS through:
+
+- `defineRuntimeBundle(...)`
+- zero or more `defineRuntimeSurface(...)` calls
+
+The runtime reads bundle metadata through `globalThis.__runtimeBundleHost.getMeta()`.
 
 ### `vmmeta`
 
@@ -215,12 +233,12 @@ Checklist:
 
 Examples:
 
-- [KanbanBoardView.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/KanbanBoardView.tsx)
-- [KanbanHighlights.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/rich-widgets/src/kanban/KanbanHighlights.tsx)
+- [KanbanBoardView.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/KanbanBoardView.tsx)
+- [KanbanHighlights.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-widgets/src/kanban/KanbanHighlights.tsx)
 
 If the widget family is already generic enough, this may already be done.
 
-## Phase 3: Define The Pack Contract In `hypercard-runtime`
+## Phase 3: Define The Package Contract
 
 This is the real runtime boundary.
 
@@ -228,7 +246,7 @@ This is the real runtime boundary.
 
 Create or update a file like:
 
-- [kanbanV1Pack.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/runtime-packs/kanbanV1Pack.tsx)
+- [packages/os-kanban/src/runtimeRegistration.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/os-kanban/src/runtimeRegistration.tsx)
 
 Responsibilities:
 
@@ -239,85 +257,89 @@ Responsibilities:
 
 Do not skip validation.
 
-### 2. Register the pack
+### 2. Export package and surface-type definitions
 
 Use:
 
-- [runtimePackRegistry.tsx](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/runtime-packs/runtimePackRegistry.tsx)
+- `RUNTIME_PACKAGE`
+- `RUNTIME_SURFACE_TYPE`
 
 Pattern:
 
 ```ts
-registerRuntimePack({
-  packId: 'myPack.v1',
-  validateTree: validateMyPackNode,
-  render: ({ tree, onEvent }) => <MyPackRenderer tree={tree} onEvent={onEvent} />,
-});
-```
+export const MY_RUNTIME_PACKAGE = {
+  packageId: 'my-package',
+  install(session) { ... },
+  docsMetadata: ...,
+};
 
-This is what makes `renderRuntimeTree(packId, ...)` work.
-
-### 3. Expose VM-side helpers in bootstrap
-
-Update:
-
-- [stack-bootstrap.vm.js](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend/packages/hypercard-runtime/src/plugin-runtime/stack-bootstrap.vm.js)
-
-This is where the QuickJS side gets helpers like:
-
-- `ui.*`
-- `widgets.kanban.*`
-
-Pattern:
-
-```js
-const __widgets = {
-  myPack: {
-    page(props) { ... },
-    board(props) { ... },
+export const MY_V1_RUNTIME_SURFACE_TYPE = {
+  typeId: 'my-package.v1',
+  validateTree(value) { ... },
+  render({ tree, onEvent }) {
+    return <MyRenderer tree={tree} onEvent={onEvent} />;
   },
 };
 ```
 
-And ensure `createPackHelpers(packId)` returns the right helper surface for your new pack.
+Host apps then register those explicitly at startup.
+
+### 3. Expose VM-side helpers in bootstrap
+
+In the current architecture, this should live in the concrete package, not runtime core.
+
+Pattern:
+
+```js
+registerRuntimePackageApi('my-package', {
+  widgets: {
+    myPackage: {
+      page(props) { ... },
+      board(props) { ... },
+    },
+  },
+});
+```
+
+Do not put concrete package APIs back into generic runtime-core bootstrap files.
 
 ## Phase 4: Author VM Cards As Real Source Files
 
-Do not author important built-in cards only as opaque strings.
+Do not author important built-in surfaces only as opaque strings.
 
 Use per-card files with:
 
 - `__card__(...)`
 - `__doc__(...)`
 - `doc\`...\``
-- `defineCard(...)`
+- `defineRuntimeSurface(...)`
 
 Pattern:
 
 ```js
 // @ts-check
 __card__({
-  id: 'myCard',
-  packId: 'myPack.v1',
-  title: 'My Card',
+  id: 'mySurface',
+  packId: 'my-package.v1',
+  title: 'My Surface',
   icon: '🧪',
 });
 
 __doc__({
-  name: 'myCard',
+  name: 'mySurface',
   summary: 'One-line summary for docs browser.',
-  tags: ['demo', 'my-pack'],
-  related: ['widgets.myPack.page'],
+  tags: ['demo', 'my-package'],
+  related: ['widgets.myPackage.page'],
 });
 
 doc`
 ---
-symbol: myCard
+symbol: mySurface
 ---
-Longer prose that becomes card documentation.
+Longer prose that becomes surface documentation.
 `;
 
-defineCard(
+defineRuntimeSurface(
   'myCard',
   ({ widgets }) => ({
     render({ state }) {

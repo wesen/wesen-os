@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev": "npm run dev -w apps/os-launcher",
+    "dev-public": "npm run dev-public -w apps/os-launcher",
     "build": "npm run build -w apps/os-launcher",
     "test": "npm run test -w apps/os-launcher",
     "typecheck": "node ./node_modules/typescript/bin/tsc --build",

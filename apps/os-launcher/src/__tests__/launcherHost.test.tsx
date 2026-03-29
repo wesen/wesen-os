@@ -7,8 +7,8 @@ import {
   formatAppKey,
   type LaunchableAppModule,
   parseAppKey,
-} from '@hypercard/desktop-os';
-import { type DesktopCommandContext, routeContributionCommand } from '@hypercard/engine/desktop-react';
+} from '@go-go-golems/os-shell';
+import { type DesktopCommandContext, routeContributionCommand } from '@go-go-golems/os-core/desktop-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { launcherModules } from '../app/modules';
@@ -19,7 +19,7 @@ function commandContext(): DesktopCommandContext {
     dispatch: () => undefined,
     getState: () => ({}),
     focusedWindowId: null,
-    openCardWindow: () => undefined,
+    openSurfaceWindow: () => undefined,
     closeWindow: () => undefined,
   };
 }
@@ -51,24 +51,16 @@ describe('launcher host wiring', () => {
     expect(hostContext.openWindow).toHaveBeenCalledTimes(appIds.length);
     for (const [index, appId] of appIds.entries()) {
       const [payload] = hostContext.openWindow.mock.calls[index] as [
-        { content: { kind: string; appKey?: string; card?: { stackId?: string } } },
+        { content: { kind: string; appKey?: string; surface?: { bundleId?: string } } },
       ];
-      if (
-        appId === 'inventory' ||
-        appId === 'sqlite' ||
-        appId === 'apps-browser' ||
-        appId === 'arc-agi-player' ||
-        appId === 'kanban-vm' ||
-        appId === 'hypercard-runtime-debug' ||
-        appId === 'rich-widgets'
-      ) {
+      if (payload.content.kind === 'app') {
         expect(payload.content.kind).toBe('app');
         expect(payload.content.appKey).toMatch(new RegExp(`^${appId}:`));
       } else {
-        expect(payload.content.kind).toBe('card');
-        expect(payload.content.card?.stackId).toBeTruthy();
+        expect(payload.content.kind).toBe('surface');
+        expect(payload.content.surface?.bundleId).toBeTruthy();
         if (appId === 'hypercard-tools') {
-          expect(payload.content.card?.stackId).toBe('hypercardToolsUiDslDemo');
+          expect(payload.content.surface?.bundleId).toBe('hypercardToolsUiDslDemo');
         }
       }
     }
@@ -105,7 +97,7 @@ describe('launcher host wiring', () => {
     expect(content).not.toBeNull();
   });
 
-  it('renders hypercard-tools editor window for encoded runtime card refs', () => {
+  it('renders hypercard-tools editor window for encoded runtime surface refs', () => {
     const render = createRenderAppWindow({
       registry: launcherRegistry,
       hostContext: {
@@ -175,10 +167,10 @@ describe('launcher host wiring', () => {
     const moduleSource = readFileSync(new URL('../app/modules.tsx', import.meta.url), 'utf8');
     const storeSource = readFileSync(new URL('../app/store.ts', import.meta.url), 'utf8');
 
-    expect(moduleSource).toContain("@hypercard/inventory/launcher");
-    expect(storeSource).toContain("@hypercard/inventory/reducers");
-    expect(moduleSource).not.toContain('@hypercard/inventory/src/');
-    expect(storeSource).not.toContain('@hypercard/inventory/src/');
+    expect(moduleSource).toContain("@go-go-golems/inventory/launcher");
+    expect(storeSource).toContain("@go-go-golems/inventory/reducers");
+    expect(moduleSource).not.toContain('@go-go-golems/inventory/src/');
+    expect(storeSource).not.toContain('@go-go-golems/inventory/src/');
   });
 
   it('prevents placeholder module labels from being reintroduced', () => {
@@ -191,8 +183,11 @@ describe('launcher host wiring', () => {
       new URL('../../../../../go-go-os-frontend/apps/apps-browser/src/launcher/module.tsx', import.meta.url),
       new URL('../../../../../go-go-os-frontend/apps/hypercard-tools/src/launcher/module.tsx', import.meta.url),
       new URL('../app/kanbanVmModule.tsx', import.meta.url),
+      new URL('../app/hypercardReplModule.tsx', import.meta.url),
+      new URL('../app/jsReplModule.tsx', import.meta.url),
       new URL('../app/runtimeDebugModule.tsx', import.meta.url),
-      new URL('../../../../../go-go-os-frontend/packages/rich-widgets/src/launcher/modules.tsx', import.meta.url),
+      new URL('../app/taskManagerModule.tsx', import.meta.url),
+      new URL('../../../../../go-go-os-frontend/packages/os-widgets/src/launcher/modules.tsx', import.meta.url),
       new URL('../../../../../go-go-app-sqlite/apps/sqlite/src/launcher/module.tsx', import.meta.url),
     ];
     const moduleSources = moduleUrls
@@ -209,7 +204,10 @@ describe('launcher host wiring', () => {
       'Apps Browser Module',
       'HyperCard Tools Module',
       'Kanban VM Module',
+      'HyperCard REPL Module',
+      'JavaScript REPL Module',
       'Runtime Debug Module',
+      'Task Manager Module',
       'Rich Widgets Module',
       'SQLite Module',
     ];
@@ -225,24 +223,16 @@ describe('launcher host wiring', () => {
       const ctx = createHostContext();
       const payload = module.buildLaunchWindow(ctx, 'icon');
       expect(payload.id).toContain(module.manifest.id);
-      if (
-        module.manifest.id === 'inventory' ||
-        module.manifest.id === 'sqlite' ||
-        module.manifest.id === 'apps-browser' ||
-        module.manifest.id === 'arc-agi-player' ||
-        module.manifest.id === 'kanban-vm' ||
-        module.manifest.id === 'hypercard-runtime-debug' ||
-        module.manifest.id === 'rich-widgets'
-      ) {
+      if (payload.content.kind === 'app') {
         expect(payload.content.kind).toBe('app');
         const parsed = parseAppKey(payload.content.appKey ?? '');
         expect(parsed).not.toBeNull();
         expect(parsed?.appId).toBe(module.manifest.id);
       } else {
-        expect(payload.content.kind).toBe('card');
-        expect(payload.content.card?.stackId).toBeTruthy();
+        expect(payload.content.kind).toBe('surface');
+        expect(payload.content.surface?.bundleId).toBeTruthy();
         if (module.manifest.id === 'hypercard-tools') {
-          expect(payload.content.card?.stackId).toBe('hypercardToolsUiDslDemo');
+          expect(payload.content.surface?.bundleId).toBe('hypercardToolsUiDslDemo');
         }
       }
 
@@ -510,10 +500,10 @@ describe('launcher host wiring', () => {
 
   it('removes legacy standalone desktop shell boot wiring from app roots', () => {
     const appRootSources = [
-      readFileSync(new URL('../../../../../go-go-app-inventory/apps/inventory/src/App.tsx', import.meta.url), 'utf8'),
-      readFileSync(new URL('../../../../../go-go-os-frontend/apps/todo/src/App.tsx', import.meta.url), 'utf8'),
-      readFileSync(new URL('../../../../../go-go-os-frontend/apps/crm/src/App.tsx', import.meta.url), 'utf8'),
-      readFileSync(new URL('../../../../../go-go-os-frontend/apps/book-tracker-debug/src/App.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../workspace-links/go-go-app-inventory/apps/inventory/src/App.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../workspace-links/go-go-os-frontend/apps/todo/src/App.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../workspace-links/go-go-os-frontend/apps/crm/src/App.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('../../../../workspace-links/go-go-os-frontend/apps/book-tracker-debug/src/App.tsx', import.meta.url), 'utf8'),
     ];
 
     for (const source of appRootSources) {

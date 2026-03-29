@@ -382,7 +382,7 @@ The `ui` helper is injected into the QuickJS sandbox at bootstrap time and is al
 A stack is a collection of cards bundled with metadata. On the TypeScript side, stacks are defined as `CardStackDefinition` objects:
 
 ```ts
-import type { CardStackDefinition } from '@hypercard/engine';
+import type { CardStackDefinition } from '@go-go-golems/os-core';
 import bundleCode from './pluginBundle.vm.js?raw';
 
 export const MY_STACK: CardStackDefinition = {
@@ -883,7 +883,7 @@ The launcher includes several debug tools accessible through the inventory modul
 Cards can be tested without the full launcher by using the `QuickJSCardRuntimeService` directly:
 
 ```ts
-import { QuickJSCardRuntimeService } from '@hypercard/hypercard-runtime';
+import { QuickJSCardRuntimeService } from '@go-go-golems/os-scripting';
 
 const service = new QuickJSCardRuntimeService();
 

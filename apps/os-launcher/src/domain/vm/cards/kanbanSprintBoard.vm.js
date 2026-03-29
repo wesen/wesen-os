@@ -23,7 +23,7 @@ summary highlight strip above the board.
 
 const sprintBoard = boardById('kanbanSprintBoard');
 
-defineCard(
+defineRuntimeSurface(
   sprintBoard.id,
   ({ widgets }) => ({
     render({ state }) {

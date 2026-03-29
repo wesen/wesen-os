@@ -1,0 +1,11 @@
+# Workspace Topology Scan
+
+timestamp=2026-03-05T15:02:01-05:00
+repo_root=/home/manuel/workspaces/2026-03-02
+
+## Top-level repos
+/home/manuel/workspaces/2026-03-02/deliver-mento-1
+/home/manuel/workspaces/2026-03-02/fix-codex-sessions
+/home/manuel/workspaces/2026-03-02/os-openai-app-server
+
+## go.work
