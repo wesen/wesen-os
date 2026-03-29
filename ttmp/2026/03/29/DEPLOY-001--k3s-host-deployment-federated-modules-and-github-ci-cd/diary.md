@@ -608,6 +608,121 @@ git@github.com:wesen/wesen-os
   - preview: `ghcr.io/wesen/wesen-os:branch-<sanitized-branch>-<short-sha>`
   - default-branch mutable tag later: `ghcr.io/wesen/wesen-os:main`
 
+## 2026-03-29: Task 7, Host Runtime Config Audit
+
+I closed out Phase 1 by documenting the launcher’s actual runtime configuration contract. The important outcome here is that the host is not primarily an “env-var configured app”; its mandatory startup input is profile bootstrap configuration, and the cleanest production path is to provide that through an explicit mounted config file plus flags.
+
+This step matters because K3s manifests and GHCR workflows need a stable answer to “what config must exist at runtime?” Without that, the next deployment work would be guessing which values belong in environment variables, which belong in CLI flags, and which are only development conveniences.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 4)
+
+**Assistant interpretation:** Keep advancing the ticket in committed slices and preserve enough detail in the diary to reconstruct the implementation path later.
+
+**Inferred user intent:** Make deployment work reproducible and reviewable, especially around configuration contracts that are easy to misremember.
+
+**Commit (code):** `0977670` — `Audit host runtime config`
+
+### What I did
+
+- Added ticket script:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/07-audit-host-runtime-config.sh`
+- Added generated audit artifact:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/07-host-runtime-config-audit.md`
+- Collected launcher help output from:
+  - `go run ./cmd/wesen-os-launcher wesen-os-launcher --help`
+- Grepped repo code for direct env-var usage and profile-bootstrap env references.
+- Collapsed the results into:
+  - required runtime inputs for the first container
+  - optional-but-important flags
+  - direct env vars
+  - frontend/dev-only env vars
+  - deployment interpretation for K3s
+
+### Why
+
+- The next deployment steps need a crisp boundary between:
+  - required runtime configuration
+  - optional tuning knobs
+  - local-development-only environment variables
+- The smoke-task debugging already proved that profile bootstrap config is the real required runtime input.
+- It is better to encode that lesson now than to rediscover it while debugging a failing K3s deployment later.
+
+### What worked
+
+- The audit confirmed the key operational conclusion:
+  - there is no large required env-var surface for the launcher binary itself
+  - the main required runtime input is profile registry configuration
+- The audit also separated development-only frontend env vars from real host runtime inputs:
+  - `INVENTORY_CHAT_BACKEND`
+  - `GO_GO_OS_FRONTEND_RESOLUTION`
+- The final report gives a clean first-container contract:
+  - `--addr=:8091`
+  - `--arc-enabled=false`
+  - `--profile default`
+  - `--profile-registries /config/profiles.runtime.yaml`
+
+### What didn't work
+
+- Nothing failed operationally in this step; the complexity was interpretive.
+- The only place I was deliberately conservative was AI provider credentials and inference settings. The help output exposes many related flags, but this audit does not overclaim a complete env-variable contract for all provider integrations.
+
+### What I learned
+
+- The launcher’s runtime contract is better described as “flags plus profile bootstrap” than “environment variables.”
+- `PINOCCHIO_PROFILE` and `PINOCCHIO_PROFILE_REGISTRIES` matter because of the profile bootstrap layer, even though they are not directly read in the same obvious way as `PINOCCHIO_WEBCHAT_DEBUG`.
+- The first production container should keep using explicit mounted configuration rather than relying on workstation defaults under `~/.config/pinocchio/profiles.yaml`.
+
+### What was tricky to build
+
+- The tricky part was drawing the line between direct env-var reads, inherited config behavior from libraries, and plain CLI flags. A naive grep for `os.Getenv` would have found only a tiny piece of the real contract and would have missed the actual startup requirement: `--profile-registries` or its profile-bootstrap equivalent.
+- The other subtlety was not to confuse frontend dev env vars with backend production config. `INVENTORY_CHAT_BACKEND` and `GO_GO_OS_FRONTEND_RESOLUTION` matter for Vite and published-mode testing, but they are not part of the runtime contract for the deployed launcher binary.
+
+### What warrants a second pair of eyes
+
+- Whether we want to standardize on flags-only container configuration or allow selected env-to-flag wiring in the future K3s manifests.
+- Whether AI provider credentials should be normalized into a clearer deployment contract before production rollout.
+- Whether ARC config should remain entirely flag-driven or move behind a separate config surface if/when ARC becomes part of production.
+
+### What should be done in the future
+
+- Reuse this runtime-config summary when writing:
+  - the GHCR workflow
+  - K3s `Deployment` and `ConfigMap`
+  - staging smoke/runbook docs
+- Decide how profile registry files are generated or mounted per environment.
+- Revisit the config surface once production secrets and persistence are introduced.
+
+### Code review instructions
+
+- Start with:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/07-audit-host-runtime-config.sh`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/07-host-runtime-config-audit.md`
+- Validate with:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/07-audit-host-runtime-config.sh`
+- Spot-check the conclusions against:
+  - `cmd/wesen-os-launcher/main.go`
+  - `cmd/wesen-os-launcher/profile_bootstrap.go`
+
+### Technical details
+
+- Direct repo grep highlights:
+  - `PINOCCHIO_WEBCHAT_DEBUG`
+  - `PINOCCHIO_PROFILE`
+  - `PINOCCHIO_PROFILE_REGISTRIES`
+  - `INVENTORY_CHAT_BACKEND`
+  - `GO_GO_OS_FRONTEND_RESOLUTION`
+- Operational first-container interpretation:
+
+```text
+wesen-os-launcher wesen-os-launcher \
+  --addr=:8091 \
+  --arc-enabled=false \
+  --profile default \
+  --profile-registries /config/profiles.runtime.yaml
+```
+
 ## 2026-03-29: reMarkable Delivery
 
 After the ticket content was written, I bundled the main deliverables into a single PDF for reMarkable delivery:

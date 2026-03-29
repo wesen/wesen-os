@@ -40,7 +40,7 @@
   - build image
   - run image
   - probe health or entry page
-- [ ] Document the runtime environment variables required by the host.
+- [x] Document the runtime environment variables required by the host.
 
 ## Phase 2: Publish The Host Image To GHCR
 
