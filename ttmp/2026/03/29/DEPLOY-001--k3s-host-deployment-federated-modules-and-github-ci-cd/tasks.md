@@ -200,6 +200,11 @@
 ## Phase 7: Teach The Host To Load Remotes Dynamically
 
 - [ ] Add a remote registry loader to `apps/os-launcher`.
+- [x] Add an explicit federation-registry shape to `apps/os-launcher` for the local bootstrap path.
+- [x] Add a default local registry entry for `inventory`:
+  - `mode: local-package`
+  - `contractExport: @go-go-golems/inventory/host`
+- [x] Keep unsupported registry modes fail-fast in the local resolver instead of silently ignoring them.
 - [ ] Decide remote registry source:
   - static JSON shipped with the host
   - environment-generated JSON

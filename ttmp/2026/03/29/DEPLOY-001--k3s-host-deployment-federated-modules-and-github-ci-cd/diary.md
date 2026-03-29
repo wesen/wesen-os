@@ -2419,3 +2419,75 @@ The next real step should stop being about TypeScript packaging shape and start 
 - define the concrete remote registry format the host will read
 - add a host-side loader interface that can return local contracts now and remote contracts later
 - then wire the first `inventory` remote implementation path on top of that interface
+
+## 2026-03-29: Third Federation Code Slice, Introduce The Host Registry Shape
+
+With the launcher-side seam centralized, the next step was to stop treating the list of local contracts as an unstructured constant and instead give the host an explicit registry shape.
+
+I added:
+
+- `apps/os-launcher/src/app/federationRegistry.ts`
+
+This defines:
+
+- `FederatedRemoteMode`
+- `FederatedRemoteRegistryEntry`
+- `FederatedRemoteRegistry`
+- `DEFAULT_LOCAL_FEDERATION_REGISTRY`
+
+### Why this matters
+
+Before this step, the host could list local contracts, but there was no configuration model describing *why* a contract was present or how it was meant to be loaded.
+
+Now the launcher has an explicit registry entry for `inventory`:
+
+- `remoteId: 'inventory'`
+- `mode: 'local-package'`
+- `enabled: true`
+- `contractExport: '@go-go-golems/inventory/host'`
+
+That is still static and local, but it is much closer to the future runtime story. The only thing missing is the `remote-manifest` branch implementation.
+
+### Resolver behavior
+
+I updated `localFederatedAppContracts.ts` so it no longer assumes “all known contracts are always active.” Instead, it resolves contracts from `DEFAULT_LOCAL_FEDERATION_REGISTRY`.
+
+Important behavior:
+
+- disabled entries are skipped
+- unknown local remote ids fail loudly
+- non-local modes also fail loudly in the local resolver
+
+That last point matters. Silent fallback would make the eventual remote-manifest migration much harder to debug.
+
+### Validation
+
+Commands run:
+
+- `npm run typecheck -w apps/os-launcher`
+- `npm run test -w apps/os-launcher -- --run launcherHost runtimeDebugModule registerAppsBrowserDocs`
+
+Both passed.
+
+### Ticket helper added
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/28-audit-federation-registry-shape.sh`
+
+This helper prints both the new registry definition and the current local resolver so later docs can show the exact “registry exists, but remote-manifest mode is not implemented yet” state.
+
+### State after this slice
+
+The host now has three increasingly better layers:
+
+1. remote app package exposes one host contract:
+   - `@go-go-golems/inventory/host`
+2. launcher has one local seam for package touchpoints:
+   - `localFederatedAppContracts.ts`
+3. launcher has an explicit registry/config shape:
+   - `federationRegistry.ts`
+
+That is enough structure to start the next real step:
+
+- implement a remote-manifest loader path behind the same registry model
+
+without rewriting the host again from scratch.
