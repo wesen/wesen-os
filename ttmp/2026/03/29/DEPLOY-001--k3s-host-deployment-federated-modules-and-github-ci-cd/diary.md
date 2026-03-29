@@ -1504,3 +1504,59 @@ An initial `remarquee cloud ls /ai/2026/03/29/DEPLOY-001 --long --non-interactiv
 - `/ai/2026/03/29/DEPLOY-001/`
 
 That was a path lookup quirk, not an upload failure.
+
+## 2026-03-29: Host Publish Workflow Registration Gap
+
+After moving the canonical cluster manifests into the Hetzner K3s repo, the next critical path was the first real host image publish. Before trying to trigger that workflow, I checked whether GitHub had actually registered the workflow on the `wesen/wesen-os` repository.
+
+### Why this check was necessary
+
+GitHub Actions only exposes `workflow_dispatch` and file-based workflow lookups for workflows that exist on the repository’s default branch. A workflow file that only exists on a local branch or an unmerged feature branch does not count as “registered” for dispatch purposes.
+
+We already hit that exact failure mode earlier on the package-publishing side, so it was worth checking explicitly instead of assuming the workflow had landed.
+
+### Commands used
+
+- `gh workflow list --repo wesen/wesen-os`
+- `gh run list --repo wesen/wesen-os --workflow publish-host-image.yml --limit 5`
+- `git ls-remote --heads origin`
+
+I also added a ticket helper for this exact check:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/14-check-host-workflow-registration.sh`
+
+and saved the result in:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/14-host-workflow-registration-check.md`
+
+### Result
+
+The workflow is **not** registered on GitHub yet.
+
+- `gh workflow list` returned only:
+  - `verify-launcher-canary-consumption`
+- `gh run list --workflow publish-host-image.yml` returned:
+  - `HTTP 404: Not Found (https://api.github.com/repos/wesen/wesen-os/actions/workflows/publish-host-image.yml)`
+
+### What this means
+
+The local/source-repo implementation work is ahead of `wesen/wesen-os` `main`. The publish workflow exists in the current branch, but GitHub cannot run it yet because the branch has not been merged.
+
+That makes the next execution sequence explicit:
+
+1. push the current `wesen-os` deployment branch
+2. open a PR against `wesen/wesen-os`
+3. merge that PR so GitHub registers `publish-host-image.yml`
+4. run the first real host image publish
+5. verify public pullability of the resulting GHCR image
+6. pin the Hetzner K3s deployment to an immutable image ref
+
+### What was tricky
+
+The first version of the helper script wrote an incomplete artifact because `gh` error output was going to stderr while the artifact capture redirected only stdout. I fixed the helper to capture both streams, then reran it. I also briefly mistyped the ticket path on the second run and reran that cleanly. Those were tooling mistakes, not architecture issues, but they are worth recording so the artifact trail makes sense later.
+
+### What should happen next
+
+- push the current `task/os-openai-app-server` branch
+- open the `wesen-os` PR for the host deployment work
+- create a corresponding branch in the Hetzner K3s repo so the canonical GitOps package and Argo `Application` are reviewable there too
