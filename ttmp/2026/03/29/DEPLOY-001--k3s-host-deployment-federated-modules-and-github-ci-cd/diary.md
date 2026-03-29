@@ -845,6 +845,130 @@ checkout recursive
   - immutable: `ghcr.io/wesen/wesen-os:sha-<sha>`
   - mutable on default branch: `ghcr.io/wesen/wesen-os:main`
 
+## 2026-03-29: Task 9, Initial K3s Host Manifests
+
+After the GHCR workflow, the next concrete deployment step was to put the first Kubernetes shape into the repo instead of leaving K3s as a future concept. I chose a modest Kustomize base under `deploy/k8s/wesen-os/`, which is enough structure for staging/prod overlays later without paying Helm complexity up front.
+
+This is the first point where the deployment story becomes visible as actual cluster resources: a `Deployment`, `Service`, `Ingress`, runtime `ConfigMap`, and placeholder image-pull secret contract.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 4)
+
+**Assistant interpretation:** Keep implementing the deployment plan slice by slice, with commits and diary entries that make the path reviewable later.
+
+**Inferred user intent:** Turn the deployment ticket into a real runnable stack, not just build/publish automation.
+
+**Commit (code):** `2d77ce6` — `Add initial K3s host manifests`
+
+### What I did
+
+- Added Kustomize deployment bundle:
+  - `deploy/k8s/wesen-os/kustomization.yaml`
+  - `deploy/k8s/wesen-os/configmap.yaml`
+  - `deploy/k8s/wesen-os/deployment.yaml`
+  - `deploy/k8s/wesen-os/service.yaml`
+  - `deploy/k8s/wesen-os/ingress.yaml`
+  - `deploy/k8s/wesen-os/secret.example.yaml`
+- Added ticket validation script:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/09-render-k8s-host-manifests.sh`
+- Added generated render artifact:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/09-k8s-host-manifest-render.md`
+- Configured the deployment to:
+  - use `ghcr.io/wesen/wesen-os:main` for now
+  - mount `/config/profiles.runtime.yaml` from a ConfigMap
+  - disable ARC explicitly
+  - expose port `8091`
+  - mount writable `/app/data` via `emptyDir`
+  - use `ghcr-creds` as the image pull secret
+- Added probes:
+  - readiness: `GET /api/os/apps`
+  - startup: `GET /api/os/apps`
+  - liveness: `GET /`
+- Validated the bundle with:
+  - `kubectl kustomize deploy/k8s/wesen-os`
+
+### Why
+
+- The GHCR workflow alone does not define how the host runs in-cluster.
+- The runtime-config audit already identified the right initial container contract:
+  - explicit profile registry file
+  - ARC disabled
+  - port `8091`
+- Kustomize is a good fit for the current scope because we need composition and future overlays, but not full templating complexity yet.
+
+### What worked
+
+- `kubectl kustomize` rendered the full bundle successfully.
+- The generated manifests line up with earlier decisions:
+  - image repo/taging policy
+  - mounted profile registry config
+  - digest-oriented future deployment plan
+  - GHCR pull secret contract
+- The deployment now has a concrete readiness/liveness strategy rather than a hand-wavy “add health checks later.”
+
+### What didn't work
+
+- Nothing failed in rendering.
+- The unresolved operational gap is still external:
+  - the manifests assume an existing `ghcr-creds` secret, but we have not yet proven real cluster auth against GHCR
+- The current `ConfigMap` profile registry is only a starter example; it is not yet an environment-specific managed config source.
+
+### What I learned
+
+- The host config decision becomes much clearer once written into manifests: profile bootstrap belongs in a mounted config file, not hidden user-home defaults.
+- A single Kustomize base is enough to express the first deployment shape while still leaving room for future staging/prod overlays.
+- Using `emptyDir` for `/app/data` is acceptable for the first cluster bundle, but it makes the persistence tradeoff explicit rather than accidental.
+
+### What was tricky to build
+
+- The main design tension was how much future infrastructure to bake in now. It would have been easy to overbuild with Helm, multi-env overlays, or secret managers before the first cluster shape existed. I kept the base small and explicit: one namespace, one deployment, one config source, one pull-secret contract.
+- Another subtlety was choosing probe targets. The launcher does not expose a dedicated `/healthz`, so I used `GET /api/os/apps` for readiness/startup because it exercises backend module registration, while `GET /` is sufficient for liveness because it confirms the embedded shell is still being served.
+
+### What warrants a second pair of eyes
+
+- Whether `imagePullPolicy: IfNotPresent` is the right default before we switch manifests to digests.
+- Whether the placeholder `Ingress` host and Traefik annotation match the actual cluster ingress setup we intend to use.
+- Whether `/app/data` should move to a persistent volume sooner rather than later for staging.
+
+### What should be done in the future
+
+- Add a deployment workflow that applies this Kustomize bundle.
+- Replace `:main` in real deployments with image digests after the first GHCR publish.
+- Decide how environment-specific profile registries are authored and mounted.
+- Revisit persistence once staging expectations are clearer.
+
+### Code review instructions
+
+- Start with:
+  - `deploy/k8s/wesen-os/kustomization.yaml`
+  - `deploy/k8s/wesen-os/deployment.yaml`
+  - `deploy/k8s/wesen-os/configmap.yaml`
+  - `deploy/k8s/wesen-os/service.yaml`
+  - `deploy/k8s/wesen-os/ingress.yaml`
+  - `deploy/k8s/wesen-os/secret.example.yaml`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/09-render-k8s-host-manifests.sh`
+- Validate with:
+  - `kubectl kustomize deploy/k8s/wesen-os`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/09-render-k8s-host-manifests.sh`
+
+### Technical details
+
+- First cluster runtime contract embedded in the manifest args:
+
+```text
+--addr=:8091
+--arc-enabled=false
+--profile=default
+--profile-registries=/config/profiles.runtime.yaml
+```
+
+- Current placeholder ingress host:
+  - `wesen-os.example.com`
+
+- Current placeholder pull secret:
+  - `ghcr-creds`
+
 ## 2026-03-29: reMarkable Delivery
 
 After the ticket content was written, I bundled the main deliverables into a single PDF for reMarkable delivery:

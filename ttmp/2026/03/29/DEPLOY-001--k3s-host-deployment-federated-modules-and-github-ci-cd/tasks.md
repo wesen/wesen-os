@@ -62,19 +62,19 @@
 
 ## Phase 3: Define K3s Deployment For The Host
 
-- [ ] Create a deployment directory:
+- [x] Create a deployment directory:
   - recommended: `deploy/k8s/wesen-os/`
-- [ ] Add:
+- [x] Add:
   - `deployment.yaml`
   - `service.yaml`
   - `ingress.yaml`
   - `configmap.yaml`
   - `secret.example.yaml` or external secret wiring docs
-- [ ] Decide whether to use raw manifests, Kustomize, or Helm:
+- [x] Decide whether to use raw manifests, Kustomize, or Helm:
   - recommended: Kustomize if the setup stays modest
   - Helm if cross-environment templating becomes substantial
-- [ ] Add health endpoints or other probe targets for readiness/liveness.
-- [ ] Decide where host config lives:
+- [x] Add health endpoints or other probe targets for readiness/liveness.
+- [x] Decide where host config lives:
   - environment variables
   - config file mounted from ConfigMap
   - generated remote registry JSON
