@@ -1834,3 +1834,99 @@ This step closes the gap that the first inventory consumer run exposed. The earl
   - `npm error workspace @go-go-golems/os-confirm@0.1.0`
 - Exact local shell mismatch while validating the workflow guard:
   - `zsh:read:1: bad option: -a`
+
+## Step 14: Add Published-Mode Resolution To `wesen-os` Launcher
+
+This step starts the host-side migration in `wesen-os` itself. Inventory already proved that a downstream app repo can install and typecheck against published platform packages, but the host repo was still hard-wired to source-linked platform resolution. The goal here is not to flip the whole host to published dependencies in one shot. The goal is to add a real published-mode path for `apps/os-launcher` so the host can be validated without `workspace-links/go-go-os-frontend` aliases for the platform layer.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue. keep a detailed diary as you work, committting at appropriate intervals"
+
+**Assistant interpretation:** Keep moving into the next migration phase instead of stopping at the inventory consumer proof, and record the host-side migration work with the same level of detail.
+
+**Inferred user intent:** Progress from "published platform packages exist and one downstream app repo can consume them" to "the main host repo has a concrete published-mode path too."
+
+### What I did
+
+- Added `typecheck:published` and `build:published` scripts to `apps/os-launcher/package.json`.
+- Added `apps/os-launcher/tsconfig.published.json` so the launcher has a no-`workspace-links/go-go-os-frontend` TypeScript mode for platform packages.
+- Updated `apps/os-launcher/vite.config.ts` to support `GO_GO_OS_FRONTEND_RESOLUTION=published`.
+- In published mode:
+  - workspace package alias collection now skips the platform package set
+  - platform package resolution is rebuilt from the installed package manifests in `apps/os-launcher/node_modules/@go-go-golems/*`
+  - Vite aliases are derived from the installed package `exports` map rather than from a naive wildcard filesystem rewrite
+- Added explicit TypeScript published-mode mappings for the platform subpaths the launcher currently needs from `os-core`, including:
+  - `@go-go-golems/os-core/desktop-core`
+  - `@go-go-golems/os-core/desktop-react`
+- Kept the launcher shims for non-platform app launchers (`arc-agi-player` and `sqlite`) in the published-mode tsconfig, because those are outside the current platform-package publish scope.
+
+### Why
+
+- The inventory proof alone is not enough. The real host still needs its own path away from direct platform source aliasing.
+- `apps/os-launcher` is the narrowest useful host checkpoint because it is where the platform packages, app launchers, runtime registration, and host build all meet.
+- The launcher Vite config was previously built around workspace alias discovery. Published mode needs a different contract: platform packages should resolve through the launcher app’s installed package set, not through linked-repo source trees.
+
+### What worked
+
+- `npm run typecheck:published -w apps/os-launcher` now passes.
+- `npm run build:published -w apps/os-launcher` now passes.
+- The final published-mode Vite build resolved platform packages via the launcher’s installed package manifests and completed successfully.
+
+### What didn't work
+
+- The first published-mode typecheck attempt failed because linked app packages like inventory were still being pulled in as source, and from that source path TypeScript could not resolve platform packages such as `@go-go-golems/os-shell` and `@go-go-golems/os-core`.
+- The first published-mode build attempt failed because a naive wildcard Vite alias turned package subpaths into raw filesystem guesses. The exact failure was:
+  - `Could not load .../apps/os-launcher/node_modules/@go-go-golems/os-core/theme`
+- A second published-mode typecheck/build attempt still exposed subpath-resolution gaps for `@go-go-golems/os-core/desktop-core` and `@go-go-golems/os-core/desktop-react`.
+
+### What I learned
+
+- Host-side published mode cannot just "stop aliasing platform packages." As long as the launcher still consumes linked app package source, those app sources also need a stable way to resolve the platform layer.
+- The right Vite strategy in published mode is export-aware aliasing from the installed package manifests, not hand-written wildcard path rewrites.
+- The launcher’s installed `node_modules/@go-go-golems/*` package set is the right anchor for published-mode resolution because in local workspace mode it points at symlinked packages, and in a future canary/stable install it will point at real downloaded artifacts with the same package contract.
+
+### What was tricky to build
+
+- The launcher imports linked app packages like inventory, and inventory imports platform packages. That means published-mode resolution has to work not just for launcher source files, but for app source files reached transitively through launcher imports.
+- Vite aliasing and TypeScript path mapping do not fail in the same way. Vite needed export-aware alias expansion from installed package manifests, while TypeScript needed a few explicit subpath mappings for the platform entrypoints the launcher host actually touches.
+- The local workspace layout is asymmetric:
+  - `apps/os-launcher/node_modules/@go-go-golems/*` had the platform symlinks
+  - linked app repos like inventory did not have a complete matching local platform install state
+  That asymmetry is exactly why host-side published mode has to anchor resolution at the launcher app boundary instead of trusting transitive linked repo `node_modules`.
+
+### What warrants a second pair of eyes
+
+- Review the published-mode resolution logic in:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/vite.config.ts`
+- Review whether the TypeScript published-mode subpath mappings are minimal and correct in:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/tsconfig.published.json`
+- Review whether `build:published` and `typecheck:published` should eventually be lifted to root-level scripts once the host migration is more complete:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/package.json`
+
+### What should be done in the future
+
+- Add an Actions workflow for `wesen-os` that rewrites platform dependencies to a selected canary version and runs the launcher published-mode checks in CI.
+- Decide which linked app packages should remain source-linked in the host versus which should eventually move to versioned package consumption too.
+- Expand the host-side published-mode proof beyond `typecheck` and `build` into a meaningful runtime or smoke test.
+- Record how published-mode launcher resolution should interact with any future app-package publishing or federation work.
+
+### Code review instructions
+
+- Start with the launcher published-mode entry points:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/package.json`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/tsconfig.published.json`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/vite.config.ts`
+- Validate with:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os && npm run typecheck:published -w apps/os-launcher`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os && npm run build:published -w apps/os-launcher`
+
+### Technical details
+
+- Exact first published-mode typecheck failure:
+  - linked inventory source could not resolve `@go-go-golems/os-shell` / `@go-go-golems/os-core`
+- Exact first published-mode build failure:
+  - `Could not load /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/node_modules/@go-go-golems/os-core/theme`
+- Successful final validations:
+  - `npm run typecheck:published -w apps/os-launcher`
+  - `npm run build:published -w apps/os-launcher`

@@ -8,6 +8,7 @@ const linkedReposRoot = path.resolve(workspaceRoot, 'workspace-links');
 const inventoryBackendTarget = process.env.INVENTORY_CHAT_BACKEND ?? 'http://127.0.0.1:8091';
 const hasArcAgiPlayerRepo = existsSync(path.resolve(linkedReposRoot, 'go-go-app-arc-agi-3/apps/arc-agi-player/src/launcher/public.ts'));
 const hasSQLiteRepo = existsSync(path.resolve(linkedReposRoot, 'go-go-app-sqlite/apps/sqlite/src/launcher/public.ts'));
+const frontendResolutionMode = resolveFrontendResolutionMode();
 const workspacePackageExcludes = [
   '@go-go-golems/apps-browser',
   '@go-go-golems/book-tracker-debug',
@@ -23,6 +24,73 @@ const workspacePackageExcludes = [
 
 type PackageExports = string | Record<string, string>;
 type AliasEntry = { find: RegExp; replacement: string };
+type FrontendResolutionMode = 'workspace' | 'published';
+
+const publishedPlatformPackageNames = [
+  '@go-go-golems/os-chat',
+  '@go-go-golems/os-confirm',
+  '@go-go-golems/os-core',
+  '@go-go-golems/os-kanban',
+  '@go-go-golems/os-repl',
+  '@go-go-golems/os-scripting',
+  '@go-go-golems/os-shell',
+  '@go-go-golems/os-ui-cards',
+  '@go-go-golems/os-widgets',
+];
+
+const publishedPlatformPackages = new Set(publishedPlatformPackageNames);
+
+function resolveFrontendResolutionMode(): FrontendResolutionMode {
+  const configuredMode = process.env.GO_GO_OS_FRONTEND_RESOLUTION;
+  if (configuredMode === 'workspace' || configuredMode === 'published') {
+    return configuredMode;
+  }
+
+  const workspaceFrontendRoot = path.resolve(linkedReposRoot, 'go-go-os-frontend');
+  return existsSync(workspaceFrontendRoot) ? 'workspace' : 'published';
+}
+
+function createPublishedPackageAliases(): AliasEntry[] {
+  const aliases: AliasEntry[] = [];
+
+  for (const packageName of publishedPlatformPackageNames) {
+    const packageDir = path.resolve(__dirname, 'node_modules', ...packageName.split('/'));
+    const packageJsonPath = path.join(packageDir, 'package.json');
+    if (!existsSync(packageJsonPath)) {
+      continue;
+    }
+
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {
+      exports?: PackageExports;
+    };
+    const packageExports = packageJson.exports;
+
+    if (typeof packageExports === 'string') {
+      aliases.push({
+        find: new RegExp(`^${packageName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`),
+        replacement: path.resolve(packageDir, packageExports),
+      });
+      continue;
+    }
+    if (!packageExports || typeof packageExports !== 'object') {
+      continue;
+    }
+
+    for (const [exportKey, exportTarget] of Object.entries(packageExports)) {
+      if (typeof exportTarget !== 'string') {
+        continue;
+      }
+      const aliasKey = exportKey === '.' ? packageName : `${packageName}/${exportKey.replace(/^\.\//, '')}`;
+      aliases.push({
+        find: new RegExp(`^${aliasKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`),
+        replacement: path.resolve(packageDir, exportTarget),
+      });
+    }
+  }
+
+  aliases.sort((a, b) => String(b.find).length - String(a.find).length);
+  return aliases;
+}
 
 function collectWorkspacePackageJsonPaths(): string[] {
   const packageJsonPaths: string[] = [];
@@ -71,6 +139,9 @@ function collectWorkspacePackageAliases(): AliasEntry[] {
     if (!packageName.startsWith('@go-go-golems/')) {
       continue;
     }
+    if (frontendResolutionMode === 'published' && publishedPlatformPackages.has(packageName)) {
+      continue;
+    }
 
     const packageExports = packageJson.exports;
     if (typeof packageExports === 'string') {
@@ -101,6 +172,7 @@ function collectWorkspacePackageAliases(): AliasEntry[] {
 }
 
 const workspacePackageAliases = collectWorkspacePackageAliases();
+const publishedPackageAliases = frontendResolutionMode === 'published' ? createPublishedPackageAliases() : [];
 
 export default defineConfig({
   plugins: [react()],
@@ -130,6 +202,7 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom'],
     alias: [
+      ...publishedPackageAliases,
       ...workspacePackageAliases,
       {
         find: /^@hypercard\/arc-agi-player\/launcher$/,
