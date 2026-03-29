@@ -693,3 +693,86 @@ The answer is now yes for the first canary set.
   - `@go-go-golems/os-chat`
   - `@go-go-golems/os-repl`
   - `@go-go-golems/os-scripting`
+
+## Step 9: Prove Inventory Against Packed Platform Packages
+
+This step closes the first real downstream-consumer proof. The inventory app is the right target because it is a true external consumer of the platform packages rather than the package repo itself, and it imports enough of the runtime stack to make the validation meaningful.
+
+The stable code changes here are in the inventory repo itself:
+
+- declare the platform packages that inventory actually imports
+- add a published-mode TypeScript config with no workspace path aliases
+- make Vite aliasing switchable between workspace-source mode and published-package mode
+
+### What I did
+
+- Added missing direct platform dependencies to `workspace-links/go-go-app-inventory/apps/inventory/package.json`:
+  - `@go-go-golems/os-core`
+  - `@go-go-golems/os-shell`
+  - `@go-go-golems/os-confirm`
+- Added `typecheck:published` to `workspace-links/go-go-app-inventory/apps/inventory/package.json`.
+- Added `workspace-links/go-go-app-inventory/apps/inventory/tsconfig.published.json` with no linked-workspace `paths` or project `references`.
+- Updated `workspace-links/go-go-app-inventory/tooling/vite/createHypercardViteConfig.ts` so frontend resolution now has two modes:
+  - `workspace` mode for linked local development
+  - `published` mode for package-consumer resolution
+- Verified inventory against packed platform tarballs in a temp fixture by:
+  - building the v1 platform dist artifacts in `go-go-os-frontend`
+  - installing inventory’s normal dependencies in the fixture
+  - layering packed platform tarballs into the fixture
+  - running published-mode typecheck
+  - running published-mode Vite build
+
+### Why
+
+- The migration needed one proof that a real downstream app can stop resolving `../../../go-go-os-frontend/packages/*/src` and still build against packed platform artifacts.
+- Inventory was also surfacing a real package-contract problem: it imported `os-core`, `os-shell`, and `os-confirm` without declaring them.
+
+### What worked
+
+- Inventory published-mode typecheck passed in the temp fixture:
+  - `npm run typecheck:published`
+- Inventory published-mode Vite build passed in the temp fixture:
+  - `GO_GO_OS_FRONTEND_RESOLUTION=published npm exec -- vite build`
+- That fixture used packed platform tarballs rather than any source-path aliases from `go-go-os-frontend`.
+
+### What didn't work
+
+- Fresh-fixture npm install automation is still flaky in a way that is not specific to the publish migration itself:
+  - `codemirror@6.0.2` tries to run `cm-buildhelper` during some fresh npm installs
+  - npm Arborist is also unstable when layering multiple interdependent local tarballs in one step
+- I attempted to stabilize that as a checked-in smoke harness, but it remained unreliable enough that I dropped the wrapper from the committed surface instead of committing a broken script.
+
+### What I learned
+
+- The consumer-side package assumptions were not fully honest before this step. Inventory’s manifest was missing three platform dependencies that source-path aliasing had been hiding.
+- The published-mode split is real now for inventory:
+  - TypeScript can run with no workspace path aliases
+  - Vite can resolve either from linked source or installed packages based on mode
+- The package graph itself is good enough for a real downstream app build; the remaining friction is around fresh-fixture npm automation stability.
+
+### What warrants a second pair of eyes
+
+- The newly declared inventory dependencies (`os-core`, `os-shell`, `os-confirm`) should be reviewed as a package-contract correction rather than a migration-only workaround.
+- The Vite resolution mode switch in `createHypercardViteConfig.ts` is intentionally minimal; reviewers should confirm that the default auto-detection remains correct for local engineers who still use the linked frontend repo.
+
+### What should be done in the future
+
+- Stabilize an automated downstream packed-platform smoke script once the fresh-fixture npm install path is less flaky.
+- Reuse the same published-mode resolution pattern in `wesen-os` and any other app repos that still assume `go-go-os-frontend/packages/*/src`.
+
+### Code review instructions
+
+- Start with:
+  - `workspace-links/go-go-app-inventory/apps/inventory/package.json`
+  - `workspace-links/go-go-app-inventory/apps/inventory/tsconfig.published.json`
+  - `workspace-links/go-go-app-inventory/tooling/vite/createHypercardViteConfig.ts`
+- Then review the exact manual validation sequence recorded below.
+
+### Technical details
+
+- Manual downstream-consumer proof used inventory in a temp fixture and succeeded with this sequence:
+  - `pnpm install --ignore-scripts` for the app’s normal dependencies
+  - `npm install --no-save --legacy-peer-deps --ignore-scripts <packed os-core..os-confirm tarballs>`
+  - `npm run typecheck:published`
+  - `GO_GO_OS_FRONTEND_RESOLUTION=published npm exec -- vite build`
+- The successful published-mode build emitted a full production Vite output, including the QuickJS wasm assets, from the inventory fixture.
