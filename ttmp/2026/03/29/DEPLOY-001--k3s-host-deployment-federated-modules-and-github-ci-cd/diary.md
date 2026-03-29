@@ -1,5 +1,9 @@
 # Diary
 
+## Goal
+
+Capture the step-by-step path from package publishing work into a full `wesen-os` deployment model, including the later migration of canonical Kubernetes ownership into the Hetzner K3s GitOps repository.
+
 ## 2026-03-29: Ticket Creation And Architecture Synthesis
 
 This ticket was created because the package-publishing work in `NPM-PUBLISH-001` answered only the first third of the deployment story. We now have proof that the shared platform packages can be published and consumed from GitHub Packages, but the user’s desired end-state is larger:
@@ -1075,6 +1079,98 @@ checkout
 
 - Expected runtime input:
   - `image_ref`, preferably `ghcr.io/wesen/wesen-os@sha256:...`
+
+## 2026-03-29: Step 11, GitOps Migration Guide And Task Expansion
+
+After reading the Hetzner K3s repo’s own onboarding and GitOps playbooks, I documented the migration path from the temporary `wesen-os`-local Kubernetes package to the canonical cluster-owned GitOps package. This was necessary because the first implementation pass proved deployability, but it also made the ownership boundary visible: the cluster repo, not the app repo, should own the long-term Kubernetes source of truth.
+
+I wrote that migration guide into the active ticket and expanded the task board with a dedicated Phase `3B` so the next implementation work can be tracked explicitly instead of being implied by chat context.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Ok, create an implementation guide for all this so that we have a reference for later, the nadd detailed tasks to the ticket and then get to work."
+
+**Assistant interpretation:** Write a concrete migration guide for moving `wesen-os` deployment ownership into the Hetzner K3s GitOps repo, add the corresponding detailed tasks to `DEPLOY-001`, and then start implementing that plan.
+
+**Inferred user intent:** Create a durable reference for the cluster-repo migration and immediately turn it into tracked execution work.
+
+### What I did
+
+- Read and synthesized the Hetzner K3s repo’s canonical docs:
+  - `README.md`
+  - `docs/source-app-deployment-infrastructure-playbook.md`
+  - `docs/public-repo-ghcr-argocd-deployment-playbook.md`
+  - `docs/app-packaging-and-gitops-pr-standard.md`
+  - `docs/argocd-app-setup.md`
+- Added a new ticket design doc:
+  - `design/02-wesen-os-into-hetzner-k3s-gitops-guide.md`
+- Updated:
+  - `index.md`
+  - `tasks.md`
+- Added a dedicated migration phase:
+  - `Phase 3B: Move Canonical Host GitOps Into Hetzner K3s Repo`
+
+### Why
+
+- The first implementation pass placed the initial K8s manifests in `wesen-os` because that was the fastest way to prove the host deployment shape.
+- The K3s repo docs make the long-term model explicit:
+  - source repo owns build/publish
+  - GitOps repo owns Kubernetes state
+  - Argo CD reconciles from the GitOps repo
+- Without writing that down in the ticket, the next cross-repo work would be easy to perform but harder to explain or review later.
+
+### What worked
+
+- The docs were consistent about the ownership split.
+- The migration guide could therefore be concrete rather than speculative:
+  - move Kustomize package into `gitops/kustomize/wesen-os`
+  - later add `gitops/applications/wesen-os.yaml`
+  - only then wire GitOps PR automation from `wesen-os`
+- The new Phase `3B` tasks now make that path visible in the ticket.
+
+### What didn't work
+
+- No technical command failed in this step.
+- The only open issue is execution ordering:
+  - we should not add the Argo `Application` until the Kustomize package is present, render-valid, and the image-pull strategy is decided
+
+### What I learned
+
+- The Hetzner repo is already opinionated enough that we should follow its patterns rather than inventing a parallel `wesen-os`-specific deployment model.
+- The right place for canonical cluster state is the GitOps repo even if the first draft was authored elsewhere.
+- The `wesen-os` repo should eventually own GitOps PR automation, not long-term cluster manifests.
+
+### What was tricky to build
+
+- The main subtlety was separating “proof-of-concept manifests” from “canonical manifests.” The local package under `wesen-os/deploy/k8s/wesen-os` is still useful as a draft and as a record of how the deployment shape was discovered, but if it remains unqualified it risks drifting from the GitOps repo later.
+- The other subtlety was deciding the safe order of work. The Kustomize package can be created in the Hetzner repo immediately, but the Argo `Application` should wait until the image-pull mode and first real image reference are clear.
+
+### What warrants a second pair of eyes
+
+- Whether Phase `3B` should stay inside `DEPLOY-001` or later be split into a K3s-repo-local ticket if the cross-repo work becomes much larger.
+- Whether the final `wesen-os` copy of the draft manifests should be removed entirely or kept as a non-canonical reference.
+
+### What should be done in the future
+
+- Implement the first `Phase 3B` slice now:
+  - create `gitops/kustomize/wesen-os` in the Hetzner repo
+  - render-validate it
+- Then decide image visibility / pull-secret strategy before adding the Argo `Application`.
+
+### Code review instructions
+
+- Start with:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/design/02-wesen-os-into-hetzner-k3s-gitops-guide.md`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/tasks.md`
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/index.md`
+
+### Technical details
+
+- Key external repo paths the guide centers:
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/<app>/`
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/applications/<app>.yaml`
+- First concrete target for `wesen-os`:
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/`
 
 ## 2026-03-29: reMarkable Delivery
 

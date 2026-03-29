@@ -20,6 +20,8 @@ This ticket is written for:
 
 - `design/01-k3s-host-federation-and-github-cicd-guide.md`
   - full analysis, design, architecture, implementation guide, intern onboarding, pseudocode, diagrams, and references
+- `design/02-wesen-os-into-hetzner-k3s-gitops-guide.md`
+  - concrete migration guide for moving canonical `wesen-os` Kubernetes ownership into the Hetzner GitOps repo
 - `tasks.md`
   - detailed phased task board
 - `diary.md`
