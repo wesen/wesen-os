@@ -95,9 +95,9 @@
   - or another equivalent build-only mechanism
 - [x] Phase 1A.3: Make `@go-go-golems/os-core` and `@go-go-golems/os-repl` build cleanly into `dist/` with copied runtime assets.
 - [x] Phase 1A.4: Make `@go-go-golems/os-chat` and `@go-go-golems/os-scripting` build cleanly into `dist/` without source-tree leakage.
-- [ ] Phase 1A.5: Make `@go-go-golems/os-ui-cards`, `@go-go-golems/os-widgets`, `@go-go-golems/os-kanban`, `@go-go-golems/os-confirm`, and `@go-go-golems/os-shell` build cleanly into `dist/` in dependency order.
-- [ ] Phase 1A.6: Add one scripted `build:publish-v1` flow that builds the full v1 package set from a clean state.
-- [ ] Phase 1A.7: Record the exact remaining package-local build failures, if any, with commands and file references.
+- [x] Phase 1A.5: Make `@go-go-golems/os-ui-cards`, `@go-go-golems/os-widgets`, `@go-go-golems/os-kanban`, `@go-go-golems/os-confirm`, and `@go-go-golems/os-shell` build cleanly into `dist/` in dependency order.
+- [x] Phase 1A.6: Add one scripted `build:publish-v1` flow that builds the full v1 package set from a clean state.
+- [x] Phase 1A.7: Record the exact remaining package-local build failures, if any, with commands and file references.
 - [ ] Phase 1B: Finalize dist entrypoints and shipped assets.
 - [ ] Phase 1B.1: Replace `main`, `types`, and `exports` entries that still point at `src/*` with `dist/*` for the v1 package set.
 - [ ] Phase 1B.2: Ensure all exported subpaths still resolve after the `dist/*` rewrite.

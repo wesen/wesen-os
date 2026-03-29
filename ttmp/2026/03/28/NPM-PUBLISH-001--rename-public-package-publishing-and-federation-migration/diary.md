@@ -393,6 +393,44 @@ The result is a much better packaging baseline: `os-core`, `os-chat`, `os-repl`,
 - Current aggregate build blocker after this step:
   - `os-widgets` pulls `os-shell`/`os-scripting` back through source-first package metadata during `build:publish-v1`
 
+## Step 6: Make The Full V1 Dist-Build Chain Pass
+
+This step closed the remaining Phase 1A build-isolation loop. After teaching the dist helper about workspace package exports, the remaining failure was simply dependency order: `os-widgets` imports `os-shell`, so `os-shell` has to be built before `os-widgets` once dist-builds resolve package imports to built artifacts instead of source.
+
+With that order fixed, the full `build:publish-v1` script now passes end-to-end for the v1 platform package set.
+
+### What I did
+
+- Extended the shared dist-build helper to generate path aliases for all local workspace package exports, not just the aliases already present in the current package’s `tsconfig.json`.
+- Kept explicit package-local `tsconfig` paths overriding the generated defaults where needed.
+- Added robust temp-file cleanup around `.tsconfig.build-dist.tmp.json` and `.tsconfig.build-dist.tmp.tsbuildinfo` via `try/finally`.
+- Reordered `workspace-links/go-go-os-frontend/package.json` `build:publish-v1` so `os-shell` builds before `os-widgets`.
+
+### Why
+
+- Once package imports resolve to `dist/*`, the build order has to follow real package dependencies. The previous order only worked while some dependencies still leaked through `src/*`.
+- The helper needed to understand package exports transitively, otherwise a package like `os-widgets` could still resolve `os-shell` through package metadata and fall back into source trees.
+
+### What worked
+
+- These direct package-local dist builds now pass:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-shell`
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:dist -w packages/os-widgets`
+- The full aggregate build now passes:
+  - `cd /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-os-frontend && npm run build:publish-v1`
+- There are currently no remaining package-local v1 dist-build failures.
+
+### What I learned
+
+- The important boundary is no longer “does the current package know how to rewrite its own tsconfig paths?” It is “can any workspace package import another workspace package without falling back to source-first package metadata?”
+- Once that is true, the remaining issues become release-manifest problems rather than build-graph problems.
+
+### What should be done in the future
+
+- Switch the v1 package manifests from `src/*` entrypoints to `dist/*`.
+- Add `files` allowlists so the built artifacts are actually publishable.
+- Then start validating `npm pack` and clean external-consumer installs.
+
 ### Code review instructions
 
 - Start with `ttmp/2026/03/28/NPM-PUBLISH-001--rename-public-package-publishing-and-federation-migration/package-identity-matrix.md`.
