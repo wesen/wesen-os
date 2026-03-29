@@ -44,13 +44,19 @@
 
 ## Phase 2: Publish The Host Image To GHCR
 
-- [ ] Land `.github/workflows/publish-host-image.yml` on `wesen/wesen-os` `main` so GitHub registers the workflow.
+- [x] Land `.github/workflows/publish-host-image.yml` on `wesen/wesen-os` `main` so GitHub registers the workflow.
 - [x] Add a GitHub Actions workflow that:
   - checks out submodules
   - installs Node dependencies
   - builds the launcher
   - builds the Docker image
   - pushes to GHCR
+- [x] Consolidate the host publish workflow to the same two-job model used by `draft-review`:
+  - publish the image in the source repo
+  - then open a GitOps PR against the K3s repo
+- [x] Add `deploy/gitops-targets.json` to `wesen-os`.
+- [x] Add `scripts/open_gitops_pr.py` to `wesen-os`.
+- [x] Push the `wesen-os` workflow-consolidation branch and open a PR for review.
 - [x] Use immutable tags keyed by git SHA.
 - [x] Optionally add mutable tags:
   - `main`
@@ -59,8 +65,9 @@
 - [x] Add provenance/metadata labels.
 - [x] Decide whether production deploys use tags or digests:
   - recommended: digests for deployment manifests
-- [ ] After the first real host image publish, verify the GHCR package is publicly pullable at the pinned image ref.
+- [x] After the first real host image publish, verify the GHCR package is publicly pullable at the pinned image ref.
 - [ ] Verify K3s can pull the GHCR image using its registry credentials.
+- [ ] Run the new GitOps-PR job on GitHub and verify it opens or updates the expected PR against `wesen/2026-03-27--hetzner-k3s`.
 
 ## Phase 3: Define K3s Deployment For The Host
 
@@ -82,6 +89,7 @@
   - generated remote registry JSON
 - [x] Add a GitHub Actions deployment workflow that applies manifests to staging.
 - [ ] Add manual approval or environment protection before production rollout.
+- [ ] Demote `.github/workflows/deploy-host-to-k3s.yml` to a documented break-glass/manual operator path rather than the normal release path.
 
 ## Phase 3B: Move Canonical Host GitOps Into Hetzner K3s Repo
 
@@ -105,8 +113,12 @@
   - source path
   - destination namespace
   - sync policy
-- [ ] Once the first real GHCR image exists, pin the K3s deployment to an immutable image ref.
+- [x] Once the first real GHCR image exists, pin the K3s deployment to an immutable image ref.
+- [x] Validate the pinned `wesen-os` image ref with:
+  - `kubectl kustomize gitops/kustomize/wesen-os`
+- [x] Push the updated digest-pin commit onto the open Hetzner K3s PR branch.
 - [ ] Decide whether to remove or demote the draft manifests in `wesen-os/deploy/k8s/wesen-os/` after the K3s repo becomes canonical.
+- [ ] Merge the pinned-image `wesen-os` GitOps PR in `/home/manuel/code/wesen/2026-03-27--hetzner-k3s` after the deployment manifest is updated away from `:main`.
 
 ## Phase 4: Define The Federation Contract
 
@@ -223,3 +235,22 @@
   - image plane
   - remote asset plane
 - [ ] Add diagrams showing the final flow from merge to running system.
+- [ ] Update the Hetzner K3s repo docs to make the core handoff explicit:
+  - source repo CI publishes image
+  - CI opens GitOps PR
+  - reviewer merges GitOps PR
+  - Argo CD syncs cluster state
+- [ ] Add a short top-level deployment-model page in `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/`.
+- [x] Update `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/app-packaging-and-gitops-pr-standard.md` so the GitHub -> GitOps PR flow appears near the top and the one-time `Application` bootstrap rule is explicit.
+- [x] Update `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/source-app-deployment-infrastructure-playbook.md` with a “most common misunderstanding” section:
+  - publishing to GHCR is not deployment
+  - Argo only acts on GitOps repo changes
+  - the CI-created GitOps PR is the deployment handoff
+- [x] Update `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/public-repo-ghcr-argocd-deployment-playbook.md` with the same explicit sequence and the one-time `Application` bootstrap step.
+- [ ] Add one concrete reference implementation section in the K3s docs that points at:
+  - `draft-review`
+  - `deploy/gitops-targets.json`
+  - `scripts/open_gitops_pr.py`
+  - the GitOps deployment manifest
+  - the Argo `Application`
+- [x] Update `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/README.md` so the initial `kubectl apply -f gitops/applications/<name>.yaml` pattern is framed as the generic first-time bootstrap rule for new apps.
