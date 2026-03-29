@@ -62,3 +62,37 @@ That keeps the deliverables next to the rest of the `wesen-os` ticket work.
   - K3s manifests
   - first federated remote
   - remote asset hosting and runtime registry
+
+## 2026-03-29: reMarkable Delivery
+
+After the ticket content was written, I bundled the main deliverables into a single PDF for reMarkable delivery:
+
+- `index.md`
+- `design/01-k3s-host-federation-and-github-cicd-guide.md`
+- `tasks.md`
+- `diary.md`
+- `sources/reference-links.md`
+
+### Commands used
+
+- `remarquee status`
+- `remarquee upload bundle --dry-run ... --name "DEPLOY-001 Deployment and Federation Guide" --remote-dir "/ai/2026/03/29/DEPLOY-001" --toc-depth 2`
+- `remarquee upload bundle ... --name "DEPLOY-001 Deployment and Federation Guide" --remote-dir "/ai/2026/03/29/DEPLOY-001" --toc-depth 2`
+- `remarquee cloud ls /ai/2026/03/29 --long --non-interactive`
+- `remarquee cloud ls /ai/2026/03/29/DEPLOY-001/ --long --non-interactive`
+
+### Results
+
+- `remarquee status` returned `remarquee: ok`
+- the dry-run succeeded
+- the real upload succeeded
+- remote verification confirmed:
+  - `/ai/2026/03/29/DEPLOY-001/DEPLOY-001 Deployment and Federation Guide`
+
+### Note
+
+An initial `remarquee cloud ls /ai/2026/03/29/DEPLOY-001 --long --non-interactive` returned `Error: no matches for 'DEPLOY-001'`. Listing the parent folder first showed that the directory existed; repeating the command with a trailing slash worked:
+
+- `/ai/2026/03/29/DEPLOY-001/`
+
+That was a path lookup quirk, not an upload failure.
