@@ -186,7 +186,13 @@
   - build the real inventory federation artifact
   - load the real manifest through the launcher loader
 - [x] Validate the host can load the remote in a local real-artifact environment.
-- [ ] Validate the host can load the remote in a staging/browser environment.
+- [x] Wire the async manifest loader into launcher bootstrap and `src/main.tsx`.
+- [x] Add an environment-driven inventory remote-manifest path for launcher startup:
+  - `VITE_INVENTORY_REMOTE_MANIFEST_URL`
+  - `VITE_INVENTORY_FEDERATION_ENABLED`
+- [x] Validate the host can boot in a real browser with the remote-manifest registry and show the remote-provided Inventory launcher entry.
+- [ ] Validate the host can fully render the remote Inventory window in a browser runtime.
+- [ ] Replace duplicate remote React/react-redux copies with a shared-singleton strategy so remote windows do not crash with hook/context errors.
 
 ## Phase 6: Host Remote Assets On Hetzner Object Storage
 
@@ -216,7 +222,10 @@
   - resolve entry URL relative to the manifest
   - dynamic-import the contract module
   - validate the exported host contract shape
-- [ ] Decide remote registry source:
+- [x] Add an environment-driven registry resolution path for local/browser proof:
+  - dedicated inventory manifest URL env
+  - optional JSON registry env override
+- [ ] Decide the long-term remote registry source:
   - static JSON shipped with the host
   - environment-generated JSON
   - backend-served config endpoint
@@ -227,6 +236,11 @@
   - hide launcher entry
   - show unavailable state
   - fallback to built-in module only where explicitly intended
+- [ ] Add a shared-singleton runtime contract for browser remotes:
+  - `react`
+  - `react/jsx-runtime`
+  - `react-redux`
+  - any additional host-owned libraries required to avoid duplicate runtime contexts
 
 ## Phase 8: End-To-End CI/CD
 

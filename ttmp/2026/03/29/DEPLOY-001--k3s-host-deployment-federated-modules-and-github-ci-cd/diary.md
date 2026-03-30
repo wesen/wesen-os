@@ -2675,3 +2675,196 @@ The next gaps are now very concrete:
 - decide how the runtime registry source is provided
 - reduce or explicitly manage shared dependencies instead of bundling the whole world into one contract file
 - eventually replace this minimal manifest with the full remote build/deploy path
+
+## 2026-03-30: Sixth Federation Code Slice, Bootstrap The Launcher Through `remote-manifest` And Capture The First Browser Runtime Blocker
+
+After the real inventory artifact smoke, the next job was to stop treating the manifest-backed loader as a side utility and actually put it on the launcher startup path. I wanted the launcher to decide at boot whether it should load the local inventory contract or the remote-manifest version, and I wanted a real browser proof rather than only a Vitest fixture.
+
+This step delivered that bootstrap wiring. It also gave us the first real browser-runtime failure after bootstrap: the launcher now boots through the remote contract path and shows the `Inventory` desktop entry, but opening the remote Inventory window crashes because the remote bundle still carries its own React/react-redux runtime instead of sharing the host singletons.
+
+### Startup wiring added
+
+I added a new launcher bootstrap entrypoint:
+
+- `apps/os-launcher/src/app/bootstrapLauncherApp.ts`
+
+Its responsibilities are:
+
+1. reset any stale in-memory federated contracts
+2. resolve the active registry from environment or from an explicit override
+3. load the active contracts through `loadFederatedAppContracts`
+4. install those contracts into runtime state
+5. then load the real launcher modules (`store`, `registry`, `App`)
+
+The actual browser entrypoint now uses that bootstrap:
+
+- `apps/os-launcher/src/main.tsx`
+
+So launcher startup is no longer hard-wired to only the local inventory package. It is now a two-step boot:
+
+1. resolve/load federation contracts
+2. load/render the real launcher app
+
+### Runtime contract seam widened from “local-only” to “bootstrapped runtime”
+
+To support that, I changed the previous local helpers in:
+
+- `apps/os-launcher/src/app/localFederatedAppContracts.ts`
+
+That file still knows how to resolve the local package contracts, but it now also owns the runtime-loaded contract list. The rest of launcher startup now reads from that runtime list instead of directly from the static local-package array:
+
+- `apps/os-launcher/src/app/modules.tsx`
+- `apps/os-launcher/src/app/store.ts`
+- `apps/os-launcher/src/app/registerAppsBrowserDocs.ts`
+- `apps/os-launcher/src/app/runtimeDebugModule.tsx`
+- `apps/os-launcher/src/app/taskManagerModule.tsx`
+- `apps/os-launcher/src/app/hypercardReplModule.tsx`
+
+That is the key architectural shift in this slice. The launcher now has one consistent “federated contract runtime state” instead of a bunch of static imports that only happened to work for the local inventory package.
+
+### Registry/env control added
+
+I extended:
+
+- `apps/os-launcher/src/app/federationRegistry.ts`
+
+to support two practical browser-proof paths:
+
+- `VITE_FEDERATION_REGISTRY_JSON`
+- `VITE_INVENTORY_REMOTE_MANIFEST_URL`
+- `VITE_INVENTORY_FEDERATION_ENABLED`
+
+That let me point the launcher at a real manifest without inventing the final registry service yet. For this phase, the environment-driven registry is enough.
+
+### Unit coverage added and reshaped
+
+I added:
+
+- `apps/os-launcher/src/app/bootstrapLauncherApp.test.ts`
+
+Initially I tried to make this test import the real `App`, `store`, and `registry` modules after bootstrapping the remote manifest path. That hung repeatedly under Vitest, not because the federation decision logic was wrong, but because the test was pulling the entire launcher runtime graph through repeated module reloads.
+
+The concrete failed command was:
+
+- `npm run test -w apps/os-launcher -- --run bootstrapLauncherApp`
+
+The repeated failure looked like:
+
+- `Error: Test timed out in 5000ms.`
+- then again after raising the timeout:
+- `Error: Test timed out in 20000ms.`
+
+I narrowed this down enough to see that the hanging portion was the “real launcher graph import under Vitest” piece, not the registry/manifest contract path itself. So I kept the unit test focused on the actual bootstrap orchestration by adding injectable module loaders to `bootstrapLauncherApp`. That way the test can still prove:
+
+- remote manifest registry resolution
+- contract loading
+- runtime contract installation
+- launcher registry creation from the bootstrapped contract
+
+without pretending Vitest is a browser-runtime integration environment.
+
+### Browser proof performed
+
+I then ran a real browser proof instead of trusting the unit test alone.
+
+The operator flow was:
+
+1. build the real inventory federation artifact
+2. copy it into a same-origin launcher static path:
+   - `apps/os-launcher/public/__federation-smoke/inventory/`
+3. start the launcher dev server with:
+   - `VITE_INVENTORY_REMOTE_MANIFEST_URL=/__federation-smoke/inventory/mf-manifest.json`
+4. open the launcher in a browser
+
+The first browser run failed during bootstrap with:
+
+- `TypeError: Failed to construct 'URL': Invalid base URL`
+
+That came from resolving a relative manifest URL as if it were already absolute. I fixed that in:
+
+- `apps/os-launcher/src/app/loadFederatedAppContracts.ts`
+
+by normalizing the manifest URL against the browser location when necessary before resolving `contract.entry`.
+
+The second browser run got further, but the loaded remote bundle failed with:
+
+- `ReferenceError: process is not defined`
+
+That came from the producer-side remote bundle still emitting raw `process.env.NODE_ENV` checks. I fixed that in:
+
+- `workspace-links/go-go-app-inventory/apps/inventory/vite.federation.config.ts`
+
+by defining:
+
+- `process.env.NODE_ENV = "production"`
+
+for the federation build.
+
+### What the real browser proof now demonstrates
+
+After those fixes, the launcher boots successfully through the remote-manifest path in the browser:
+
+- launcher page loads
+- no bootstrap error screen
+- `Inventory` appears as a desktop icon from the remote-provided contract
+
+This is the first real browser proof that the launcher is no longer relying on the local-package-only inventory path for startup.
+
+### The next blocker we exposed
+
+When I actually opened the Inventory window from that browser session, the window failed with:
+
+- `Cannot read properties of null (reading 'useContext')`
+
+This is the first real runtime boundary problem after bootstrap. It is the expected duplicate-singleton issue:
+
+- the remote bundle currently includes its own React/react-redux runtime
+- the host renders with its own Provider/React runtime
+- the remote hook layer is therefore not using the same context instance as the host
+
+So the system is now at a better place than before:
+
+- bootstrap path works
+- remote contract contributes launcher UI successfully
+- the next failure is no longer in manifest loading
+- the next failure is the shared-runtime contract between host and remote
+
+### Validation performed
+
+Commands that passed in this slice:
+
+- `npm run typecheck -w apps/os-launcher`
+- `npm run typecheck -w workspace-links/go-go-app-inventory/apps/inventory`
+- `npm run test -w apps/os-launcher -- --run bootstrapLauncherApp`
+
+Browser/operator proof:
+
+- built inventory remote artifact
+- served launcher with `VITE_INVENTORY_REMOTE_MANIFEST_URL`
+- verified launcher boot + Inventory desktop icon in Playwright
+- verified opening the Inventory window fails with the expected React/runtime singleton error
+
+### Why this is still valid progress even though the Inventory window crashes
+
+Before this slice, we did not know whether the next breakage would be:
+
+- registry resolution
+- manifest fetch
+- relative URL handling
+- dynamic import
+- host contract validation
+- launcher boot ordering
+
+Now we do.
+
+The browser proof shows that all of those layers are working. The first remaining blocker is the real architectural one we expected from the beginning: host/remote shared singletons.
+
+That means the next task is not “make the bootstrap loader work.” It already works. The next task is:
+
+- define and implement the shared-singleton strategy for browser remotes
+
+### Ticket helpers added for this slice
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/31-prepare-launcher-remote-manifest-smoke.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/32-clean-launcher-remote-manifest-smoke.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/31-launcher-remote-manifest-browser-smoke.md`
