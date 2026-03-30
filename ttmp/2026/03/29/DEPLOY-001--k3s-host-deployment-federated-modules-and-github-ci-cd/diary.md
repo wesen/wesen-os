@@ -2491,3 +2491,91 @@ That is enough structure to start the next real step:
 - implement a remote-manifest loader path behind the same registry model
 
 without rewriting the host again from scratch.
+
+## 2026-03-30: Fourth Federation Code Slice, Add The First Manifest-Backed Loader
+
+This is the first step that actually crosses from “better static structure” into “runtime federation mechanics.”
+
+I added:
+
+- `apps/os-launcher/src/app/loadFederatedAppContracts.ts`
+- `apps/os-launcher/src/app/loadFederatedAppContracts.test.ts`
+- `apps/os-launcher/src/app/fixtures/remoteInventoryContract.mjs`
+
+and expanded:
+
+- `apps/os-launcher/src/app/federationRegistry.ts`
+
+### What this slice implements
+
+The launcher now has an async loader that can resolve contracts from the registry in two modes:
+
+1. `local-package`
+   - resolve the contract from the local registry as before
+2. `remote-manifest`
+   - fetch a manifest JSON document
+   - validate the manifest shape
+   - resolve the entry URL relative to the manifest URL
+   - dynamically import the remote module
+   - extract the configured export
+   - validate that the export looks like a `FederatedAppHostContract`
+
+That means the host can now load a manifest-backed remote contract through the same top-level API, even though the production launcher is not yet wired to use this async path during startup.
+
+### Manifest shape used in this step
+
+I added a concrete host-side manifest model in `federationRegistry.ts`:
+
+- `FederatedRemoteManifest`
+- `FederatedRemoteManifestContract`
+
+Current required fields:
+
+- `version`
+- `remoteId`
+- `contract.entry`
+- optional `contract.exportName`
+
+This is a deliberately minimal bootstrap contract. It is enough to prove the runtime loading path without forcing the full CDN/build pipeline first.
+
+### Why I treated this as valid progress even though it is not full Module Federation yet
+
+The repo still has no producer-side federation build tooling installed, and there is no emitted `mf-manifest.json` from `inventory` yet. So the pragmatic move here was:
+
+- keep the registry and manifest terminology aligned with the desired end-state
+- implement the host loader mechanics now
+- leave the producer-side build/output wiring for the next task
+
+That gives us working host behavior we can test today instead of waiting for the entire producer pipeline to exist first.
+
+### Validation
+
+Commands run:
+
+- `npm run typecheck -w apps/os-launcher`
+- `npm run test -w apps/os-launcher -- --run loadFederatedAppContracts launcherHost runtimeDebugModule registerAppsBrowserDocs`
+
+The new tests cover:
+
+- loading enabled local-package contracts from the registry
+- loading a manifest-backed contract through fetch + dynamic import
+- failing when the remote manifest/exported contract does not match the expected `remoteId`
+
+All passed.
+
+### Ticket helper added
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/29-audit-federated-loader.sh`
+
+This helper prints the registry shape, loader implementation, and loader tests together so later docs can show the exact first-runtime-loader state in one place.
+
+### What this still does not do
+
+This slice does **not** yet:
+
+- build a real `inventory` manifest from a remote build
+- upload remote assets to Hetzner
+- wire the async loader into launcher startup
+- add UI fallback behavior when a remote fails to load
+
+Those are the next tasks.

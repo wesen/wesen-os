@@ -122,7 +122,7 @@
 
 ## Phase 4: Define The Federation Contract
 
-- [ ] Decide the remote loading format:
+- [x] Decide the remote loading format:
   - Module Federation manifest (`mf-manifest.json`) preferred
   - `remoteEntry.js` only if manifest mode is not workable in current tooling
 - [x] Freeze `inventory` as the first federation candidate and capture the current host touchpoints.
@@ -199,12 +199,17 @@
 
 ## Phase 7: Teach The Host To Load Remotes Dynamically
 
-- [ ] Add a remote registry loader to `apps/os-launcher`.
+- [x] Add a remote registry loader to `apps/os-launcher`.
 - [x] Add an explicit federation-registry shape to `apps/os-launcher` for the local bootstrap path.
 - [x] Add a default local registry entry for `inventory`:
   - `mode: local-package`
   - `contractExport: @go-go-golems/inventory/host`
 - [x] Keep unsupported registry modes fail-fast in the local resolver instead of silently ignoring them.
+- [x] Implement a manifest-backed contract loader path:
+  - fetch remote manifest JSON
+  - resolve entry URL relative to the manifest
+  - dynamic-import the contract module
+  - validate the exported host contract shape
 - [ ] Decide remote registry source:
   - static JSON shipped with the host
   - environment-generated JSON

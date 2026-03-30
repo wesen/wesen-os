@@ -13,6 +13,18 @@ export interface FederatedRemoteRegistry {
   remotes: FederatedRemoteRegistryEntry[];
 }
 
+export interface FederatedRemoteManifestContract {
+  entry: string;
+  exportName?: string;
+}
+
+export interface FederatedRemoteManifest {
+  version: 1;
+  remoteId: string;
+  contract: FederatedRemoteManifestContract;
+  compatiblePlatformRange?: string;
+}
+
 export const DEFAULT_LOCAL_FEDERATION_REGISTRY: FederatedRemoteRegistry = {
   version: 1,
   remotes: [
