@@ -3531,9 +3531,9 @@ It is:
 
 That is the exact boundary we wanted to reach in this slice.
 
-## 2026-03-30 - First Live Remote Publish Attempt Blocked By Placeholder Storage Endpoint
+## 2026-03-30 - First Live Inventory Remote Publish Path
 
-After wiring the host-side registry config, the next planned slice was the first live `inventory` remote publish. I used the existing Terraform and GitHub workflow machinery to push this as far as it would go.
+After wiring the host-side registry config, the next planned slice was the first live `inventory` remote publish. I used the existing Terraform and GitHub workflow machinery to push this through all the remaining operational steps.
 
 ### What I checked first
 
@@ -3581,30 +3581,20 @@ Using:
 - `direnv exec .`
 - `TF_VAR_public_base_url=https://scapegoat-federation-assets.${TF_VAR_object_storage_server}`
 
-### What the plan proved
+### Important correction: `your-objectstorage.com` is the real Hetzner endpoint
 
-The Terraform stack itself is correct:
+At this point, the user pointed out the actual Hetzner bucket-creation UI. That screenshot made the service contract clear:
 
-- it plans to create only:
-  - `minio_s3_bucket.federation_assets`
-  - `minio_s3_bucket_versioning.federation_assets`
+- the regional service endpoint for Falkenstein is:
+  - `fsn1.your-objectstorage.com`
+- bucket public URLs are derived from that regional host:
+  - `https://<bucket>.fsn1.your-objectstorage.com/<key>`
 
-But the plan also exposed the real blocker:
+So my earlier assumption was wrong. `fsn1.your-objectstorage.com` is not a fake placeholder here. It is the real regional S3-compatible host Hetzner expects.
 
-- `public_base_url = "https://scapegoat-federation-assets.fsn1.your-objectstorage.com"`
-- `storage_endpoint_url = "https://fsn1.your-objectstorage.com"`
+That changed the next step from “wait for a real endpoint” to “proceed with apply now.”
 
-So the current operator env is still using the placeholder endpoint, not a real Hetzner Object Storage host.
-
-That means:
-
-- the code path is ready
-- the Terraform stack is ready
-- the operator environment is **not** ready for a real apply
-
-Running `apply` at this point would be wrong.
-
-### New helper scripts added
+### Helper scripts added and corrected
 
 To turn that from “tribal knowledge” into repeatable operations, I added:
 
@@ -3618,12 +3608,11 @@ What they do:
 - loads the Terraform repo env through `direnv`
 - verifies required `TF_VAR_object_storage_*` values exist
 - computes the bucket public base URL
-- fails fast if the endpoint still contains `your-objectstorage.com`
+- reports the effective bucket ACL and computed public URL
 
 `41-seed-inventory-federation-gh-config.sh`
 
 - reads the same live Terraform env
-- refuses to run if the endpoint is still placeholder
 - seeds `go-go-app-inventory` with:
   - `HETZNER_OBJECT_STORAGE_ACCESS_KEY_ID`
   - `HETZNER_OBJECT_STORAGE_SECRET_ACCESS_KEY`
@@ -3633,7 +3622,7 @@ What they do:
 - sets:
   - `INVENTORY_FEDERATION_PUBLIC_BASE_URL`
 
-This second script was **not** run yet, because the endpoint blocker is still present.
+This second script was then run successfully after the endpoint assumption was corrected.
 
 ### New playbook added
 
@@ -3656,35 +3645,105 @@ I captured the current blocker state in:
 
 - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/40-federation-storage-operator-env-check.md`
 
-### Current blocker, stated plainly
+### Live bucket apply
 
-The next live step is not blocked by code anymore.
+With that corrected understanding, I updated the federation bucket stack defaults to match the real browser-delivery requirements:
 
-It is blocked by one concrete operator issue:
+- bucket ACL:
+  - `public-read`
+- public base URL:
+  - `https://scapegoat-federation-assets.fsn1.your-objectstorage.com`
 
-- replace `TF_VAR_object_storage_server=fsn1.your-objectstorage.com` with the real Hetzner Object Storage host in the Terraform operator environment
+Then I applied:
 
-Once that is fixed, the rest of the path is now mechanical and documented.
+- `terraform -chdir=storage/platform/federation-assets/envs/prod apply -auto-approve`
 
-### Extra confirmation from existing state
+Result:
 
-I also checked the already-applied storage stacks to see whether they exposed a reusable real endpoint in state outputs:
+- bucket created:
+  - `scapegoat-federation-assets`
+- versioning enabled
+- outputs now show:
+  - `storage_endpoint_url = "https://fsn1.your-objectstorage.com"`
+  - `public_base_url = "https://scapegoat-federation-assets.fsn1.your-objectstorage.com"`
 
-- `storage/apps/hair-booking/photos/envs/prod`
-- `storage/platform/k3s-backups/envs/prod`
+### GitHub config seeded for inventory
 
-Both still report:
-
-- `https://fsn1.your-objectstorage.com`
-
-So there is no hidden real endpoint currently available through Terraform state either. The blocker is genuinely the operator environment, not just this new federation stack.
-
-### Safe-refusal validation
-
-I validated that the GitHub seeding helper fails safely before touching repo configuration when the endpoint is still placeholder:
+I then ran:
 
 - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/41-seed-inventory-federation-gh-config.sh`
 
-Output:
+That successfully wrote these secrets into `go-go-golems/go-go-app-inventory`:
 
-- `Refusing to seed GitHub config from placeholder object storage settings.`
+- `HETZNER_OBJECT_STORAGE_ACCESS_KEY_ID`
+- `HETZNER_OBJECT_STORAGE_SECRET_ACCESS_KEY`
+- `HETZNER_OBJECT_STORAGE_BUCKET`
+- `HETZNER_OBJECT_STORAGE_ENDPOINT`
+- `HETZNER_OBJECT_STORAGE_REGION`
+
+and this variable:
+
+- `INVENTORY_FEDERATION_PUBLIC_BASE_URL=https://scapegoat-federation-assets.fsn1.your-objectstorage.com`
+
+### First live remote publish
+
+The GitHub workflow is not on `go-go-golems/go-go-app-inventory` `main` yet, so I did the first live publish manually with the exact same uploader logic:
+
+1. built the remote:
+   - `npm run build:federation -w workspace-links/go-go-app-inventory/apps/inventory`
+2. published it:
+   - `python3 scripts/publish_federation_remote.py --source-dir apps/inventory/dist-federation --remote-id inventory --version sha-f69ca10 --bucket scapegoat-federation-assets --endpoint https://fsn1.your-objectstorage.com --region fsn1 --public-base-url https://scapegoat-federation-assets.fsn1.your-objectstorage.com`
+
+Immutable manifest URL:
+
+- `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-f69ca10/mf-manifest.json`
+
+I validated that URL with the generic manifest checker:
+
+- `JSON parse: OK`
+- `remoteId: inventory`
+- `contract.entry: ./inventory-host-contract.js`
+
+### Inventory GitHub Actions workflow PR
+
+I also rebased the local inventory branch onto `origin/main`, pushed it to:
+
+- `origin/task/inventory-federation-remote-publish`
+
+and opened:
+
+- `go-go-golems/go-go-app-inventory#9`
+
+That PR is the GitHub-side workflow-registration step needed so the same publish path can run in Actions instead of only from local shell.
+
+### Host config updated to the real manifest
+
+With the immutable manifest URL available, I updated both host config packages to use the real URL and enable the remote:
+
+- local source deploy package:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/deploy/k8s/wesen-os/configmap.yaml`
+- Hetzner GitOps package:
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/configmap.yaml`
+
+The deployed host config now points to:
+
+- `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-f69ca10/mf-manifest.json`
+
+and sets:
+
+- `"enabled": true`
+
+### Remaining gap after this slice
+
+We now have:
+
+- live public bucket
+- live immutable remote manifest
+- host config updated to that live manifest
+- inventory workflow PR opened for Actions-based publishes
+
+The remaining work is:
+
+1. get the inventory workflow PR merged so GitHub Actions can own future publishes
+2. get the GitOps config change pushed/merged so deployed `wesen-os` actually serves the updated registry
+3. verify deployed `wesen-os` loads the hosted remote end to end

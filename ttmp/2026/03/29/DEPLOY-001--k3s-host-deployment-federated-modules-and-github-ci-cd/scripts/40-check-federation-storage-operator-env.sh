@@ -27,17 +27,12 @@ AWS_PROFILE="${AWS_PROFILE:-manuel}" direnv exec . bash -lc '
   server="${TF_VAR_object_storage_server}"
   region="${TF_VAR_object_storage_region}"
   public_base_url="https://scapegoat-federation-assets.${server}"
+  bucket_acl="${TF_VAR_bucket_acl:-public-read}"
 
   echo "TF_VAR_object_storage_server=${server}"
   echo "TF_VAR_object_storage_region=${region}"
   echo "TF_VAR_object_storage_access_key=set"
   echo "TF_VAR_object_storage_secret_key=set"
+  echo "effective_bucket_acl=${bucket_acl}"
   echo "computed_public_base_url=${public_base_url}"
-
-  if [[ "${server}" == *your-objectstorage.com* ]]; then
-    echo
-    echo "operator_blocker=placeholder_object_storage_server" >&2
-    echo "The Terraform env still uses the placeholder endpoint. Replace TF_VAR_object_storage_server with the real Hetzner Object Storage host before apply." >&2
-    exit 2
-  fi
 '

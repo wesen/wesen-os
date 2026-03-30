@@ -13,8 +13,6 @@ TF_VAR_object_storage_server=fsn1.your-objectstorage.com
 TF_VAR_object_storage_region=fsn1
 TF_VAR_object_storage_access_key=set
 TF_VAR_object_storage_secret_key=set
+effective_bucket_acl=public-read
 computed_public_base_url=https://scapegoat-federation-assets.fsn1.your-objectstorage.com
-
-operator_blocker=placeholder_object_storage_server
-The Terraform env still uses the placeholder endpoint. Replace TF_VAR_object_storage_server with the real Hetzner Object Storage host before apply.
 ```

@@ -13,11 +13,6 @@ AWS_PROFILE="${AWS_PROFILE:-manuel}" direnv exec . bash -lc '
   : "${TF_VAR_object_storage_access_key:?missing TF_VAR_object_storage_access_key}"
   : "${TF_VAR_object_storage_secret_key:?missing TF_VAR_object_storage_secret_key}"
 
-  if [[ "${TF_VAR_object_storage_server}" == *your-objectstorage.com* ]]; then
-    echo "Refusing to seed GitHub config from placeholder object storage settings." >&2
-    exit 2
-  fi
-
   repo="'"$TARGET_REPO"'"
   bucket_name="'"$BUCKET_NAME"'"
   endpoint="https://${TF_VAR_object_storage_server}"

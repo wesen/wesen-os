@@ -25,17 +25,17 @@ Reach this state:
 5. the `inventory` remote is enabled in the deployed registry
 6. deployed `wesen-os` loads the hosted remote
 
-## Current blocker
+## Endpoint note
 
-As of the latest check, the Terraform operator env is still using the placeholder
-Hetzner object-storage endpoint:
+Important correction from the initial investigation:
 
-- `TF_VAR_object_storage_server=fsn1.your-objectstorage.com`
+- `fsn1.your-objectstorage.com` is the real Hetzner Object Storage regional
+  service endpoint for Falkenstein
 
-That means:
+It is **not** a fake placeholder. The bucket-specific public URL is derived
+from that regional host:
 
-- planning can still show the right shape
-- but a real apply should **not** be run yet
+- `https://<bucket>.fsn1.your-objectstorage.com/<key>`
 
 ## Phase A: Fix the Terraform operator env
 
@@ -52,14 +52,6 @@ cd /home/manuel/code/wesen/terraform
 direnv allow
 ```
 
-Replace the placeholder value with the real Hetzner Object Storage host:
-
-- `TF_VAR_object_storage_server`
-
-Expected shape:
-
-- `fsn1.<real-objectstorage-host>`
-
 Replay check:
 
 ```bash
@@ -68,10 +60,10 @@ Replay check:
 
 Exit criteria:
 
-- endpoint is not `your-objectstorage.com`
+- endpoint is set
 - access key is set
 - secret key is set
-- computed public base URL is no longer placeholder
+- computed public base URL matches the chosen bucket host
 
 ## Phase B: Apply the federation bucket
 
@@ -95,11 +87,17 @@ Expected resources:
 Expected outputs:
 
 - bucket name
-  - `scapegoat-federation-assets`
+- `scapegoat-federation-assets`
 - endpoint URL
 - region
 - public base URL
 - advisory public-read and CI read/write policy JSON
+
+For the first live federation rollout, the bucket should be:
+
+- `public-read`
+
+because browser clients must fetch manifests and chunks directly.
 
 ## Phase C: Seed GitHub configuration for inventory
 
