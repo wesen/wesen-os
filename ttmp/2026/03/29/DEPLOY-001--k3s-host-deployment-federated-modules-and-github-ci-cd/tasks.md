@@ -252,7 +252,12 @@
   - `GET /api/os/federation-registry`
   - serves a mounted JSON file when configured
   - falls back to local-package mode when absent
-- [ ] Mount a real `federation.registry.json` into the deployed host config and wire the staging manifest URL there.
+- [x] Mount a real `federation.registry.json` into the deployed host config.
+  - [x] Add `/config/federation.registry.json` to the host deployment package in `wesen-os`.
+  - [x] Add `/config/federation.registry.json` to the Hetzner GitOps package for `wesen-os`.
+  - [x] Wire `--federation-registry=/config/federation.registry.json` into the launcher args.
+  - [x] Seed a safe initial registry with the `inventory` remote present but disabled.
+- [ ] Replace the placeholder manifest URL in the deployed registry with the first real hosted staging manifest URL after the non-dry-run remote publish succeeds.
 - [ ] Add client-side timeout/retry/failure UI.
 - [x] Improve invalid manifest diagnostics so launcher bootstrap errors include:
   - the manifest URL

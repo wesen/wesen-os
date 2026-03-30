@@ -3426,3 +3426,107 @@ If the launcher reports an invalid manifest error, the first checks should now b
 4. only then debug the remote entry itself
 
 This is a small change, but it materially improves operability of the federation bootstrap path.
+
+## 2026-03-30 - Mount A Real Federation Registry Into The Deployed Host
+
+With the local federation smoke path proven, the next missing piece on the host side was deployment wiring. The launcher backend already supported:
+
+- `--federation-registry=<path>`
+- `GET /api/os/federation-registry`
+
+but the deployed `wesen-os` package still did not mount any actual registry file. That meant the backend endpoint would either 404 or depend on ad-hoc local flags instead of cluster configuration.
+
+### Goal of this slice
+
+Make both deployment packages carry a real registry file now, even before the first live remote publish. That gives us a stable contract:
+
+- the file exists
+- the launcher serves it
+- the frontend can query it
+- switching to the real remote later becomes a config-only change
+
+### Files updated
+
+In the source repo deploy package:
+
+- `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/deploy/k8s/wesen-os/configmap.yaml`
+- `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/deploy/k8s/wesen-os/deployment.yaml`
+
+In the Hetzner GitOps repo:
+
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/configmap.yaml`
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/deployment.yaml`
+
+### What changed
+
+I added `federation.registry.json` to both configmaps with this initial shape:
+
+- `version: 1`
+- one `inventory` remote
+- `mode: remote-manifest`
+- `enabled: false`
+- placeholder manifest URL:
+  - `https://assets.example.invalid/remotes/inventory/versions/latest/mf-manifest.json`
+
+And I updated both deployments to:
+
+- pass `--federation-registry=/config/federation.registry.json`
+- mount `/config/federation.registry.json` from the shared configmap volume
+
+### Why the remote starts disabled
+
+This is deliberate. We do **not** have the first live hosted manifest yet. So the initial deployed registry should be:
+
+- structurally real
+- operationally safe
+
+With `enabled: false`, the host can ship the registry endpoint today without attempting to load a nonexistent remote artifact. Once the first real remote publish succeeds, the next config-only step is:
+
+1. replace the placeholder URL with the real hosted manifest URL
+2. set `enabled: true`
+3. let GitOps roll that change out
+
+### Validation performed
+
+I validated all three relevant layers:
+
+1. Source deploy package render:
+   - `kubectl kustomize deploy/k8s/wesen-os`
+2. Hetzner GitOps package render:
+   - `kubectl kustomize /home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os`
+3. Launcher backend tests:
+   - `go test ./cmd/wesen-os-launcher/...`
+
+### Replay helper added
+
+To make this slice easy to re-verify, I added:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/39-check-host-federation-registry-config.sh`
+
+and captured its output in:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/39-host-federation-registry-config-check.md`
+
+That helper confirms both packages render:
+
+- the configmap key
+- the placeholder manifest URL
+- the disabled flag
+- the launcher arg
+- the mounted config file path
+
+### What this unlocks next
+
+This finishes the host-config half of the staging path.
+
+The next concrete step is no longer “teach the host where to read the registry.”
+
+It is:
+
+1. provision the real object storage bucket
+2. run the first non-dry-run `inventory` remote publish
+3. replace the placeholder URL in the deployed `federation.registry.json`
+4. flip `enabled` to `true`
+5. verify deployed `wesen-os` loads the real hosted manifest through `/api/os/federation-registry`
+
+That is the exact boundary we wanted to reach in this slice.
