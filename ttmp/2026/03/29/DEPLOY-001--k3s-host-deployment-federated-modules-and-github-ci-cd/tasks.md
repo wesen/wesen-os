@@ -191,8 +191,12 @@
   - `VITE_INVENTORY_REMOTE_MANIFEST_URL`
   - `VITE_INVENTORY_FEDERATION_ENABLED`
 - [x] Validate the host can boot in a real browser with the remote-manifest registry and show the remote-provided Inventory launcher entry.
-- [ ] Validate the host can fully render the remote Inventory window in a browser runtime.
-- [ ] Replace duplicate remote React/react-redux copies with a shared-singleton strategy so remote windows do not crash with hook/context errors.
+- [x] Replace duplicate remote React/react-redux copies with a host-installed shared-singleton strategy for browser remotes.
+- [x] Validate the host can render remote Inventory windows in a browser runtime without React hook/context crashes.
+- [ ] Validate backend-integrated remote runtime flows in a browser environment with a live inventory backend:
+  - profile list fetch
+  - timeline fetch
+  - chat websocket
 
 ## Phase 6: Host Remote Assets On Hetzner Object Storage
 
@@ -237,10 +241,10 @@
   - show unavailable state
   - fallback to built-in module only where explicitly intended
 - [ ] Add a shared-singleton runtime contract for browser remotes:
-  - `react`
-  - `react/jsx-runtime`
-  - `react-redux`
-  - any additional host-owned libraries required to avoid duplicate runtime contexts
+  - [x] `react`
+  - [x] `react/jsx-runtime`
+  - [x] `react-redux`
+  - [ ] decide whether additional host-owned libraries should also move into the shared-runtime contract
 
 ## Phase 8: End-To-End CI/CD
 

@@ -2868,3 +2868,146 @@ That means the next task is not “make the bootstrap loader work.” It already
 - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/31-prepare-launcher-remote-manifest-smoke.sh`
 - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/32-clean-launcher-remote-manifest-smoke.sh`
 - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/31-launcher-remote-manifest-browser-smoke.md`
+
+## 2026-03-30: Seventh Federation Code Slice, Share React And React-Redux Between Host And Remote
+
+The last browser proof ended at the first real runtime architecture problem: the launcher could boot through the remote manifest path, but opening an Inventory window crashed with a React hook/context error. At that point the system had proven that remote manifest loading worked; what had failed was the shared runtime boundary between host and remote.
+
+I addressed that by installing a host-owned shared runtime before loading any remote contract, then making the inventory federation build alias `react`, `react/jsx-runtime`, and `react-redux` to shim modules that read from that host-installed runtime. This is still not full Module Federation plugin negotiation, but it is the first real singleton policy for browser remotes in this codebase.
+
+### Host-side shared runtime installation
+
+I added:
+
+- `apps/os-launcher/src/app/federationSharedRuntime.ts`
+
+That module imports the host's:
+
+- `react`
+- `react/jsx-runtime`
+- `react-redux`
+
+and installs them on:
+
+- `globalThis.__WESEN_FEDERATION_SHARED__`
+
+Then `bootstrapLauncherApp()` now calls `installFederationSharedRuntime()` before any remote manifest contract is loaded. That ordering matters. It ensures the remote bundle sees the shared runtime immediately when its top-level module body executes.
+
+### Remote-side shim modules
+
+In the inventory app, I added:
+
+- `workspace-links/go-go-app-inventory/apps/inventory/src/federation-shared/runtime.ts`
+- `workspace-links/go-go-app-inventory/apps/inventory/src/federation-shared/react.ts`
+- `workspace-links/go-go-app-inventory/apps/inventory/src/federation-shared/react-jsx-runtime.ts`
+- `workspace-links/go-go-app-inventory/apps/inventory/src/federation-shared/react-redux.ts`
+
+These modules do not import the real runtime packages. Instead, they:
+
+1. read `globalThis.__WESEN_FEDERATION_SHARED__`
+2. throw a clear error if the host has not installed it
+3. re-export the required runtime bindings from the host-owned module objects
+
+This is what makes the remote bundle use the host's React/react-redux context instead of shipping and using its own copy.
+
+### Producer build aliasing
+
+I then updated:
+
+- `workspace-links/go-go-app-inventory/apps/inventory/vite.federation.config.ts`
+
+The federation build now aliases these exact imports:
+
+- `react`
+- `react/jsx-runtime`
+- `react/jsx-dev-runtime`
+- `react-redux`
+
+to the shim modules above.
+
+One subtle fix was necessary here: Vite alias matching had to be exact and ordered. A naive object alias for `react` caused `react/jsx-runtime` to resolve incorrectly as `react.ts/jsx-runtime`. I replaced that with exact regex aliases in array form so `react/jsx-runtime` and `react-redux` resolve correctly before the generic `react` match.
+
+### Type/build failures during this step
+
+Two concrete issues surfaced during the first shim pass.
+
+#### TypeScript errors
+
+The first inventory typecheck failed with:
+
+- `Property 'jsxDEV' does not exist on type ... react/jsx-runtime`
+- `Property 'unstable_useCacheRefresh' does not exist on type ... react`
+
+These were not runtime blockers; they were over-eager shim exports that the installed type packages do not model. I removed those exports from the shims rather than widening the runtime contract unnecessarily.
+
+#### Alias resolution failure
+
+The first producer build failed with:
+
+- `Could not load .../src/federation-shared/react.ts/jsx-runtime`
+
+That was the alias ordering/matching bug described above. Converting to ordered exact aliases fixed it.
+
+### Real browser result after the shared-runtime fix
+
+I reran the full same-origin browser proof:
+
+1. build the inventory federation artifact
+2. sync it into `apps/os-launcher/public/__federation-smoke/inventory`
+3. boot the launcher with:
+   - `VITE_INVENTORY_REMOTE_MANIFEST_URL=/__federation-smoke/inventory/mf-manifest.json`
+4. open the launcher in a browser
+5. open the Inventory folder from the remote contract
+6. open a child window from that remote folder
+
+This time:
+
+- the launcher booted
+- the `Inventory` desktop icon appeared
+- the `Inventory Folder` window rendered successfully
+- the `Inventory Chat` child window rendered successfully
+
+The previous crash:
+
+- `Cannot read properties of null (reading 'useContext')`
+
+is gone.
+
+That means the duplicate React/react-redux runtime problem is resolved for this remote path.
+
+### What still fails in the browser, and why
+
+The remaining console errors are now backend/runtime integration errors rather than federation-rendering errors:
+
+- `profile list request failed (500)`
+- timeline/profile fetch failures under `/api/apps/inventory/api/...`
+- websocket connection failures for the inventory backend
+
+Those happen because this smoke only proves the frontend/remote integration path. It does not stand up the real inventory backend/chat websocket on `127.0.0.1:8091`.
+
+This is a much better state to be in:
+
+- frontend federation boundary is working
+- runtime child windows render
+- remaining failures are backend availability, not host/remote React isolation
+
+### Validation performed
+
+Commands run successfully:
+
+- `npm run typecheck -w apps/os-launcher`
+- `npm run typecheck -w workspace-links/go-go-app-inventory/apps/inventory`
+- `npm run build:federation -w workspace-links/go-go-app-inventory/apps/inventory`
+- `npm run test -w apps/os-launcher -- --run bootstrapLauncherApp loadFederatedAppContracts`
+
+Manual/browser validation:
+
+- launcher boot through remote manifest
+- Inventory folder render
+- Inventory Chat child window render
+
+### Ticket helper added
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/33-audit-federation-shared-runtime.sh`
+
+This helper prints the new host-side shared runtime installer, the inventory federation shims, and the producer federation config together so later docs can explain the singleton strategy from concrete files instead of prose alone.

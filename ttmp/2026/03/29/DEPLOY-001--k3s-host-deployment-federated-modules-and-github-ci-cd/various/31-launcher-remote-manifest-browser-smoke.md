@@ -89,4 +89,25 @@ Interpretation:
 
 ## Conclusion
 
-The remote-manifest bootstrap path is real and browser-proven. The next task is not manifest loading anymore; it is defining and implementing the shared-singleton policy required for browser-rendered remotes.
+The remote-manifest bootstrap path is real and browser-proven.
+
+## Follow-up result after the shared-runtime fix
+
+After adding the host-installed shared runtime plus remote-side `react` / `react/jsx-runtime` / `react-redux` shims:
+
+- the `Inventory Folder` window renders successfully
+- an `Inventory Chat` child window also renders successfully
+
+The previous React/context crash is gone.
+
+The remaining errors are backend integration errors:
+
+- profile list fetch failures
+- timeline fetch failures
+- websocket connection failures
+
+These are expected in this smoke because the inventory backend was not running for the browser session. They are not federation-rendering failures.
+
+## Updated conclusion
+
+The next task is no longer “share React so the remote can render.” That is now working. The next meaningful validation step is to run the same browser proof with a live inventory backend so the remote chat/timeline/profile flows can complete end to end.
