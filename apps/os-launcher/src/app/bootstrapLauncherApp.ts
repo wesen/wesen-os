@@ -14,6 +14,7 @@ import {
   loadFederatedAppContracts,
   type FederatedFetchLike,
 } from './loadFederatedAppContracts';
+import { installFederationSharedRuntime } from './federationSharedRuntime';
 
 export interface BootstrappedLauncherApp {
   App: ComponentType;
@@ -41,6 +42,7 @@ export async function bootstrapLauncherApp(options: {
   moduleLoaders?: LauncherBootstrapModuleLoaders;
 } = {}): Promise<BootstrappedLauncherApp> {
   resetRuntimeFederatedAppContracts();
+  installFederationSharedRuntime();
   const registry = options.registry ?? resolveFederatedRemoteRegistry();
   const federatedContracts = await loadFederatedAppContracts(registry, options.fetcher);
   setRuntimeFederatedAppContracts(federatedContracts);
