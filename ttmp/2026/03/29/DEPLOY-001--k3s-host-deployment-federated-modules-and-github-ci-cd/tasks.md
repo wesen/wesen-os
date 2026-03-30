@@ -207,6 +207,9 @@
   - Terraform-owned bucket
   - Vault-delivered runtime credentials
   - S3-compatible upload flow from GitHub Actions
+- [x] Create a dedicated Terraform stack for federation asset storage:
+  - `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod`
+  - current default bucket name: `scapegoat-federation-assets`
 - [ ] Configure CORS for the host domain.
 - [x] Set caching policy:
   - immutable cache headers on versioned assets
@@ -215,6 +218,12 @@
 - [x] Add the first remote-repo GitHub Actions workflow that uploads remote assets after build:
   - `workspace-links/go-go-app-inventory/.github/workflows/publish-federation-remote.yml`
 - [ ] Generalize the remote asset upload workflow pattern across each remote repo.
+- [ ] Apply the federation-assets Terraform stack with real Hetzner credentials.
+- [ ] Decide and provision the real public base URL for federation assets:
+  - direct bucket URL vs dedicated domain/CNAME
+  - current placeholder in Terraform/example config: `https://assets.example.invalid`
+- [ ] Seed the resulting object-storage credentials into GitHub for `go-go-app-inventory`.
+- [ ] Seed the resulting object-storage credentials into Vault or the long-term operator secret store.
 - [ ] Add rollback rules:
   - old versions remain available
   - host registry can be flipped back to an older manifest URL

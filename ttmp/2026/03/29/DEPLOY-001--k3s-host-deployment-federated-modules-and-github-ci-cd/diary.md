@@ -3242,3 +3242,100 @@ The endpoint exists, but it is not yet mounted into the deployed host config. Th
 - set the first staging remote manifest URL there
 
 Once that is done, the host can stop relying on the special-case inventory manifest env override for real remote rollouts.
+
+## 2026-03-30: Eleventh Federation Infrastructure Slice, Create The Terraform Stack For Federation Assets
+
+The previous step ended with a real remote publish workflow, but it was still configured against placeholders because there was no canonical federation bucket yet. The user asked directly how I had found the bucket name, which surfaced an important reality: I had not found one. The earlier implementation was based on the storage model documented in the K3s repo, not on an already-provisioned federation bucket.
+
+So this slice creates the missing infrastructure definition instead of pretending it already existed.
+
+### What I checked before creating it
+
+I reviewed the existing Terraform storage stacks under:
+
+- `/home/manuel/code/wesen/terraform/storage/platform/k3s-backups/envs/prod`
+- `/home/manuel/code/wesen/terraform/storage/apps/hair-booking/photos/envs/prod`
+
+That comparison mattered because the backup bucket and the photo-upload bucket encode two different ideas:
+
+- platform-owned storage
+- app-oriented storage with suggested runtime policy outputs
+
+Federation assets are closer to the second category operationally, but they are still platform-level infrastructure. So I created the new stack under:
+
+- `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod`
+
+### The chosen stack contract
+
+The new stack now exists in Terraform with default values:
+
+- bucket name:
+  - `scapegoat-federation-assets`
+- region:
+  - `fsn1`
+- default public base URL placeholder:
+  - `https://assets.example.invalid`
+
+Important design choice: the bucket still defaults to private ACL. The stack does **not** assume that “public asset” means “public bucket ACL.” Instead, it outputs the policy material needed to make public object reads explicit, which is a better security posture and matches the way the rest of this platform prefers explicit control-plane boundaries.
+
+### What the stack outputs
+
+The stack now outputs:
+
+- `bucket_name`
+- `bucket_arn`
+- `bucket_domain_name`
+- `storage_endpoint_url`
+- `storage_region`
+- `public_base_url`
+- `remote_prefixes`
+- `suggested_ci_bucket_policy_json`
+- `suggested_public_read_policy_json`
+
+Those outputs are important because they turn the next operator steps into normal wiring instead of guesswork:
+
+- CI can get a read/write object policy shape
+- the public-read path is explicit
+- the host/runtime docs can reference a concrete public base URL variable
+- the remote prefix contract is written down in infrastructure, not just in frontend code
+
+### Validation performed
+
+I validated the new stack locally with:
+
+- `terraform -chdir=/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod fmt`
+- `terraform -chdir=/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod init -backend=false`
+- `terraform -chdir=/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod validate`
+
+The first `validate` failed before `init`, exactly because the provider had not been installed yet:
+
+- `Error: Missing required provider`
+
+That was expected and useful to record. After `init -backend=false`, validation passed cleanly.
+
+### Commit recorded outside the source repo
+
+Terraform repo commit:
+
+- `1ae2402` — `Add federation asset bucket stack`
+
+This matters because the federation rollout now depends on an external infrastructure repo state, not only on code inside `wesen-os` or `go-go-app-inventory`.
+
+### Ticket helper added for replay
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/37-check-federation-bucket-terraform-stack.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/37-federation-bucket-terraform-stack-check.md`
+
+### What this unlocks next
+
+Now the next steps are no longer “invent a storage stack.”
+
+They are:
+
+1. apply the Terraform stack with real Hetzner Object Storage credentials
+2. decide the real public base URL
+3. seed the resulting credentials into GitHub for the inventory publish workflow
+4. seed the same credentials into the long-term ops path
+5. mount a real `federation.registry.json` into the host config that points at the first hosted manifest URL
+
+That is a materially better place than before because the infrastructure layer is now explicit and versioned.
