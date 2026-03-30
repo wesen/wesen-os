@@ -8,10 +8,11 @@ export const inventoryLocalContract = inventoryHostContract;
 const LOCAL_CONTRACTS_BY_REMOTE_ID = {
   inventory: inventoryLocalContract,
 } as const;
+let runtimeFederatedAppContracts: FederatedAppHostContract[] = [];
 
 export interface LocalFederatedDocsMount {
   owner: string;
-  metadata: typeof inventoryLocalContract.docsMetadata;
+  metadata: NonNullable<FederatedAppHostContract['docsMetadata']>;
 }
 
 function assertLocalPackageMode(mode: string, remoteId: string): asserts mode is 'local-package' {
@@ -39,20 +40,43 @@ export function listLocalFederatedAppContracts(
   });
 }
 
-export function listLocalFederatedLauncherModules() {
-  return listLocalFederatedAppContracts().map((contract) => contract.launcherModule);
+function ensureRuntimeFederatedContractsInitialized(): FederatedAppHostContract[] {
+  if (runtimeFederatedAppContracts.length === 0) {
+    runtimeFederatedAppContracts = [...listLocalFederatedAppContracts()];
+  }
+  return runtimeFederatedAppContracts;
 }
 
-export function collectLocalFederatedSharedReducers(): Record<string, Reducer> {
-  return Object.assign({}, ...listLocalFederatedAppContracts().map((contract) => contract.sharedReducers ?? {}));
+export function setRuntimeFederatedAppContracts(contracts: readonly FederatedAppHostContract[]): void {
+  runtimeFederatedAppContracts = [...contracts];
 }
 
-export function listLocalFederatedDocsMounts(): LocalFederatedDocsMount[] {
-  return listLocalFederatedAppContracts().flatMap((contract) =>
+export function resetRuntimeFederatedAppContracts(): void {
+  runtimeFederatedAppContracts = [...listLocalFederatedAppContracts()];
+}
+
+export function listRuntimeFederatedAppContracts(): readonly FederatedAppHostContract[] {
+  return ensureRuntimeFederatedContractsInitialized();
+}
+
+export function getRuntimeFederatedAppContract(remoteId: string): FederatedAppHostContract | undefined {
+  return listRuntimeFederatedAppContracts().find((contract) => contract.remoteId === remoteId);
+}
+
+export function listRuntimeFederatedLauncherModules() {
+  return listRuntimeFederatedAppContracts().map((contract) => contract.launcherModule);
+}
+
+export function collectRuntimeFederatedSharedReducers(): Record<string, Reducer> {
+  return Object.assign({}, ...listRuntimeFederatedAppContracts().map((contract) => contract.sharedReducers ?? {}));
+}
+
+export function listRuntimeFederatedDocsMounts(): LocalFederatedDocsMount[] {
+  return listRuntimeFederatedAppContracts().flatMap((contract) =>
     contract.docsMetadata ? [{ owner: contract.remoteId, metadata: contract.docsMetadata }] : [],
   );
 }
 
-export function listLocalFederatedRuntimeBundles(): RuntimeBundleDefinition[] {
-  return listLocalFederatedAppContracts().flatMap((contract) => [...(contract.runtimeBundles ?? [])]);
+export function listRuntimeFederatedRuntimeBundles(): RuntimeBundleDefinition[] {
+  return listRuntimeFederatedAppContracts().flatMap((contract) => [...(contract.runtimeBundles ?? [])]);
 }

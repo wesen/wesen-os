@@ -27,7 +27,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { STACK } from '../domain/stack';
 import { OS_LAUNCHER_VM_PACK_METADATA } from '../domain/vmmeta';
-import { inventoryLocalContract } from './localFederatedAppContracts';
+import { getRuntimeFederatedAppContract } from './localFederatedAppContracts';
 
 const APP_ID = 'hypercard-repl';
 const CONSOLE_INSTANCE_ID = 'console';
@@ -48,8 +48,15 @@ interface BundleLibraryEntry {
 }
 
 const RUNTIME_BROKER = createRuntimeBroker();
-const INVENTORY_STACK = inventoryLocalContract.runtimeBundles[0];
-const INVENTORY_VM_PACK_METADATA = inventoryLocalContract.docsMetadata;
+const INVENTORY_CONTRACT = getRuntimeFederatedAppContract('inventory');
+if (!INVENTORY_CONTRACT) {
+  throw new Error('Missing runtime federated contract for "inventory".');
+}
+const INVENTORY_STACK = INVENTORY_CONTRACT.runtimeBundles?.[0];
+if (!INVENTORY_STACK) {
+  throw new Error('Runtime federated contract for "inventory" is missing its primary runtime bundle.');
+}
+const INVENTORY_VM_PACK_METADATA = INVENTORY_CONTRACT.docsMetadata;
 
 const BUNDLE_LIBRARY: Record<string, BundleLibraryEntry> = {
   inventory: {

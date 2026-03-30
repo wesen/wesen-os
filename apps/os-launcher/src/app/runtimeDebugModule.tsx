@@ -8,9 +8,9 @@ import {
 } from '@go-go-golems/os-scripting';
 import type { ReactNode } from 'react';
 import { STACK } from '../domain/stack';
-import { listLocalFederatedRuntimeBundles } from './localFederatedAppContracts';
+import { listRuntimeFederatedRuntimeBundles } from './localFederatedAppContracts';
 
-const RUNTIME_DEBUG_STACKS: RuntimeBundleDefinition[] = [...listLocalFederatedRuntimeBundles(), STACK];
+const RUNTIME_DEBUG_STACKS: RuntimeBundleDefinition[] = [...listRuntimeFederatedRuntimeBundles(), STACK];
 
 registerRuntimeDebugStacks(RUNTIME_DEBUG_STACKS);
 

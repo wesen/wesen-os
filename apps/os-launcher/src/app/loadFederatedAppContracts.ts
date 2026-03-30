@@ -88,8 +88,23 @@ function assertFederatedAppHostContract(
   }
 }
 
+function resolveRemoteUrl(url: string): string {
+  try {
+    return new URL(url).toString();
+  } catch (error) {
+    if (typeof window !== 'undefined' && window.location?.href) {
+      return new URL(url, window.location.href).toString();
+    }
+    if (typeof document !== 'undefined' && document.baseURI) {
+      return new URL(url, document.baseURI).toString();
+    }
+    const detail = error instanceof Error ? ` ${error.message}` : '';
+    throw new Error(`Unable to resolve remote URL "${url}" without a browser base URL.${detail}`);
+  }
+}
+
 function resolveManifestEntryUrl(manifestUrl: string, entry: string): string {
-  return new URL(entry, manifestUrl).toString();
+  return new URL(entry, resolveRemoteUrl(manifestUrl)).toString();
 }
 
 async function fetchRemoteManifest(

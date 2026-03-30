@@ -3,12 +3,12 @@ import { booksReducer } from '@go-go-golems/book-tracker-debug/reducers';
 import { chatProfilesReducer, chatSessionReducer, chatWindowReducer, timelineReducer } from '@go-go-golems/os-chat';
 import { activitiesReducer, companiesReducer, contactsReducer, dealsReducer } from '@go-go-golems/crm/reducers';
 import { tasksReducer } from '@go-go-golems/todo/reducers';
-import { collectLocalFederatedSharedReducers } from './localFederatedAppContracts';
+import { collectRuntimeFederatedSharedReducers } from './localFederatedAppContracts';
 import { launcherModules } from './modules';
 
 export const { store, createStore: createLauncherAppStore } = createLauncherStore(launcherModules, {
   sharedReducers: {
-    ...collectLocalFederatedSharedReducers(),
+    ...collectRuntimeFederatedSharedReducers(),
     timeline: timelineReducer,
     chatSession: chatSessionReducer,
     chatWindow: chatWindowReducer,

@@ -11,7 +11,7 @@ import { assistantLauncherModule } from './assistantModule';
 import { hypercardReplLauncherModule } from './hypercardReplModule';
 import { jsReplLauncherModule } from './jsReplModule';
 import { kanbanVmLauncherModule } from './kanbanVmModule';
-import { listLocalFederatedLauncherModules } from './localFederatedAppContracts';
+import { listRuntimeFederatedLauncherModules } from './localFederatedAppContracts';
 import { registerAppsBrowserDocs } from './registerAppsBrowserDocs';
 import { runtimeDebugLauncherModule } from './runtimeDebugModule';
 import { taskManagerLauncherModule } from './taskManagerModule';
@@ -26,7 +26,7 @@ export const launcherModules: LaunchableAppModule[] = [
   assistantLauncherModule,
   hypercardReplLauncherModule,
   jsReplLauncherModule,
-  ...listLocalFederatedLauncherModules(),
+  ...listRuntimeFederatedLauncherModules(),
   sqliteLauncherModule,
   todoLauncherModule,
   crmLauncherModule,
