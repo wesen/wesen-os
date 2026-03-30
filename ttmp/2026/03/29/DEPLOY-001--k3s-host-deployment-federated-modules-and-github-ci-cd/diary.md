@@ -2579,3 +2579,99 @@ This slice does **not** yet:
 - add UI fallback behavior when a remote fails to load
 
 Those are the next tasks.
+
+## 2026-03-30: Fifth Federation Code Slice, Build A Real Inventory Artifact And Smoke It
+
+The loader path existed after the previous step, but it was still only proven against synthetic manifests and fixture modules. The next thing I wanted was a real producer artifact from `inventory` that the launcher loader could consume without any fake module object in the middle.
+
+### Producer build added
+
+In `go-go-app-inventory`, I added:
+
+- `workspace-links/go-go-app-inventory/apps/inventory/vite.federation.config.ts`
+- `build:federation` in `workspace-links/go-go-app-inventory/apps/inventory/package.json`
+
+I also refactored the shared Vite helper slightly so both the normal app build and the federation build can reuse the same frontend-resolution alias logic:
+
+- `workspace-links/go-go-app-inventory/tooling/vite/createHypercardViteConfig.ts`
+
+### What the new build emits
+
+The federation build now writes:
+
+- `dist-federation/mf-manifest.json`
+- `dist-federation/inventory-host-contract.js`
+
+Current manifest contents are intentionally minimal:
+
+- `version`
+- `remoteId`
+- `compatiblePlatformRange`
+- `contract.entry`
+- `contract.exportName`
+
+This is not full producer-side Module Federation yet. It is a minimal manifest-emitting remote artifact that matches the host loader we just built.
+
+### Real smoke path
+
+I added:
+
+- `apps/os-launcher/src/app/loadFederatedAppContracts.real.test.ts`
+
+This test is skipped unless `INVENTORY_FEDERATION_MANIFEST_FILE` is set. When enabled, it:
+
+1. uses the real built `mf-manifest.json`
+2. passes a file-backed fetcher into `loadFederatedAppContracts`
+3. loads the real built `inventory-host-contract.js`
+4. validates the loaded contract
+5. calls `buildLaunchWindow()` on the loaded launcher module
+
+So this is no longer a fake fixture pretending to be a producer build. It is the real inventory artifact going through the real host loader.
+
+### Ticket helper added
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/30-real-inventory-federation-smoke.sh`
+
+That helper does the full bounded operator loop:
+
+1. `npm run build:federation -w workspace-links/go-go-app-inventory/apps/inventory`
+2. set `INVENTORY_FEDERATION_MANIFEST_FILE`
+3. run the explicit launcher real-smoke test
+
+### Real results
+
+The build succeeded and emitted:
+
+- `dist-federation/mf-manifest.json`
+- `dist-federation/inventory-host-contract.js`
+
+The bundled contract file is currently large:
+
+- about 2.6 MB uncompressed
+
+That is expected for now because we are still bundling the entire host-contract graph rather than doing real shared singleton negotiation and remote chunk splitting.
+
+There was also one Vite warning during the producer build:
+
+- QuickJS-related code pulled in a browser-compat externalization warning for Node’s `module`
+
+The build still completed, so I recorded it as a warning rather than a blocker. It likely reflects the current broad `inventory` dependency graph more than the federation build wrapper itself.
+
+### Why I consider this “real enough”
+
+This is the first point where we can truthfully say:
+
+- the producer emits a real artifact
+- the host loader consumes that real artifact
+- the loaded contract can execute launcher behavior
+
+It is still not the final browser/runtime deployment path, but it is no longer hypothetical.
+
+### What remains
+
+The next gaps are now very concrete:
+
+- wire the async loader into actual launcher startup
+- decide how the runtime registry source is provided
+- reduce or explicitly manage shared dependencies instead of bundling the whole world into one contract file
+- eventually replace this minimal manifest with the full remote build/deploy path

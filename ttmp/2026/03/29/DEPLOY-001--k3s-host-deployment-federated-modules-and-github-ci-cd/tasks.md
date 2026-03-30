@@ -175,12 +175,18 @@
   - alternatives only if current tooling forces a different name
 - [x] Add a launcher-side adapter so the host can consume the same contract from both local package mode and future remote mode.
 - [ ] Add module federation build configuration there.
+- [x] Add an initial manifest-emitting remote build for `inventory`:
+  - `dist-federation/mf-manifest.json`
+  - `dist-federation/inventory-host-contract.js`
 - [ ] Add a stable exposed entrypoint for the host:
   - for example `./launcher`
 - [ ] Ensure the remote no longer depends on sibling-source aliases.
 - [ ] Build a versioned manifest plus chunks.
-- [ ] Add a local dev mode that still works before full CDN/K3s rollout.
-- [ ] Validate the host can load the remote in a local or staging environment.
+- [x] Add a local real-artifact smoke path before CDN rollout:
+  - build the real inventory federation artifact
+  - load the real manifest through the launcher loader
+- [x] Validate the host can load the remote in a local real-artifact environment.
+- [ ] Validate the host can load the remote in a staging/browser environment.
 
 ## Phase 6: Host Remote Assets On Hetzner Object Storage
 
