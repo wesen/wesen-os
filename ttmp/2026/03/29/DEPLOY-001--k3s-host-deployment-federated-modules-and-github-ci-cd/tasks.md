@@ -218,12 +218,24 @@
 - [x] Add the first remote-repo GitHub Actions workflow that uploads remote assets after build:
   - `workspace-links/go-go-app-inventory/.github/workflows/publish-federation-remote.yml`
 - [ ] Generalize the remote asset upload workflow pattern across each remote repo.
+- [x] Add a fail-fast operator env check for the federation-assets Terraform stack.
+- [x] Confirm the current blocker precisely:
+  - Terraform env still uses placeholder `TF_VAR_object_storage_server=fsn1.your-objectstorage.com`
+- [ ] Replace the placeholder object storage endpoint in the Terraform operator env with the real Hetzner endpoint.
+- [ ] Re-run the operator env check until it passes.
 - [ ] Apply the federation-assets Terraform stack with real Hetzner credentials.
 - [ ] Decide and provision the real public base URL for federation assets:
   - direct bucket URL vs dedicated domain/CNAME
   - current placeholder in Terraform/example config: `https://assets.example.invalid`
+- [x] Add a replayable GitHub secret/variable seeding helper for `go-go-app-inventory`.
 - [ ] Seed the resulting object-storage credentials into GitHub for `go-go-app-inventory`.
 - [ ] Seed the resulting object-storage credentials into Vault or the long-term operator secret store.
+- [ ] Run the first non-dry-run `publish-federation-remote` workflow in `go-go-app-inventory`.
+- [ ] Capture the first real immutable manifest URL.
+- [ ] Replace the placeholder manifest URL in deployed `wesen-os` config with that immutable manifest URL.
+- [ ] Flip the deployed `inventory` remote from `enabled: false` to `enabled: true`.
+- [ ] Verify deployed `wesen-os` serves the updated registry from `/api/os/federation-registry`.
+- [ ] Verify deployed `wesen-os` loads the hosted `inventory` remote successfully.
 - [ ] Add rollback rules:
   - old versions remain available
   - host registry can be flipped back to an older manifest URL

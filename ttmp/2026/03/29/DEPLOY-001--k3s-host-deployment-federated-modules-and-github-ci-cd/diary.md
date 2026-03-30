@@ -3530,3 +3530,161 @@ It is:
 5. verify deployed `wesen-os` loads the real hosted manifest through `/api/os/federation-registry`
 
 That is the exact boundary we wanted to reach in this slice.
+
+## 2026-03-30 - First Live Remote Publish Attempt Blocked By Placeholder Storage Endpoint
+
+After wiring the host-side registry config, the next planned slice was the first live `inventory` remote publish. I used the existing Terraform and GitHub workflow machinery to push this as far as it would go.
+
+### What I checked first
+
+I re-opened the current storage and publish wiring:
+
+- Terraform federation stack:
+  - `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod/main.tf`
+  - `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod/variables.tf`
+  - `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod/outputs.tf`
+- inventory remote publish path:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-inventory/.github/workflows/publish-federation-remote.yml`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-inventory/scripts/publish_federation_remote.py`
+
+I also checked the current GitHub configuration state for `go-go-app-inventory`:
+
+- `gh secret list --repo go-go-golems/go-go-app-inventory`
+- `gh variable list --repo go-go-golems/go-go-app-inventory`
+
+Result:
+
+- no object-storage secrets configured yet
+- no `INVENTORY_FEDERATION_PUBLIC_BASE_URL` variable configured yet
+
+That was expected, but useful to make explicit.
+
+### Operator environment check
+
+The Terraform repo already exposes the object-storage variables through `direnv`, so I checked whether they were actually usable or still placeholders.
+
+First I verified presence only:
+
+- `TF_VAR_object_storage_server=set`
+- `TF_VAR_object_storage_region=set`
+- `TF_VAR_object_storage_access_key=set`
+- `TF_VAR_object_storage_secret_key=set`
+
+That looked promising. So I tried the normal live operator path:
+
+1. `terraform init -reconfigure`
+2. `terraform plan`
+
+Using:
+
+- `AWS_PROFILE=manuel`
+- `direnv exec .`
+- `TF_VAR_public_base_url=https://scapegoat-federation-assets.${TF_VAR_object_storage_server}`
+
+### What the plan proved
+
+The Terraform stack itself is correct:
+
+- it plans to create only:
+  - `minio_s3_bucket.federation_assets`
+  - `minio_s3_bucket_versioning.federation_assets`
+
+But the plan also exposed the real blocker:
+
+- `public_base_url = "https://scapegoat-federation-assets.fsn1.your-objectstorage.com"`
+- `storage_endpoint_url = "https://fsn1.your-objectstorage.com"`
+
+So the current operator env is still using the placeholder endpoint, not a real Hetzner Object Storage host.
+
+That means:
+
+- the code path is ready
+- the Terraform stack is ready
+- the operator environment is **not** ready for a real apply
+
+Running `apply` at this point would be wrong.
+
+### New helper scripts added
+
+To turn that from “tribal knowledge” into repeatable operations, I added:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/40-check-federation-storage-operator-env.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/41-seed-inventory-federation-gh-config.sh`
+
+What they do:
+
+`40-check-federation-storage-operator-env.sh`
+
+- loads the Terraform repo env through `direnv`
+- verifies required `TF_VAR_object_storage_*` values exist
+- computes the bucket public base URL
+- fails fast if the endpoint still contains `your-objectstorage.com`
+
+`41-seed-inventory-federation-gh-config.sh`
+
+- reads the same live Terraform env
+- refuses to run if the endpoint is still placeholder
+- seeds `go-go-app-inventory` with:
+  - `HETZNER_OBJECT_STORAGE_ACCESS_KEY_ID`
+  - `HETZNER_OBJECT_STORAGE_SECRET_ACCESS_KEY`
+  - `HETZNER_OBJECT_STORAGE_BUCKET`
+  - `HETZNER_OBJECT_STORAGE_ENDPOINT`
+  - `HETZNER_OBJECT_STORAGE_REGION`
+- sets:
+  - `INVENTORY_FEDERATION_PUBLIC_BASE_URL`
+
+This second script was **not** run yet, because the endpoint blocker is still present.
+
+### New playbook added
+
+I also added a dedicated ticket playbook:
+
+- `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/design/03-first-live-inventory-remote-publish-playbook.md`
+
+That playbook now defines the exact next operator sequence:
+
+1. replace placeholder object-storage endpoint in Terraform env
+2. apply federation bucket
+3. seed GitHub secrets/vars for inventory
+4. run the first non-dry-run remote publish
+5. capture the immutable manifest URL
+6. update GitOps host config to that immutable URL and enable the remote
+
+### Captured replay artifact
+
+I captured the current blocker state in:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/40-federation-storage-operator-env-check.md`
+
+### Current blocker, stated plainly
+
+The next live step is not blocked by code anymore.
+
+It is blocked by one concrete operator issue:
+
+- replace `TF_VAR_object_storage_server=fsn1.your-objectstorage.com` with the real Hetzner Object Storage host in the Terraform operator environment
+
+Once that is fixed, the rest of the path is now mechanical and documented.
+
+### Extra confirmation from existing state
+
+I also checked the already-applied storage stacks to see whether they exposed a reusable real endpoint in state outputs:
+
+- `storage/apps/hair-booking/photos/envs/prod`
+- `storage/platform/k3s-backups/envs/prod`
+
+Both still report:
+
+- `https://fsn1.your-objectstorage.com`
+
+So there is no hidden real endpoint currently available through Terraform state either. The blocker is genuinely the operator environment, not just this new federation stack.
+
+### Safe-refusal validation
+
+I validated that the GitHub seeding helper fails safely before touching repo configuration when the endpoint is still placeholder:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/41-seed-inventory-federation-gh-config.sh`
+
+Output:
+
+- `Refusing to seed GitHub config from placeholder object storage settings.`
