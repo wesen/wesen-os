@@ -239,6 +239,11 @@
   - static JSON shipped with the host
   - environment-generated JSON
   - backend-served config endpoint
+- [x] Add a host-served federation registry endpoint for runtime bootstrap:
+  - `GET /api/os/federation-registry`
+  - serves a mounted JSON file when configured
+  - falls back to local-package mode when absent
+- [ ] Mount a real `federation.registry.json` into the deployed host config and wire the staging manifest URL there.
 - [ ] Add client-side timeout/retry/failure UI.
 - [ ] Add tracing/logging so remote load failures are diagnosable.
 - [ ] Add feature flags so staging can enable a remote before production.

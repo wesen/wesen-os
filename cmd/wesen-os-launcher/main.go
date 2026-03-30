@@ -79,6 +79,7 @@ type serverSettings struct {
 	ARCRawListenAddr     string `glazed:"arc-raw-listen-addr"`
 	ARCAPIKey            string `glazed:"arc-api-key"`
 	ARCMaxSessionEvents  int    `glazed:"arc-max-session-events"`
+	FederationRegistry   string `glazed:"federation-registry"`
 }
 
 func NewCommand() (*Command, error) {
@@ -134,6 +135,7 @@ func NewCommand() (*Command, error) {
 			fields.New("arc-raw-listen-addr", fields.TypeString, fields.WithDefault("127.0.0.1:18081"), fields.WithHelp("Loopback listen address for raw ARC runtime mode")),
 			fields.New("arc-api-key", fields.TypeString, fields.WithDefault("1234"), fields.WithHelp("X-API-Key header used for ARC requests")),
 			fields.New("arc-max-session-events", fields.TypeInteger, fields.WithDefault(200), fields.WithHelp("Maximum ARC session events retained per session")),
+			fields.New("federation-registry", fields.TypeString, fields.WithDefault(""), fields.WithHelp("Optional JSON file served at /api/os/federation-registry for frontend remote discovery")),
 		),
 		cmds.WithSections(geLayers...),
 	)
@@ -362,6 +364,7 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 	launcherHelpStore := loadLauncherHelpDocStore()
 	registerOSHelpEndpoint(appMux, launcherHelpStore)
 	registerOSDocsEndpoint(appMux, moduleRegistry, launcherHelpStore, cfg.Root)
+	registerOSFederationRegistryEndpoint(appMux, cfg.FederationRegistry)
 	for _, module := range moduleRegistry.Modules() {
 		manifest := module.Manifest()
 		if err := backendhost.MountNamespacedRoutes(appMux, manifest.AppID, module.MountRoutes); err != nil {

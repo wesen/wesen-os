@@ -13,6 +13,15 @@ export interface FederatedRemoteRegistry {
   remotes: FederatedRemoteRegistryEntry[];
 }
 
+interface FetchLikeResponse {
+  ok: boolean;
+  status: number;
+  text(): Promise<string>;
+  json(): Promise<unknown>;
+}
+
+export type FederatedRegistryFetchLike = (input: string, init?: RequestInit) => Promise<FetchLikeResponse>;
+
 export interface FederatedRemoteManifestContract {
   entry: string;
   exportName?: string;
@@ -54,8 +63,7 @@ function asBooleanEnv(value: string | boolean | undefined): boolean | undefined 
   return undefined;
 }
 
-function parseFederatedRemoteRegistry(raw: string): FederatedRemoteRegistry {
-  const parsed = JSON.parse(raw) as unknown;
+function parseFederatedRemoteRegistryValue(parsed: unknown): FederatedRemoteRegistry {
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
     throw new Error('Federation registry JSON must be an object.');
   }
@@ -89,9 +97,26 @@ function parseFederatedRemoteRegistry(raw: string): FederatedRemoteRegistry {
   };
 }
 
-export function resolveFederatedRemoteRegistry(
+function parseFederatedRemoteRegistry(raw: string): FederatedRemoteRegistry {
+  return parseFederatedRemoteRegistryValue(JSON.parse(raw) as unknown);
+}
+
+function buildDefaultFederatedRemoteRegistry(
   env: Record<string, string | boolean | undefined> = import.meta.env,
 ): FederatedRemoteRegistry {
+  const inventoryEnabled = asBooleanEnv(env.VITE_INVENTORY_FEDERATION_ENABLED) ?? true;
+  return {
+    ...DEFAULT_LOCAL_FEDERATION_REGISTRY,
+    remotes: DEFAULT_LOCAL_FEDERATION_REGISTRY.remotes.map((entry) => ({
+      ...entry,
+      enabled: entry.remoteId === 'inventory' ? inventoryEnabled : entry.enabled,
+    })),
+  };
+}
+
+function resolveExplicitFederatedRemoteRegistry(
+  env: Record<string, string | boolean | undefined> = import.meta.env,
+): FederatedRemoteRegistry | undefined {
   const jsonRegistry = env.VITE_FEDERATION_REGISTRY_JSON;
   if (typeof jsonRegistry === 'string' && jsonRegistry.trim().length > 0) {
     return parseFederatedRemoteRegistry(jsonRegistry);
@@ -116,11 +141,62 @@ export function resolveFederatedRemoteRegistry(
     };
   }
 
-  return {
-    ...DEFAULT_LOCAL_FEDERATION_REGISTRY,
-    remotes: DEFAULT_LOCAL_FEDERATION_REGISTRY.remotes.map((entry) => ({
-      ...entry,
-      enabled: entry.remoteId === 'inventory' ? inventoryEnabled : entry.enabled,
-    })),
-  };
+  return undefined;
+}
+
+function defaultFederatedRegistryFetch(input: string, init?: RequestInit) {
+  return fetch(input, init);
+}
+
+function resolveRemoteUrl(url: string): string {
+  try {
+    return new URL(url).toString();
+  } catch (error) {
+    if (typeof window !== 'undefined' && window.location?.href) {
+      return new URL(url, window.location.href).toString();
+    }
+    if (typeof document !== 'undefined' && document.baseURI) {
+      return new URL(url, document.baseURI).toString();
+    }
+    const detail = error instanceof Error ? ` ${error.message}` : '';
+    throw new Error(`Unable to resolve federation registry URL "${url}" without a browser base URL.${detail}`);
+  }
+}
+
+export function resolveFederatedRemoteRegistry(
+  env: Record<string, string | boolean | undefined> = import.meta.env,
+): FederatedRemoteRegistry {
+  return resolveExplicitFederatedRemoteRegistry(env) ?? buildDefaultFederatedRemoteRegistry(env);
+}
+
+export async function loadFederatedRemoteRegistry(options: {
+  env?: Record<string, string | boolean | undefined>;
+  fetcher?: FederatedRegistryFetchLike;
+  registryUrl?: string;
+} = {}): Promise<FederatedRemoteRegistry> {
+  const env = options.env ?? import.meta.env;
+  const explicitRegistry = resolveExplicitFederatedRemoteRegistry(env);
+  if (explicitRegistry) {
+    return explicitRegistry;
+  }
+
+  const fetcher = options.fetcher ?? defaultFederatedRegistryFetch;
+  const registryUrl = resolveRemoteUrl(options.registryUrl ?? '/api/os/federation-registry');
+
+  try {
+    const response = await fetcher(registryUrl);
+    if (response.status === 404) {
+      return buildDefaultFederatedRemoteRegistry(env);
+    }
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(`Federation registry fetch failed: ${response.status} ${message}`.trim());
+    }
+    return parseFederatedRemoteRegistryValue(await response.json());
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Federation registry fetch failed:')) {
+      throw error;
+    }
+    return buildDefaultFederatedRemoteRegistry(env);
+  }
 }

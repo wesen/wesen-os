@@ -3,7 +3,7 @@ import type { Store } from '@reduxjs/toolkit';
 import type { ComponentType } from 'react';
 import type { FederatedAppHostContract } from '@go-go-golems/os-shell';
 import {
-  resolveFederatedRemoteRegistry,
+  loadFederatedRemoteRegistry,
   type FederatedRemoteRegistry,
 } from './federationRegistry';
 import {
@@ -43,7 +43,7 @@ export async function bootstrapLauncherApp(options: {
 } = {}): Promise<BootstrappedLauncherApp> {
   resetRuntimeFederatedAppContracts();
   installFederationSharedRuntime();
-  const registry = options.registry ?? resolveFederatedRemoteRegistry();
+  const registry = options.registry ?? await loadFederatedRemoteRegistry({ fetcher: options.fetcher });
   const federatedContracts = await loadFederatedAppContracts(registry, options.fetcher);
   setRuntimeFederatedAppContracts(federatedContracts);
   const moduleLoaders = options.moduleLoaders ?? DEFAULT_LAUNCHER_BOOTSTRAP_MODULE_LOADERS;

@@ -3145,3 +3145,100 @@ Still pending:
 - decide whether to add a moving alias path such as `staging/current`
 
 The important point is that the system now has a real first publish path, not just a browser smoke setup under `apps/os-launcher/public/__federation-smoke`.
+
+## 2026-03-30: Tenth Federation Runtime Slice, Move Registry Resolution Onto A Host-Served Endpoint
+
+The object-storage publish workflow solved the producer side, but the host still had a structural weakness: remote discovery only came from frontend build-time env. That is acceptable for local smoke runs, but it is the wrong contract for a deployed host. A host image should be able to learn about remote manifests from runtime config, not only from the values that happened to exist when Vite bundled the SPA.
+
+I addressed that by adding a small host-served federation-registry endpoint and teaching launcher bootstrap to consult it before falling back to the local-package default. The result is a better split of responsibility: the backend owns runtime-discoverable host config, the frontend still supports env overrides for development/proof flows, and the default local inventory path remains available when the endpoint is absent.
+
+### Host endpoint added
+
+I added:
+
+- `cmd/wesen-os-launcher/federation_registry_endpoint.go`
+- `cmd/wesen-os-launcher/federation_registry_endpoint_test.go`
+
+and wired the endpoint into the launcher server in:
+
+- `cmd/wesen-os-launcher/main.go`
+
+The new endpoint is:
+
+- `GET /api/os/federation-registry`
+
+The server behavior is deliberately small and strict:
+
+- if no `--federation-registry` path is configured, it returns `404`
+- if the file does not exist, it returns `404`
+- if the file exists but is invalid JSON, it returns `500`
+- if the file exists and contains valid JSON, it serves that JSON as `application/json`
+
+That shape matches the current phase of the rollout. We are not building a full remote-control plane yet. We are adding the smallest runtime configuration seam that can be mounted from the host config path later.
+
+### Frontend bootstrap changes
+
+In `apps/os-launcher`, I updated:
+
+- `src/app/federationRegistry.ts`
+- `src/app/bootstrapLauncherApp.ts`
+- `src/app/federationRegistry.test.ts`
+
+The launcher now resolves the registry in this order:
+
+1. explicit `VITE_FEDERATION_REGISTRY_JSON`
+2. explicit `VITE_INVENTORY_REMOTE_MANIFEST_URL`
+3. fetch `/api/os/federation-registry`
+4. if the endpoint is absent or unreachable, fall back to the local-package inventory registry
+
+That ordering keeps all of the earlier proof paths working:
+
+- local env overrides still work
+- the manifest smoke path still works
+- the deployed host now has a runtime-served path available
+
+This matters because it lets us move from “remote URL baked into a frontend build” toward “remote URL supplied by host runtime config.”
+
+### Why this was the right next step
+
+At this point in the ticket, the system already had:
+
+- a working remote-manifest browser path
+- a working live-backend proof
+- an immutable object-storage publish workflow
+
+What it did not have was a stable runtime seam between those layers. Without that seam, each new remote URL would have to be injected directly through frontend build-time env, which is exactly the wrong direction once the host is deployed as a container on K3s.
+
+This endpoint does not finish the runtime registry story, but it creates the right contract boundary:
+
+- source repo publishes remote assets
+- host runtime config points at the chosen registry data
+- frontend asks the host what remotes exist
+
+That is a much more defensible architecture than keeping federation discovery entirely inside Vite env knobs.
+
+### Validation performed
+
+I validated the new runtime registry path with:
+
+- `go test ./cmd/wesen-os-launcher/...`
+- `npm run typecheck -w apps/os-launcher`
+- `npm run test -w apps/os-launcher -- --run federationRegistry bootstrapLauncherApp loadFederatedAppContracts`
+
+I also added the replay helper:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/36-check-runtime-federation-registry-path.sh`
+
+and captured it in:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/36-runtime-federation-registry-path-check.md`
+
+### What is still missing after this slice
+
+The endpoint exists, but it is not yet mounted into the deployed host config. That means the next deployment-oriented follow-up is:
+
+- add `federation.registry.json` to the host config path
+- mount it in the canonical K3s `wesen-os` package
+- set the first staging remote manifest URL there
+
+Once that is done, the host can stop relying on the special-case inventory manifest env override for real remote rollouts.
