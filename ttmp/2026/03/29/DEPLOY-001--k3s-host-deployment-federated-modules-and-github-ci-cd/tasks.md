@@ -139,7 +139,7 @@
   - static import still exists
   - no dynamic remote loader yet
   - no runtime manifest registry yet
-- [ ] Freeze the minimum remote contract:
+- [x] Freeze the minimum remote contract:
   - remote id
   - version
   - manifest URL
@@ -174,14 +174,14 @@
   - likely `./host`
   - alternatives only if current tooling forces a different name
 - [x] Add a launcher-side adapter so the host can consume the same contract from both local package mode and future remote mode.
-- [ ] Add module federation build configuration there.
+- [x] Add module federation build configuration there.
 - [x] Add an initial manifest-emitting remote build for `inventory`:
   - `dist-federation/mf-manifest.json`
   - `dist-federation/inventory-host-contract.js`
 - [ ] Add a stable exposed entrypoint for the host:
   - for example `./launcher`
 - [ ] Ensure the remote no longer depends on sibling-source aliases.
-- [ ] Build a versioned manifest plus chunks.
+- [x] Build a versioned manifest plus chunks.
 - [x] Add a local real-artifact smoke path before CDN rollout:
   - build the real inventory federation artifact
   - load the real manifest through the launcher loader
@@ -193,22 +193,28 @@
 - [x] Validate the host can boot in a real browser with the remote-manifest registry and show the remote-provided Inventory launcher entry.
 - [x] Replace duplicate remote React/react-redux copies with a host-installed shared-singleton strategy for browser remotes.
 - [x] Validate the host can render remote Inventory windows in a browser runtime without React hook/context crashes.
-- [ ] Validate backend-integrated remote runtime flows in a browser environment with a live inventory backend:
+- [x] Validate backend-integrated remote runtime flows in a browser environment with a live inventory backend:
   - profile list fetch
   - timeline fetch
   - chat websocket
 
 ## Phase 6: Host Remote Assets On Hetzner Object Storage
 
-- [ ] Define bucket/container layout, for example:
+- [x] Define bucket/container layout, for example:
   - `remotes/<remote-id>/<version>/mf-manifest.json`
   - `remotes/<remote-id>/<version>/assets/*`
+- [x] Align the first remote asset publish path with the Hetzner K3s object-storage model already documented for backups:
+  - Terraform-owned bucket
+  - Vault-delivered runtime credentials
+  - S3-compatible upload flow from GitHub Actions
 - [ ] Configure CORS for the host domain.
-- [ ] Set caching policy:
+- [x] Set caching policy:
   - immutable cache headers on versioned assets
   - short-lived cache or no-cache on moving aliases, if any
 - [ ] Decide whether to expose a moving alias like `stable/current`.
-- [ ] Add a GitHub Actions workflow in each remote repo that uploads remote assets after build.
+- [x] Add the first remote-repo GitHub Actions workflow that uploads remote assets after build:
+  - `workspace-links/go-go-app-inventory/.github/workflows/publish-federation-remote.yml`
+- [ ] Generalize the remote asset upload workflow pattern across each remote repo.
 - [ ] Add rollback rules:
   - old versions remain available
   - host registry can be flipped back to an older manifest URL

@@ -3011,3 +3011,137 @@ Manual/browser validation:
 - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/33-audit-federation-shared-runtime.sh`
 
 This helper prints the new host-side shared runtime installer, the inventory federation shims, and the producer federation config together so later docs can explain the singleton strategy from concrete files instead of prose alone.
+
+## 2026-03-30: Eighth Federation Validation Slice, Prove The Remote Path Against The Live Inventory Backend
+
+Once the browser-side singleton issue was fixed, the remaining question was whether the remote-manifest path still held up when the real backend was present instead of the earlier smoke environment. The key difference here is that this is no longer just a frontend/federation test. It exercises the launcher proxy, the inventory HTTP API, and the websocket path while the app UI is being supplied by the remote contract.
+
+The user ran that proof and confirmed it works. That changed the state of the ticket in an important way: the first federated remote is no longer just an artifact-level or render-level proof. We now have a live browser proof that the host can boot through `remote-manifest`, render the remote-provided Inventory UI, and talk to the actual backend routes the app needs.
+
+### What the successful operator path looked like
+
+The working proof used the existing `wesen-os` launcher backend as the live inventory backend and the launcher Vite dev server as the frontend shell:
+
+- backend:
+  - `go run ./cmd/wesen-os-launcher wesen-os-launcher --addr 127.0.0.1:8091 --arc-enabled=false`
+- remote artifact staging:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/31-prepare-launcher-remote-manifest-smoke.sh`
+- frontend:
+  - `INVENTORY_CHAT_BACKEND=http://127.0.0.1:8091`
+  - `VITE_INVENTORY_REMOTE_MANIFEST_URL=/__federation-smoke/inventory/mf-manifest.json`
+  - `npm run dev-public -w apps/os-launcher -- --port 4175`
+
+That setup is important because it proves we do not need a separate one-off inventory dev backend just to validate the remote path. The normal launcher backend already provides the inventory routes the remote frontend expects.
+
+### What this proof upgrades from “assumed” to “known”
+
+Before this run, the backend-integrated part of the federation story was still only inferred from route shapes and proxy config.
+
+After this run, we know:
+
+- the launcher can boot from the remote manifest path
+- the remote-provided Inventory launcher entry appears in the shell
+- Inventory windows render through the remote bundle
+- the live inventory backend path works through the launcher proxy
+- the remaining work is no longer “prove this remote can function at all”
+- the remaining work is now “package, host, and roll it out cleanly”
+
+That is the moment where the next task should move from browser-local smoke scripts into real remote asset delivery.
+
+## 2026-03-30: Ninth Federation Delivery Slice, Add The First Immutable Hetzner Object Storage Publish Path
+
+After the live-backend proof, the next question was not about React or runtime correctness anymore. It was about deployment shape: where do the remote assets live, how are they published, and how do we make that path match the infrastructure conventions already forming in the Hetzner K3s repo.
+
+I checked `/home/manuel/code/wesen/2026-03-27--hetzner-k3s` before adding anything new. The useful pattern was already there in the backup system documentation: Terraform owns the bucket, Vault owns the credentials, GitOps or automation jobs use S3-compatible uploads at runtime, and the source repo should not invent a second credential model just because the payload is frontend assets instead of SQL dumps. That is the model this slice now follows.
+
+### Source-repo publish path added
+
+In `workspace-links/go-go-app-inventory`, I added:
+
+- `.github/workflows/publish-federation-remote.yml`
+- `scripts/publish_federation_remote.py`
+- `.gitignore` update for `dist-federation/`
+
+The workflow now does the first real remote-delivery job:
+
+1. check out the repo
+2. install Go and Node
+3. build `apps/inventory/dist-federation`
+4. validate the federation artifact
+5. upload it to an immutable object-storage prefix using AWS CLI against a Hetzner S3-compatible endpoint
+
+The current immutable path contract is:
+
+- object prefix:
+  - `remotes/inventory/versions/<remote-version>/`
+- manifest URL:
+  - `<public-base-url>/remotes/inventory/versions/<remote-version>/mf-manifest.json`
+
+That keeps the first rollout simple:
+
+- immutable versioned artifacts
+- no moving alias yet
+- no registry rewrite step yet
+
+### Why this follows the K3s repo instead of competing with it
+
+The K3s repo already documents the object-storage model as:
+
+- Terraform-owned infrastructure
+- Vault-held runtime credentials
+- S3-compatible runtime uploads
+
+The remote publish path is now intentionally aligned with that:
+
+- GitHub Actions in the source repo will consume object-storage credentials
+- the destination is a versioned immutable prefix
+- the host can later point at the manifest URL directly
+- a future channel alias or registry document can be layered on afterward if needed
+
+This is materially better than starting with a special-case upload script that only works from one laptop or that bakes provider-specific assumptions straight into the launcher.
+
+### Validation performed
+
+I validated three pieces locally before recording the step:
+
+- Python syntax:
+  - `python3 -m py_compile workspace-links/go-go-app-inventory/scripts/publish_federation_remote.py`
+- workflow structure:
+  - `yq eval '.' workspace-links/go-go-app-inventory/.github/workflows/publish-federation-remote.yml >/dev/null`
+- real artifact + dry-run publish plan:
+  - `npm run build:federation -w apps/inventory`
+  - `python3 scripts/publish_federation_remote.py --source-dir apps/inventory/dist-federation --remote-id inventory --version sha-localproof --bucket demo-bucket --endpoint https://example.invalid --region eu-central --public-base-url https://assets.example.invalid --dry-run`
+
+The dry-run plan resolved exactly to:
+
+- destination:
+  - `s3://demo-bucket/remotes/inventory/versions/sha-localproof/`
+- manifest URL:
+  - `https://assets.example.invalid/remotes/inventory/versions/sha-localproof/mf-manifest.json`
+
+That gives us a stable contract to document and to wire into the launcher later.
+
+### Ticket helpers added for this slice
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/34-audit-k3s-object-storage-pattern.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/35-check-inventory-federation-publish-path.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/34-k3s-object-storage-pattern-audit.md`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/35-inventory-federation-publish-path-check.md`
+
+### What still remains after this step
+
+This does not yet finish the remote deployment story.
+
+Still pending:
+
+- decide and configure the real public base URL
+- seed the real Hetzner Object Storage credentials into GitHub Actions
+- run the first non-dry-run remote publish on GitHub
+- configure CORS for the host domain
+- decide whether the first runtime registry source is:
+  - static JSON
+  - env-generated JSON
+  - backend-served config
+- decide whether to add a moving alias path such as `staging/current`
+
+The important point is that the system now has a real first publish path, not just a browser smoke setup under `apps/os-launcher/public/__federation-smoke`.
