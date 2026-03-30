@@ -7,21 +7,22 @@ describe('bootstrapLauncherApp', () => {
     const { bootstrapLauncherApp } = await import('./bootstrapLauncherApp');
 
     const manifestUrl = new URL('./fixtures/inventory.mf-manifest.json', import.meta.url).toString();
+    const manifest = {
+      version: 1,
+      remoteId: 'inventory',
+      contract: {
+        entry: './remoteInventoryContract.mjs',
+        exportName: 'inventoryRemoteContract',
+      },
+    };
     const fetcher: FederatedFetchLike = async () => ({
       ok: true,
       status: 200,
       async text() {
-        return '';
+        return JSON.stringify(manifest);
       },
       async json() {
-        return {
-          version: 1,
-          remoteId: 'inventory',
-          contract: {
-            entry: './remoteInventoryContract.mjs',
-            exportName: 'inventoryRemoteContract',
-          },
-        };
+        return manifest;
       },
     });
 

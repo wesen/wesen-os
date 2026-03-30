@@ -254,6 +254,10 @@
   - falls back to local-package mode when absent
 - [ ] Mount a real `federation.registry.json` into the deployed host config and wire the staging manifest URL there.
 - [ ] Add client-side timeout/retry/failure UI.
+- [x] Improve invalid manifest diagnostics so launcher bootstrap errors include:
+  - the manifest URL
+  - the JSON parse error
+  - the first response bytes, which helps distinguish HTML/404 fallback from a real manifest
 - [ ] Add tracing/logging so remote load failures are diagnosable.
 - [ ] Add feature flags so staging can enable a remote before production.
 - [ ] Add a degraded mode when a remote is absent:

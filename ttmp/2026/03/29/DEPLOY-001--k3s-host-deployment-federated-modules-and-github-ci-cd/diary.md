@@ -3339,3 +3339,90 @@ They are:
 5. mount a real `federation.registry.json` into the host config that points at the first hosted manifest URL
 
 That is a materially better place than before because the infrastructure layer is now explicit and versioned.
+
+## 2026-03-30 - Better Invalid Manifest Diagnostics For Launcher Bootstrap
+
+While exercising the new remote-manifest bootstrap path, the launcher failed with a generic browser-side error:
+
+- `Launcher bootstrap failed SyntaxError: JSON.parse: unexpected character at line 1 column 1 of the JSON data`
+
+That error is too vague operationally. It tells us JSON parsing failed, but it does **not** tell us whether the root cause is:
+
+- a bad `mf-manifest.json`
+- an HTML 404/dev-server fallback page
+- a wrong URL entirely
+- or some other non-JSON payload
+
+For federation, that distinction matters because the most common operator mistake is configuring the host to fetch a manifest URL that does not actually serve the manifest artifact.
+
+### Code change
+
+I updated:
+
+- `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/loadFederatedAppContracts.ts`
+
+The loader no longer relies on an opaque `response.json()` path for manifest fetches. It now:
+
+1. reads the raw response body with `response.text()`
+2. parses that body with `JSON.parse(...)`
+3. throws a richer error on failure that includes:
+   - the remote id
+   - the manifest URL
+   - the original JSON parse error
+   - the first bytes of the response body
+
+So instead of a browser-only `SyntaxError`, the host now emits something much more actionable, along the lines of:
+
+- `Remote manifest for "inventory" at <url> did not return valid JSON: ... Response starts with: <!doctype html> ...`
+
+That is exactly what we need when the URL accidentally resolves to an HTML fallback page.
+
+### Test fallout and fix
+
+The targeted launcher tests initially failed after this change because the mocks still simulated only `response.json()` and returned an empty string for `response.text()`.
+
+The failing command was:
+
+- `npm run test -w apps/os-launcher -- --run loadFederatedAppContracts bootstrapLauncherApp`
+
+The fix was to update the mocked manifest responses in:
+
+- `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/loadFederatedAppContracts.test.ts`
+- `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/bootstrapLauncherApp.test.ts`
+
+Both tests now return `JSON.stringify(manifest)` from `text()` so the mocks match the real fetch path.
+
+### Validation performed
+
+After updating the mocks, both checks passed:
+
+- `npm run test -w apps/os-launcher -- --run loadFederatedAppContracts bootstrapLauncherApp`
+- `npm run typecheck -w apps/os-launcher`
+
+### Ticket helper added
+
+To make this reproducible for operators, I added:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/38-check-remote-manifest-json.sh`
+
+This helper fetches a manifest URL and prints:
+
+- response headers
+- a body preview
+- whether the body parses as JSON
+- `remoteId`
+- `contract.entry`
+
+That should make future “why did JSON parsing fail?” debugging much faster.
+
+### Practical operator guidance from this incident
+
+If the launcher reports an invalid manifest error, the first checks should now be:
+
+1. inspect the exact manifest URL being used
+2. open it directly in the browser or run:
+   - `ttmp/.../scripts/38-check-remote-manifest-json.sh <manifest-url>`
+3. confirm the response is actual JSON, not HTML
+4. only then debug the remote entry itself
+
+This is a small change, but it materially improves operability of the federation bootstrap path.

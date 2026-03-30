@@ -20,6 +20,20 @@ function defaultFederatedFetch(input: string, init?: RequestInit) {
   return fetch(input, init);
 }
 
+async function parseJsonResponse(
+  response: FetchLikeResponse,
+  context: string,
+): Promise<unknown> {
+  const raw = await response.text();
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch (error) {
+    const snippet = raw.slice(0, 200).replace(/\s+/g, ' ').trim();
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`${context} did not return valid JSON: ${detail}. Response starts with: ${snippet}`);
+  }
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return null;
@@ -123,7 +137,10 @@ async function fetchRemoteManifest(
     );
   }
 
-  return parseFederatedRemoteManifest(await response.json(), entry.remoteId);
+  return parseFederatedRemoteManifest(
+    await parseJsonResponse(response, `Remote manifest for "${entry.remoteId}" at ${entry.manifestUrl}`),
+    entry.remoteId,
+  );
 }
 
 async function loadRemoteManifestContract(

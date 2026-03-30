@@ -25,6 +25,14 @@ describe('loadFederatedAppContracts', () => {
 
   it('loads remote-manifest contracts through a manifest fetch and dynamic import', async () => {
     const manifestUrl = new URL('./fixtures/inventory.mf-manifest.json', import.meta.url).toString();
+    const manifest = {
+      version: 1,
+      remoteId: 'inventory',
+      contract: {
+        entry: './remoteInventoryContract.mjs',
+        exportName: 'inventoryRemoteContract',
+      },
+    };
     const fetcher: FederatedFetchLike = async (input) => {
       if (input !== manifestUrl) {
         throw new Error(`Unexpected fetch target: ${input}`);
@@ -34,17 +42,10 @@ describe('loadFederatedAppContracts', () => {
         ok: true,
         status: 200,
         async text() {
-          return '';
+          return JSON.stringify(manifest);
         },
         async json() {
-          return {
-            version: 1,
-            remoteId: 'inventory',
-            contract: {
-              entry: './remoteInventoryContract.mjs',
-              exportName: 'inventoryRemoteContract',
-            },
-          };
+          return manifest;
         },
       };
     };
@@ -72,21 +73,22 @@ describe('loadFederatedAppContracts', () => {
 
   it('fails when a remote-manifest contract exports the wrong remote id', async () => {
     const manifestUrl = new URL('./fixtures/inventory-invalid.mf-manifest.json', import.meta.url).toString();
+    const manifest = {
+      version: 1,
+      remoteId: 'inventory',
+      contract: {
+        entry: './remoteInventoryContract.mjs',
+        exportName: 'default',
+      },
+    };
     const fetcher: FederatedFetchLike = async () => ({
       ok: true,
       status: 200,
       async text() {
-        return '';
+        return JSON.stringify(manifest);
       },
       async json() {
-        return {
-          version: 1,
-          remoteId: 'inventory',
-          contract: {
-            entry: './remoteInventoryContract.mjs',
-            exportName: 'default',
-          },
-        };
+        return manifest;
       },
     });
 
