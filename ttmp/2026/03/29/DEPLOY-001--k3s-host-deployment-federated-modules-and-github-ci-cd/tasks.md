@@ -210,7 +210,7 @@
 - [x] Create a dedicated Terraform stack for federation asset storage:
   - `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod`
   - current default bucket name: `scapegoat-federation-assets`
-- [ ] Configure CORS for the host domain.
+- [x] Configure CORS for the host domain.
 - [x] Set caching policy:
   - immutable cache headers on versioned assets
   - short-lived cache or no-cache on moving aliases, if any
