@@ -51,15 +51,16 @@
   - object storage credentials
   - `GITOPS_PR_TOKEN`
   - platform package version variables if needed
+- [x] Promote the first ticket-side docs/examples/helpers into `../infra-tooling` as the shared home.
 
 ## Phase 4: Define K3s-Side Reuse
 
-- [ ] Decide what belongs in the K3s repo as reusable reference material:
+- [x] Decide what belongs in the K3s repo as reusable reference material:
   - docs
   - example host config layout
   - template `federation.registry.json` entry shape
   - maybe helper scripts
-- [ ] Avoid putting source-repo CI logic into the K3s repo.
+- [x] Avoid putting source-repo CI logic into the K3s repo.
 - [ ] Add docs that explain how a new app opts into the shared remote-release pattern.
 
 ## Phase 5: Prove Reuse

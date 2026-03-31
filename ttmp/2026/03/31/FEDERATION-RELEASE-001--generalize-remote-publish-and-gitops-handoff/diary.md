@@ -258,6 +258,82 @@ This records the standard secret and variable set a source repo needs before it 
 - region
 - `GITOPS_PR_TOKEN`
 - public base URL variable
+
+## 2026-03-31: Extracting The First Shared Toolkit Into `infra-tooling`
+
+With the ticket-side prototypes validated, I created the first real shared home in:
+
+- `/home/manuel/workspaces/2026-03-02/os-openai-app-server/infra-tooling`
+
+The point of this move is to stop treating the ticket as the permanent home for reusable mechanics. The ticket should stay the design trail and reasoning record. The shared repo should become the place future source repos actually copy from or call into.
+
+### What moved into `infra-tooling`
+
+I added the first extracted federation/tooling set:
+
+- `README.md`
+- `docs/federation/federated-remote-release-model.md`
+- `docs/federation/secret-bootstrap.md`
+- `docs/platform/source-repo-to-gitops-pr.md`
+- `examples/federation/federation-gitops-targets.example.json`
+- `examples/federation/federation.registry.example.json`
+- `templates/github/publish-federated-remote.template.yml`
+- `scripts/federation/patch_federation_registry_target.py`
+- `scripts/federation/update_federation_gitops_target.py`
+- `scripts/gitops/open_gitops_pr.py`
+
+### Why these files were worth extracting
+
+These files are the first set that clearly do not belong in one app repo:
+
+1. federation registry patching logic
+2. federation target metadata shape
+3. the thin publish workflow template
+4. secret/bootstrap expectations
+5. the generic source-repo -> GitOps PR opener pattern
+6. the control-plane explanation originally described in the Hetzner K3s docs
+
+That split now looks like this:
+
+- ticket docs = design history and implementation breadcrumbs
+- K3s repo = canonical live GitOps state plus platform/operator docs
+- source repos = thin app-specific workflows and target metadata
+- `infra-tooling` = reusable scripts, templates, examples, and extracted cross-repo docs
+
+### Validation I ran against the extracted files
+
+I did not just copy these files. I validated them directly in the new repo:
+
+1. Python compile check:
+   - `python3 -m py_compile .../scripts/federation/patch_federation_registry_target.py`
+   - `python3 -m py_compile .../scripts/federation/update_federation_gitops_target.py`
+   - `python3 -m py_compile .../scripts/gitops/open_gitops_pr.py`
+2. federation dry-run against the real K3s checkout:
+   - `update_federation_gitops_target.py --config .../federation-gitops-targets.example.json --target wesen-os-inventory-prod --manifest-url https://assets.example.invalid/... --gitops-repo-dir /home/manuel/code/wesen/2026-03-27--hetzner-k3s`
+3. image-based GitOps dry-run against the real K3s checkout:
+   - `open_gitops_pr.py --config /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/deploy/gitops-targets.json --target wesen-os-prod --image ghcr.io/wesen/wesen-os:sha-example --gitops-repo-dir /home/manuel/code/wesen/2026-03-27--hetzner-k3s --dry-run`
+
+The federation updater produced the expected diff in the `wesen-os` configmap, and the GitOps PR opener produced the expected diff in the `wesen-os` deployment image field.
+
+### One small validation miss I corrected
+
+My first validation attempt for the extracted `open_gitops_pr.py` used the wrong target name:
+
+- `wesen-os-staging`
+
+The actual target in `deploy/gitops-targets.json` is:
+
+- `wesen-os-prod`
+
+That was just a bad probe, not a script bug. Rerunning with the correct target produced the expected diff immediately.
+
+### What still remains after this extraction
+
+The shared home now exists, but the generalized pattern is not proven complete yet. The next remaining steps are still:
+
+1. add a concrete onboarding doc for a second app adopting the pattern
+2. apply the extracted tooling to a second remote so it is no longer inventory-only in practice
+3. decide whether future repos should vendor/copy these helpers or call them as versioned shared tooling
 - platform package version variable when needed
 
 It also captures:
