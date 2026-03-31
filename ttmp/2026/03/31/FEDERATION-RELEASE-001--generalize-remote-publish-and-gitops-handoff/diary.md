@@ -240,3 +240,28 @@ That means the ticket now has a full thin-template prototype:
 2. generic patch helper
 3. dry-run updater that consumes the metadata
 4. template workflow showing where those steps plug into a source repo release flow
+
+## 2026-03-31: Standardizing Secret Bootstrap
+
+The next piece that still felt too inventory-specific was the operator bootstrap.
+
+So I added:
+
+- `design/03-standard-secret-bootstrap-for-federated-remotes.md`
+
+This records the standard secret and variable set a source repo needs before it can participate in the generalized remote-release flow:
+
+- object storage access key
+- object storage secret key
+- bucket
+- endpoint
+- region
+- `GITOPS_PR_TOKEN`
+- public base URL variable
+- platform package version variable when needed
+
+It also captures:
+
+- the generic `gh secret set ... --repo <owner>/<repo>` pattern
+- the current inventory example
+- the recommendation to standardize the public-base-url variable naming in the future

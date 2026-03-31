@@ -47,7 +47,7 @@
   - as a GitHub reusable workflow
   - as copied source-repo files with docs
   - as a k3s-side template/reference package
-- [ ] Add standard secret bootstrap docs:
+- [x] Add standard secret bootstrap docs:
   - object storage credentials
   - `GITOPS_PR_TOKEN`
   - platform package version variables if needed

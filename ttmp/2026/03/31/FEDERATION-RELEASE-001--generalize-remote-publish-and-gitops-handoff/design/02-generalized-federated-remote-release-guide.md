@@ -287,6 +287,7 @@ Ticket-side template/prototype artifacts:
 - workflow template: [01-publish-federated-remote.template.yml](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/templates/01-publish-federated-remote.template.yml)
 - dry-run updater: [04-dry-run-federation-gitops-target-update.py](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/scripts/04-dry-run-federation-gitops-target-update.py)
 - dry-run check: [05-check-federation-gitops-target-dry-run.sh](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/scripts/05-check-federation-gitops-target-dry-run.sh)
+- secret bootstrap guide: [03-standard-secret-bootstrap-for-federated-remotes.md](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/design/03-standard-secret-bootstrap-for-federated-remotes.md)
 
 ## Template Options
 
