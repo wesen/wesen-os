@@ -6,11 +6,11 @@ import {
   registerRuntimeDebugStacks,
   RuntimeDebugAppWindow,
 } from '@go-go-golems/os-scripting';
-import { inventoryStack } from '@go-go-golems/inventory/launcher';
 import type { ReactNode } from 'react';
 import { STACK } from '../domain/stack';
+import { listRuntimeFederatedRuntimeBundles } from './localFederatedAppContracts';
 
-const RUNTIME_DEBUG_STACKS: RuntimeBundleDefinition[] = [inventoryStack, STACK];
+const RUNTIME_DEBUG_STACKS: RuntimeBundleDefinition[] = [...listRuntimeFederatedRuntimeBundles(), STACK];
 
 registerRuntimeDebugStacks(RUNTIME_DEBUG_STACKS);
 
