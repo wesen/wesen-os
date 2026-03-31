@@ -4016,3 +4016,56 @@ This is the first end-to-end proof of the intended federation remote delivery pa
 - host config ready to consume that exact URL
 
 That is the point where the inventory remote stops being a manually staged experiment and becomes a real CI-produced deployment artifact.
+
+## 2026-03-31: Fixing The Root Repo Inventory Gitlink After The First Successful Remote Publish
+
+Once the inventory publish workflow was green, I checked the open `wesen-os` PR because the deployed host was still running an older image and the next normal step is to merge the source repo changes and let `publish-host-image` build a fresh host image from `main`.
+
+That immediately exposed a separate source-repo problem:
+
+- PR `wesen/wesen-os#10`
+- failing run: `https://github.com/wesen/wesen-os/actions/runs/23776538524`
+- failing job: `docker`
+
+### Actual failure cause
+
+This was not a Dockerfile problem and not a federation runtime bug. The workflow failed during `actions/checkout` while fetching recursive submodules:
+
+- `fatal: Fetched in submodule path 'workspace-links/go-go-app-inventory', but it did not contain 6deb885c6e4f6bf2a58b6ccf63661ac89c9c47b5`
+
+The reason is that the root repo gitlink for:
+
+- `workspace-links/go-go-app-inventory`
+
+still pointed at local commit:
+
+- `6deb885c6e4f6bf2a58b6ccf63661ac89c9c47b5`
+
+That commit existed only in my local inventory checkout during development. It was never the final remote-reachable commit that GitHub Actions can fetch from the public inventory repository.
+
+### What I changed
+
+I updated the root repo submodule checkout to the merged inventory `main` commit:
+
+- `1a3228632b308cafc180076503d5b1cc2eb41e66`
+
+That commit contains the full merged chain needed for the hosted remote workflow:
+
+- PR `#9`
+- PR `#10`
+- PR `#11`
+- PR `#12`
+
+I added a replay helper for this exact sanity check:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/45-check-root-inventory-gitlink.sh`
+
+### Why this matters
+
+This is the same class of problem we already had to normalize earlier for other submodules: a source repo that uses recursive submodules cannot rely on local detached-head submodule commits if GitHub-hosted workflows need to check the tree out from scratch.
+
+The practical rule is:
+
+- before expecting `wesen-os` CI to pass, every submodule gitlink in the branch must point at a commit that is fetchable from that submodule's remote
+
+In this case, the inventory remote publish path itself is already healthy. The remaining blocker to getting the deployed host onto the newer federation-aware image is just making the root source PR mergeable by updating the gitlink to the real merged inventory commit.
