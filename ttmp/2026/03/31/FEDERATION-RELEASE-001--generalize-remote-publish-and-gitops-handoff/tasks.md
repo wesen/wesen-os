@@ -2,23 +2,25 @@
 
 ## Phase 0: Freeze The Reusable Pattern
 
-- [ ] Document the generic release flow:
+- [x] Document the generic release flow:
   - source repo builds remote
   - uploads immutable artifacts
   - computes manifest URL
   - opens GitOps PR
   - merge triggers rollout
-- [ ] Separate app-specific inputs from generic mechanics:
+- [x] Separate app-specific inputs from generic mechanics:
   - remote id
   - source dir
   - public base URL
   - target config path
   - target app/registry key
+- [x] Write a detailed design/reference guide for the reusable remote-release template.
+- [x] Add a replay helper that captures the current inventory-specific flow as the baseline.
 
 ## Phase 1: Generalize Source-Repo Inputs
 
-- [ ] Define a reusable `deploy/gitops-targets.json` shape for remote-manifest targets.
-- [ ] Define how source repos declare:
+- [x] Define a reusable `deploy/gitops-targets.json` shape for remote-manifest targets.
+- [x] Define how source repos declare:
   - remote id
   - object-storage upload prefix
   - GitOps destination file
