@@ -4069,3 +4069,25 @@ The practical rule is:
 - before expecting `wesen-os` CI to pass, every submodule gitlink in the branch must point at a commit that is fetchable from that submodule's remote
 
 In this case, the inventory remote publish path itself is already healthy. The remaining blocker to getting the deployed host onto the newer federation-aware image is just making the root source PR mergeable by updating the gitlink to the real merged inventory commit.
+
+### Immediate next blocker after inventory
+
+As soon as I pushed the inventory gitlink repair, the next `publish-host-image` run for `wesen/wesen-os#10` progressed one step further and then failed on the same class of problem for the frontend submodule:
+
+- failing run: `https://github.com/wesen/wesen-os/actions/runs/23776607042`
+- failing submodule commit: `workspace-links/go-go-os-frontend`
+- unreachable gitlink in the PR branch: `2561accc2205e40fe5ba5615f6c8eccdb24c1151`
+
+That commit was the local frontend commit where the federation contract work originally lived before the frontend PR merged. The actual merged remote-reachable frontend `main` commit is:
+
+- `c0a24bf00113246c4c9bf5f29dddda3527796cf6`
+
+I updated the local frontend submodule checkout to that merged commit and added another replay helper:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/46-check-root-frontend-gitlink.sh`
+
+So the new checklist for keeping this source PR mergeable is now explicit:
+
+1. inventory gitlink must point at merged `main`
+2. frontend gitlink must point at merged `main`
+3. only then can `publish-host-image` get past recursive checkout and exercise the actual Docker build path
