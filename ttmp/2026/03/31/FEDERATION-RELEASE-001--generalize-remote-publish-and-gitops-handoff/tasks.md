@@ -25,24 +25,25 @@
   - object-storage upload prefix
   - GitOps destination file
   - JSON path or logical target inside host registry
-- [ ] Decide whether the patch helper lives:
+- [x] Decide whether the patch helper lives:
   - in each source repo
   - in a shared helper package/repo
   - or as a template in the K3s repo
 
 ## Phase 2: Generalize GitOps Patching
 
-- [ ] Design a generic patch helper that updates one remote entry in `federation.registry.json` inside YAML.
+- [x] Design a generic patch helper that updates one remote entry in `federation.registry.json` inside YAML.
+- [x] Prove the patch helper against the current `wesen-os` configmap shape on a temp copy.
 - [ ] Make it work for:
   - `inventory`
   - future apps like `sqlite` or `gepa`
-- [ ] Avoid hardcoding `inventory` strings in the reusable path.
+- [x] Avoid hardcoding `inventory` strings in the reusable path.
 - [ ] Define idempotent PR update behavior.
 
 ## Phase 3: Turn The Workflow Into A Template
 
 - [ ] Extract the current `go-go-app-inventory` workflow shape into a reusable template.
-- [ ] Decide whether the reusable template should live:
+- [x] Decide whether the reusable template should live:
   - as a GitHub reusable workflow
   - as copied source-repo files with docs
   - as a k3s-side template/reference package

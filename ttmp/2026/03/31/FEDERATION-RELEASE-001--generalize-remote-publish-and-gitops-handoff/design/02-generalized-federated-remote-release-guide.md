@@ -175,6 +175,10 @@ It captures:
 
 without embedding inventory-specific patch code.
 
+Concrete example captured in this ticket:
+
+- [01-federation-gitops-targets.example.json](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/examples/01-federation-gitops-targets.example.json)
+
 ## Generic Patch Operation
 
 The patch operation should be data-driven and look like this:
@@ -208,6 +212,14 @@ if not matched:
 doc["data"][config_map_key] = json.dumps(registry, indent=2)
 yaml_dump(doc, target_file)
 ```
+
+Prototype helper captured in this ticket:
+
+- [02-patch-federation-registry-target.py](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/scripts/02-patch-federation-registry-target.py)
+
+Replay helper:
+
+- [03-check-federation-registry-patch-prototype.sh](/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/scripts/03-check-federation-registry-patch-prototype.sh)
 
 ## Reusable Workflow Contract
 
@@ -316,6 +328,65 @@ That means:
 - K3s repo documents the target layout
 - source repos keep thin local publish workflows
 - shared helper scripts or a small shared toolkit handle the generic patching and PR logic
+
+## Packaging Decision
+
+To answer the packaging question directly:
+
+- do **not** make the K3s repo the home of executable source-repo release logic
+- do use the K3s repo as the canonical documentation and example-target home
+- package the reusable mechanics as a shared helper layer that source repos can consume
+
+The recommended packaging model is:
+
+```text
+K3s repo
+  -> docs
+  -> examples
+  -> canonical target file paths
+
+shared helper layer
+  -> update_federation_gitops_target.py
+  -> open/update PR helper
+  -> maybe reusable workflow snippets
+
+source repos
+  -> thin publish workflow
+  -> repo-specific build step
+  -> repo-specific target metadata
+```
+
+### Why not keep the logic in K3s
+
+If the release mechanics live in the K3s repo, every app repo still has to somehow import or duplicate them at CI time, and the cluster repo becomes an awkward build-tool dependency.
+
+That is the wrong dependency direction.
+
+The source repo should be able to:
+
+- build its remote
+- publish its remote
+- open its PR
+
+without treating the cluster repo as a runtime tool library.
+
+### Recommended concrete packaging
+
+Short term:
+
+- keep the prototype helpers in ticket/reference form
+- copy the generic helper into the first source repo that uses it
+- make the workflow thin and data-driven
+
+Medium term:
+
+- move the generic helper(s) into a small shared repo or shared tooling package
+- let source repos vendor or install that helper
+
+K3s repo:
+
+- add docs and example target files
+- do not own app CI mechanics
 
 ## What Should Live In The K3s Repo
 

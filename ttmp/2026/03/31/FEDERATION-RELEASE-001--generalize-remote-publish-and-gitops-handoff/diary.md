@@ -61,3 +61,130 @@ That means the ticket now has:
   - config key / logical registry target
 
 So Phase 0 and the design half of Phase 1 are now documented strongly enough to implement against them, instead of inventing the structure ad hoc while coding.
+
+## 2026-03-31: Prototyping Generic Federation GitOps Targets And Patching
+
+After freezing the model, I moved one level deeper and turned the abstract recommendations into concrete ticket artifacts.
+
+### What I added
+
+I added a reusable target-config example:
+
+- `examples/01-federation-gitops-targets.example.json`
+
+That example deliberately includes both:
+
+- `inventory`
+- `sqlite`
+
+so the structure itself is no longer inventory-only, even though the live implementation still is.
+
+I also added a generic patch helper prototype:
+
+- `scripts/02-patch-federation-registry-target.py`
+
+and a replay wrapper:
+
+- `scripts/03-check-federation-registry-patch-prototype.sh`
+
+### What the patch helper does
+
+The prototype:
+
+1. reads a YAML file
+2. locates the literal block for `federation.registry.json`
+3. parses the embedded JSON
+4. finds the remote entry by `remoteId`
+5. updates:
+   - `manifestUrl`
+   - `enabled`
+   - optionally `mode`
+6. rewrites the embedded JSON back into the YAML literal block
+
+### Important implementation decision
+
+I intentionally kept the prototype dependency-light and used only the Python standard library.
+
+That means it does **not** depend on PyYAML or `yq`. Instead, it patches the YAML file by targeting the known literal block shape used in the host configmap.
+
+That is a deliberate design choice for now:
+
+- it keeps the prototype portable
+- it matches the actual current config shape
+- it avoids introducing new tool dependencies before we decide the shared-helper home
+
+If we later need broader YAML support across multiple shapes, we can promote it to a richer parser. But for the current host registry shape, the standard-library approach is enough to prove the design.
+
+### Validation I ran
+
+I validated the prototype in two ways:
+
+1. temp-copy patch via:
+   - `scripts/03-check-federation-registry-patch-prototype.sh`
+2. direct dry-run render against the real K3s host configmap via:
+   - `python3 scripts/02-patch-federation-registry-target.py ... --dry-run`
+
+The dry-run output correctly rewrote:
+
+- `manifestUrl`
+
+without hardcoding `inventory` into the algorithm itself; `remoteId` is an input argument.
+
+### What is now decided versus undecided
+
+Decided enough to build on:
+
+- reusable metadata shape for `federation-manifest`
+- generic match-by-`remoteId` patch semantics
+- patching happens against host GitOps config, not directly against app code
+
+Still intentionally undecided:
+
+- whether this helper should live in each source repo
+- whether it should move to a shared helper package/repo
+- whether part of the pattern should be expressed as a reusable GitHub workflow
+
+That is the right boundary for this stage: we now have a working generic prototype and can decide placement separately from behavior.
+
+## 2026-03-31: Deciding Where The Reusable Release Logic Should Live
+
+With the patch behavior proven, I closed the remaining design question that the user explicitly raised:
+
+- should this be packaged in the K3s repo?
+
+The answer is:
+
+- partially for docs and examples
+- no for source-repo CI execution logic
+
+### Final packaging decision recorded in this ticket
+
+The ticket now explicitly recommends:
+
+1. K3s repo owns:
+   - docs
+   - example target layouts
+   - canonical host registry structure
+2. source repos own:
+   - thin publish workflows
+   - app-local build steps
+   - app-local target metadata
+3. shared helper layer owns:
+   - generic patching
+   - generic GitOps PR helper behavior
+
+### Why this is the right split
+
+If the logic lives in the K3s repo, app repos would still need to import or copy it somehow, and the dependency direction becomes backwards:
+
+- app release logic would depend on cluster repo internals
+
+That is not a good long-term shape.
+
+The better shape is:
+
+- K3s repo = reference and target authority
+- source repos = execution
+- shared helper = reusable mechanics
+
+This ticket now captures that decision directly in the design guide, so later implementation work does not have to reopen the same architectural argument.
