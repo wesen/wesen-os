@@ -217,6 +217,11 @@
 - [ ] Decide whether to expose a moving alias like `stable/current`.
 - [x] Add the first remote-repo GitHub Actions workflow that uploads remote assets after build:
   - `workspace-links/go-go-app-inventory/.github/workflows/publish-federation-remote.yml`
+- [x] Validate the first non-dry-run remote publish on GitHub `main` against:
+  - published `@go-go-golems/os-*` canary packages
+  - the pinned `go-go-os-backend` Go tool
+  - real Hetzner object storage credentials
+  - real immutable manifest URL output
 - [ ] Generalize the remote asset upload workflow pattern across each remote repo.
 - [x] Add a fail-fast operator env check for the federation-assets Terraform stack.
 - [x] Correct the operator assumption:

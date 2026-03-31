@@ -3899,3 +3899,120 @@ This is a real improvement over the sibling-checkout and fallback approaches:
 - GitHub Actions no longer depends on undocumented workspace layout
 
 That is the right contract for future app repos too.
+
+## 2026-03-31: First Successful Inventory Remote Publish From GitHub `main`
+
+With the Go toolchain cleanup merged, I moved from local validation back to the real target: the `publish-federation-remote` workflow on `go-go-app-inventory` `main`.
+
+### What failed before the final success
+
+This took three real CI failures to flush out the remaining assumptions:
+
+1. run `23775938383`
+   - failed in `npm ci`
+   - error: `Unsupported URL Type "workspace:": workspace:*`
+   - cause: the workflow was still trying to install `@go-go-golems/os-*` as local workspace deps in a repo that does not contain the frontend workspace
+2. run `23776036459`
+   - failed in `vmmeta:generate`
+   - error: `open src/domain/vm/docs: no such file or directory`
+   - cause: clean GitHub checkouts do not include the empty `src/domain/vm/docs/` directory that exists locally
+3. run `23776290887`
+   - failed in the Vite build
+   - cause: `apps/inventory/tsconfig.json` still pointed at sibling `../../../go-go-os-frontend/...` paths, so even after install succeeded, the build leaked back into a nonexistent local workspace checkout
+
+I addressed those failures in three inventory PRs:
+
+- PR `#10`
+  - install published platform packages from GitHub Packages instead of using `workspace:*` in CI
+- PR `#11`
+  - make `vmmeta` generation tolerate a missing `src/domain/vm/docs/` directory
+- PR `#12`
+  - split `tsconfig.json` into a published-safe base plus `tsconfig.workspace.json` for local linked-workspace typecheck
+
+In parallel, I republished the frontend package set so the consumer workflow had a fresh coherent platform version:
+
+- `go-go-os-frontend` run `23776237507`
+- published `os-inventory-stack` at `0.1.0-canary.5`
+
+I also updated the inventory repo variable:
+
+- `GO_GO_OS_PLATFORM_VERSION=0.1.0-canary.5`
+
+### The successful run
+
+After PR `#12` merged on `main`, I manually dispatched:
+
+- workflow: `publish-federation-remote.yml`
+- repo: `go-go-golems/go-go-app-inventory`
+- ref: `main`
+- inputs:
+  - `dry_run=false`
+
+The successful run is:
+
+- `https://github.com/go-go-golems/go-go-app-inventory/actions/runs/23776424456`
+
+It completed all critical steps:
+
+- checkout
+- setup Go / Node
+- configure GitHub Packages auth
+- resolve published platform version
+- rewrite `workspace:*` `@go-go-golems/os-*` dependencies
+- install dependencies
+- build `apps/inventory/dist-federation`
+- upload the built artifact to GitHub Actions artifacts
+- publish the federation files to Hetzner object storage
+- publish the summary with the immutable manifest URL
+
+### Concrete published artifact
+
+The workflow published:
+
+- remote version: `sha-1a32286`
+- manifest URL: `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-1a32286/mf-manifest.json`
+
+I validated the manifest directly with:
+
+- `curl -fsSL https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-1a32286/mf-manifest.json`
+
+The manifest contents are the expected minimal contract:
+
+- `version: 1`
+- `remoteId: inventory`
+- `compatiblePlatformRange: ^0.1.0`
+- contract entry: `./inventory-host-contract.js`
+- export name: `inventoryHostContract`
+
+I added a replay helper for this exact artifact check:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/44-check-live-inventory-manifest.sh`
+
+### Host config follow-up
+
+At the moment this run succeeded, both host-side configmaps were still pinned to the earlier manual upload:
+
+- `sha-f69ca10`
+
+I updated both to the CI-produced immutable manifest URL:
+
+- `deploy/k8s/wesen-os/configmap.yaml`
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/configmap.yaml`
+
+Both now point at:
+
+- `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-1a32286/mf-manifest.json`
+
+### Why this matters
+
+This is the first end-to-end proof of the intended federation remote delivery path:
+
+- app repo `main`
+- GitHub Actions build
+- published platform packages from GitHub Packages
+- pinned Go tool dependency for `vmmeta`
+- upload to Hetzner object storage
+- immutable manifest URL
+- host config ready to consume that exact URL
+
+That is the point where the inventory remote stops being a manually staged experiment and becomes a real CI-produced deployment artifact.
