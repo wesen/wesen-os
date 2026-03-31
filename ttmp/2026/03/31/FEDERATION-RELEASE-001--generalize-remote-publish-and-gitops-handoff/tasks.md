@@ -52,6 +52,10 @@
   - `GITOPS_PR_TOKEN`
   - platform package version variables if needed
 - [x] Promote the first ticket-side docs/examples/helpers into `../infra-tooling` as the shared home.
+- [x] Make `go-go-app-inventory` consume the extracted helper path in dry-run mode using:
+  - repo-local `deploy/federation-gitops-targets.json`
+  - `infra-tooling` checkout in CI
+  - shared `update_federation_gitops_target.py`
 
 ## Phase 4: Define K3s-Side Reuse
 

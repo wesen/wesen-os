@@ -334,6 +334,83 @@ The shared home now exists, but the generalized pattern is not proven complete y
 1. add a concrete onboarding doc for a second app adopting the pattern
 2. apply the extracted tooling to a second remote so it is no longer inventory-only in practice
 3. decide whether future repos should vendor/copy these helpers or call them as versioned shared tooling
+
+## 2026-03-31: Making `go-go-app-inventory` Consume `infra-tooling`
+
+With the shared repo extracted, the next question was whether a live source repo could actually consume it without inventing a full package-distribution layer first.
+
+I chose the lowest-risk proof:
+
+- keep app-specific build/upload logic in `go-go-app-inventory`
+- add repo-local remote target metadata
+- make the GitHub workflow check out `infra-tooling`
+- run the shared updater from that checkout in dry-run mode against a checked-out GitOps repo
+
+### Files changed in `go-go-app-inventory`
+
+- `.github/workflows/publish-federation-remote.yml`
+- `deploy/federation-gitops-targets.json`
+
+### What changed in the workflow
+
+I added two extra checkouts:
+
+1. `go-go-golems/infra-tooling` at `.infra-tooling`
+2. `wesen/2026-03-27--hetzner-k3s` at `.gitops`
+
+Then I added an `id: publish` to the existing object-storage publish step so it exports:
+
+- `manifest_url`
+
+After that, the workflow now runs:
+
+- `.infra-tooling/scripts/federation/update_federation_gitops_target.py`
+
+against:
+
+- `deploy/federation-gitops-targets.json`
+- `.gitops`
+
+That means the inventory repo is no longer proving the pattern only through ticket-side experiments; it now consumes the shared helper path the way a real source repo would.
+
+### Why I chose checkout-based consumption
+
+There are three possible short-term consumption models:
+
+1. copy the scripts back into the source repo
+2. package the helpers formally first
+3. check out `infra-tooling` in CI and call it directly
+
+For this stage, option 3 is the cleanest:
+
+- it proves the shared home matters
+- it avoids duplicating the helper back into app repos
+- it does not force us to invent packaging/versioning before the second app exists
+
+We can revisit versioned consumption later once more than one source repo is using the shared helper path.
+
+### Validation I ran
+
+I validated this slice locally in three layers.
+
+1. workflow syntax:
+   - `yq eval '.' workspace-links/go-go-app-inventory/.github/workflows/publish-federation-remote.yml >/dev/null`
+2. real remote build:
+   - `npm run build:federation -w apps/inventory`
+3. end-to-end dry-run handoff:
+   - `scripts/publish_federation_remote.py --dry-run --github-output <tmp>`
+   - `infra-tooling/scripts/federation/update_federation_gitops_target.py --config workspace-links/go-go-app-inventory/deploy/federation-gitops-targets.json --target wesen-os-inventory-prod --manifest-url <published-manifest-url> --gitops-repo-dir /home/manuel/code/wesen/2026-03-27--hetzner-k3s`
+
+The final dry-run produced the expected configmap diff in the real local GitOps checkout, so this slice is proven enough to commit.
+
+### Ticket replay helpers added
+
+To keep this reproducible later, I added:
+
+- `scripts/06-check-inventory-infra-tooling-consumption.sh`
+- `scripts/07-check-inventory-federation-gitops-dry-run.sh`
+
+These keep the ticket honest: the ticket can now replay both the workflow-shape validation and the real manifest-url -> shared-updater -> GitOps diff path.
 - platform package version variable when needed
 
 It also captures:
