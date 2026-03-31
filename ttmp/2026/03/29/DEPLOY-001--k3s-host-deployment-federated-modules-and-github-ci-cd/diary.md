@@ -3747,3 +3747,155 @@ The remaining work is:
 1. get the inventory workflow PR merged so GitHub Actions can own future publishes
 2. get the GitOps config change pushed/merged so deployed `wesen-os` actually serves the updated registry
 3. verify deployed `wesen-os` loads the hosted remote end to end
+
+## 2026-03-30: Fixing The Inventory Publish Workflow Review Blocker
+
+The first review comment on `go-go-golems/go-go-app-inventory#9` was correct: the new `publish-federation-remote.yml` workflow built the remote with:
+
+- `npm run build:federation -w apps/inventory`
+
+but that script still depended on:
+
+- `vmmeta:generate`
+
+and that generation path called into a sibling checkout:
+
+- `../../../go-go-os-backend/cmd/go-go-os-backend`
+
+That sibling is present in my local workspace through `wesen-os/workspace-links`, but it is not present in a normal standalone GitHub Actions checkout of `go-go-app-inventory`. In other words, the workflow as opened in PR `#9` would have failed on the hosted runner before it ever reached the object-storage upload step.
+
+### What I changed
+
+I changed the inventory repo to stop hardcoding the backend checkout assumption into the package script path:
+
+- `apps/inventory/package.json`
+- `scripts/generate_inventory_vmmeta.sh`
+
+The new wrapper script now does this:
+
+1. if a real `go-go-os-backend` generator checkout exists, run the generator
+2. otherwise, if the committed generated artifacts already exist, reuse them and exit successfully
+3. otherwise, fail hard
+
+That is the right CI contract for this repo because the generated VM metadata files are already committed:
+
+- `apps/inventory/src/domain/generated/inventory.vmmeta.json`
+- `apps/inventory/src/domain/generated/inventoryVmmeta.generated.ts`
+
+### Subtle bug caught while fixing it
+
+My first version of the wrapper ran `go run ...` from the repo root and passed absolute paths into the generator output flags. That regenerated the TypeScript artifact with absolute filesystem paths embedded in it, which is exactly the kind of nondeterministic output we do not want.
+
+I corrected that by changing the wrapper to `cd` into `apps/inventory` first and then invoke the generator with the same relative paths the repo already expects:
+
+- `src/domain/vm/cards`
+- `src/domain/vm/docs`
+- `src/domain/generated/inventory.vmmeta.json`
+- `src/domain/generated/inventoryVmmeta.generated.ts`
+
+### Validation I ran
+
+I validated both the fallback and the real build path:
+
+1. forced fallback mode:
+   - `GO_GO_OS_BACKEND_CMD=/nonexistent ./scripts/generate_inventory_vmmeta.sh`
+   - expected result: reuse committed artifacts and exit `0`
+2. full producer build:
+   - `npm run build:federation -w apps/inventory`
+   - expected result: remote build still succeeds with the wrapper in place
+
+I also added a replay helper in this ticket:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/42-check-inventory-vmmeta-fallback.sh`
+
+### Git state and PR state
+
+The fix was committed in the inventory repo as:
+
+- `8a584c2` — `Make inventory vmmeta generation CI-safe`
+
+and pushed onto the existing PR branch:
+
+- `origin/task/inventory-federation-remote-publish`
+
+So PR `#9` now contains both:
+
+- the original federation publish workflow
+- the CI-safe `vmmeta` fix that makes that workflow runnable on standard GitHub-hosted runners
+
+## 2026-03-30: Replacing The Temporary VMMeta Fallback With A Pinned Go Tool Module
+
+The temporary fallback wrapper solved the immediate review comment, but it still encoded the wrong long-term contract: it treated committed generated artifacts as the primary portability mechanism. That is acceptable as a stopgap, but the cleaner shape is for `go-go-app-inventory` to declare the generator as an explicit tooling dependency and invoke it through the Go toolchain.
+
+The user pointed out that `go-go-os-backend` is already tagged and published at `v0.0.5`, which changes the tradeoff completely. Once that is true, there is no reason for `vmmeta:generate` to depend on a sibling source checkout. The inventory repo can pin the released generator and run it directly.
+
+### What I changed
+
+I switched the inventory repo from the temporary fallback wrapper to a real pinned tooling module:
+
+- `workspace-links/go-go-app-inventory/tools/go.mod`
+- `workspace-links/go-go-app-inventory/tools/go.sum`
+- `workspace-links/go-go-app-inventory/scripts/generate_inventory_vmmeta.sh`
+
+The new generation path is:
+
+- `GOWORK=off go tool -modfile=tools/go.mod go-go-os-backend vmmeta generate ...`
+
+That does three important things:
+
+1. it pins the generator version in a reviewable file
+2. it avoids polluting the inventory runtime module with tool-only transitive dependencies
+3. it disables the enclosing `wesen-os` workspace while running the tool, which is necessary for `-modfile` to work predictably from inside the nested checkout
+
+### Why I did not keep the first `go get -tool` attempt in the main module
+
+I first proved the concept by adding the tool directly to the inventory repo's main `go.mod`. That worked, but it also upgraded the runtime dependency on `github.com/go-go-golems/go-go-os-backend` and pulled a long tail of tool-only transitive dependencies into the main module graph.
+
+That was too noisy for a workflow fix. The `tools/` submodule keeps the repo honest:
+
+- app runtime dependencies stay where they were
+- tool dependencies are explicit but isolated
+
+### Go workspace edge I had to solve
+
+The first isolated `tools/` attempt still failed with:
+
+- `go: no such tool "go-go-os-backend"`
+
+and `-modfile` initially failed with:
+
+- `go: -modfile cannot be used in workspace mode`
+
+The reason is that this repo is being worked on inside the larger `wesen-os` checkout, which enables Go workspace mode from the parent tree. The fix was not to abandon the tool module, but to force the command into standalone module mode for the tool invocation:
+
+- `GOWORK=off`
+
+Once I did that, the pinned tool resolved correctly from `tools/go.mod`.
+
+### Validation I ran
+
+I validated the final setup with:
+
+1. tool resolution:
+   - `GOWORK=off go tool -modfile=tools/go.mod go-go-os-backend --help`
+2. direct generator path:
+   - `./scripts/generate_inventory_vmmeta.sh`
+3. full producer build:
+   - `npm run build:federation -w apps/inventory`
+
+All three succeeded.
+
+I also added a replay helper:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/43-check-inventory-go-tooling.sh`
+
+### What this changes architecturally
+
+This is a real improvement over the sibling-checkout and fallback approaches:
+
+- the generator stays owned by `go-go-os-backend`
+- the inventory repo consumes it as a pinned released tool
+- there is still no runtime dependency loop
+- GitHub Actions no longer depends on undocumented workspace layout
+
+That is the right contract for future app repos too.

@@ -234,6 +234,10 @@
 - [ ] Run the first non-dry-run `publish-federation-remote` GitHub workflow in `go-go-app-inventory`.
   - [x] Open the workflow-registration PR:
     - `go-go-golems/go-go-app-inventory#9`
+  - [x] Fix the CI review blocker in that PR:
+    - `build:federation` depended on `go-go-os-backend` via `vmmeta:generate`
+    - replace the sibling-checkout assumption with a pinned Go tool module at `tools/go.mod`
+    - run the generator through `GOWORK=off go tool -modfile=tools/go.mod go-go-os-backend ...`
 - [x] Capture the first real immutable manifest URL.
 - [x] Replace the placeholder manifest URL in deployed `wesen-os` config with that immutable manifest URL.
 - [x] Flip the deployed `inventory` remote from `enabled: false` to `enabled: true`.
