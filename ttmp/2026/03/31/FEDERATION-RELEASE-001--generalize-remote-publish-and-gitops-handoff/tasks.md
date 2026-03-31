@@ -42,7 +42,7 @@
 
 ## Phase 3: Turn The Workflow Into A Template
 
-- [ ] Extract the current `go-go-app-inventory` workflow shape into a reusable template.
+- [x] Extract the current `go-go-app-inventory` workflow shape into a reusable template.
 - [x] Decide whether the reusable template should live:
   - as a GitHub reusable workflow
   - as copied source-repo files with docs

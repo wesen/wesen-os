@@ -188,3 +188,55 @@ The better shape is:
 - shared helper = reusable mechanics
 
 This ticket now captures that decision directly in the design guide, so later implementation work does not have to reopen the same architectural argument.
+
+## 2026-03-31: Building The Thin Workflow Template And Dry-Run Updater
+
+After the patch primitive was validated, I added the next layer of the reusable shape:
+
+- `templates/01-publish-federated-remote.template.yml`
+- `scripts/04-dry-run-federation-gitops-target-update.py`
+- `scripts/05-check-federation-gitops-target-dry-run.sh`
+
+The purpose of this slice is not to finalize the shared-helper home yet. It is to prove that the reusable pieces compose into a thin app workflow:
+
+1. app-specific build step
+2. generic publish helper
+3. generic target metadata
+4. generic GitOps diff/update step
+
+### Bug caught during the first dry-run
+
+The first version of `04-dry-run-federation-gitops-target-update.py` resolved the patch helper relative to the example config file path:
+
+- `examples/scripts/...`
+
+That was wrong. The real helper lives under the ticket `scripts/` directory, not under `examples/`.
+
+I fixed it by resolving the helper relative to the script location itself:
+
+- `ticket_root = Path(__file__).resolve().parents[1]`
+- `patch_script = ticket_root / "scripts" / "02-patch-federation-registry-target.py"`
+
+That is the better shape because the dry-run updater should depend on the ticket tooling layout, not on where the config JSON happens to live.
+
+### Validation after the fix
+
+After correcting the helper path, I reran:
+
+- `scripts/05-check-federation-gitops-target-dry-run.sh`
+
+That produced the expected unified diff against the local K3s checkout:
+
+- same target file:
+  - `gitops/kustomize/wesen-os/configmap.yaml`
+- same matching remote:
+  - `inventory`
+- rewritten field:
+  - `manifestUrl`
+
+That means the ticket now has a full thin-template prototype:
+
+1. example target metadata
+2. generic patch helper
+3. dry-run updater that consumes the metadata
+4. template workflow showing where those steps plug into a source repo release flow
