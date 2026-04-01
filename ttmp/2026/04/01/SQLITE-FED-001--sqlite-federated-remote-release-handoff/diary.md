@@ -939,3 +939,146 @@ I made that retarget as a separate sqlite follow-up commit and validated it with
   - `go-go-golems/go-go-app-sqlite#6`
 - Successful hosted branch dry-run:
   - `23867838529`
+
+## Step 11: Verify the merged rollout on the cluster, reproduce the live browser failure, and prepare the runtime fix
+
+Once both follow-up PRs were merged, the ticket moved out of “release automation proof” territory and into actual rollout validation. The cluster-side rollout succeeded, but that success exposed a real host/runtime bug that the earlier source-repo proofs could not catch: sqlite was being registered twice in the launcher after federation bootstrapped, which made the live browser fail with `Duplicate app reducer key "app_sqlite"`.
+
+This was the right kind of failure to find at this stage. It means the storage publish, GitOps writeback, Argo sync, manifest fetch, and remote contract fetch all worked. The bug sits at the boundary between `wesen-os` host composition and the sqlite remote contract, not in the deployment machinery.
+
+### Prompt Context
+
+**User prompt (verbatim):** "i merged both." and then "I think you need the kubeconfig map KUBECONFIG=/home/manuel/code/wesen/2026-03-27--hetzner-k3s/.cache/kubeconfig-tailnet.yaml"
+
+**Assistant interpretation:** Treat both the sqlite helper-retarget PR and the GitOps PR as landed, verify the actual cluster rollout with the provided kubeconfig, and continue far enough to validate the live host/runtime behavior instead of stopping at repo state.
+
+**Inferred user intent:** Move from GitHub-level success criteria to real environment verification and keep working until the next concrete runtime issue is identified and scoped.
+
+**Commit (code):**
+- `go-go-app-sqlite`: `bf6f9a3` — `federation: keep sqlite launcher state private`
+- `wesen-os`: pending at the time this diary step was written, because the host-side fix is being committed separately after the docs update
+
+### What I did
+- Verified the merge state of the two key PRs:
+  - `go-go-golems/go-go-app-sqlite#6`
+  - `wesen/2026-03-27--hetzner-k3s#23`
+- Verified the K3s repo `main` content includes the sqlite remote entry in:
+  - `gitops/kustomize/wesen-os/config/federation.registry.json`
+- Used the user-provided kubeconfig:
+  - `KUBECONFIG=/home/manuel/code/wesen/2026-03-27--hetzner-k3s/.cache/kubeconfig-tailnet.yaml`
+- Checked live cluster health and rollout:
+  - `kubectl cluster-info`
+  - `kubectl get applications -n argocd`
+  - `kubectl get configmap -n wesen-os`
+  - `kubectl get -n wesen-os configmap/<generated-name> -o yaml | rg -n "sqlite|inventory|manifestUrl"`
+  - `kubectl get deployment -n wesen-os -o wide`
+  - `kubectl get pods -n wesen-os -o wide`
+  - `kubectl rollout status deployment/wesen-os -n wesen-os --timeout=30s`
+- Inspected the user-provided browser console evidence showing:
+  - `inventory-host-contract.js` loads with `HTTP 200`
+  - `sqlite-host-contract.js` loads with `HTTP 200`
+  - launcher bootstrap then fails with `Duplicate app reducer key "app_sqlite"`
+- Traced the duplicate registration in source:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/modules.tsx`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/store.ts`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/localFederatedAppContracts.ts`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite/apps/sqlite/src/launcher/module.tsx`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite/apps/sqlite/src/host.ts`
+- Confirmed the launcher-side collision path:
+  - `wesen-os` still statically imports `sqliteLauncherModule`
+  - bootstrap also loads sqlite through the federated registry and app contracts
+  - both paths expose `stateKey: "app_sqlite"`
+- Confirmed the sqlite remote also had a latent reducer collision:
+  - `host.ts` exported `sharedReducers.app_sqlite`
+  - `launcher/module.tsx` already registers the same slice as module-private launcher state
+- Applied the sqlite-side fix:
+  - removed `app_sqlite` from `sharedReducers`
+  - added a targeted regression test that checks `host.ts` source does not reintroduce `sharedReducers` / `app_sqlite`
+- Applied the `wesen-os` host-side fix:
+  - removed the static `@go-go-golems/sqlite/launcher` import from `apps/os-launcher/src/app/modules.tsx`
+  - removed the static `sqliteLauncherModule` entry from the launcher module list
+  - added a regression test in `src/__tests__/launcherHost.test.tsx` that asserts the static sqlite launcher import does not come back
+- Ran targeted validation:
+  - `npm run build:federation -w apps/sqlite`
+  - `npm run test -w apps/sqlite -- src/host.test.ts`
+  - `npm run build -w apps/os-launcher`
+  - `npm run test -w apps/os-launcher -- src/__tests__/launcherHost.test.tsx`
+- Ran a local launcher preview through `tmux` and checked the browser console with Playwright:
+  - the previous duplicate reducer bootstrap failure did not appear locally
+  - the local preview instead failed later on the missing `/api/os/federation-registry` backend, which is expected for static preview mode
+
+### Why
+- A live GitOps merge without runtime validation would have left the ticket in a dangerously misleading “done enough” state.
+- The browser error strongly suggested a composition problem rather than a deployment problem, and the source audit confirmed that.
+- Fixing only one side would have been incomplete: `wesen-os` was mounting sqlite twice, and sqlite itself was also exporting launcher-private state through `sharedReducers`.
+
+### What worked
+- The cluster verification path worked once the correct kubeconfig was used.
+- Argo and the deployment were healthy, so the rollout infrastructure is not the blocker anymore.
+- The browser evidence was enough to focus debugging quickly on launcher/store composition instead of object storage, GitOps, or manifest loading.
+- Both local code fixes validated cleanly:
+  - sqlite federated artifact build still passes
+  - `wesen-os` production build still passes
+  - the new `launcherHost` regression test passes
+  - the new sqlite host-contract regression test passes
+
+### What didn't work
+- A first attempt at a sqlite regression test imported `sqliteHostContract` directly and tripped an unrelated Vitest/runtime problem:
+
+```text
+TypeError: (0 , __vite_ssr_import_0__.createSelector) is not a function
+```
+
+- That failure was not a sign the fix was wrong. It was a test-harness coupling issue caused by importing too much runtime. I replaced that test with a narrower source-level assertion instead of spending more time fighting the harness.
+- A local static preview cannot fully validate federated bootstrap because it has no backend for:
+
+```text
+/api/os/federation-registry
+```
+
+- That is why the local runtime check was used only as a negative signal ("the duplicate reducer failure is gone before backend fetch"), not as the final proof.
+
+### What I learned
+- The rollout machinery is now proven beyond the source repo: the live cluster really picks up the sqlite manifest URL and the host really tries to load the remote contract.
+- The remaining issue is ordinary frontend integration debt, not deployment debt.
+- The duplicate reducer error string mattered. It came from `collectModuleReducers()` semantics, which pointed to duplicated launcher modules before shared-reducer merge even ran. That clue made the `modules.tsx` static sqlite import stand out quickly.
+
+### What was tricky to build
+- The hard part was not the fix itself; it was separating two overlapping bugs:
+  1. static sqlite launcher registration in `wesen-os`
+  2. launcher-private sqlite state being exported as a shared reducer
+
+- The browser only surfaced the first error message, but the second issue would have become the next launcher-store collision after the first one was fixed. Handling both together avoids a second avoidable production cycle.
+
+### What warrants a second pair of eyes
+- Review whether sqlite should expose any shared reducer at all right now, or whether all current sqlite state is intentionally launcher-private.
+- Review whether any other federated remote in `wesen-os` is still mounted statically and should follow the same cleanup pattern.
+
+### What should be done in the future
+- Commit and push the `wesen-os` host-side fix.
+- Open or update the follow-up PRs for the sqlite remote fix and the `wesen-os` host fix.
+- Republish sqlite so the live remote contract stops exporting the old host shape.
+- Deploy the updated `wesen-os` host build so the launcher no longer statically mounts sqlite.
+- Re-run live browser verification after both updates land and only then mark the ticket complete.
+
+### Code review instructions
+- Review the host-side composition fix:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/modules.tsx`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/__tests__/launcherHost.test.tsx`
+- Review the sqlite remote fix:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite/apps/sqlite/src/host.ts`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite/apps/sqlite/src/host.test.ts`
+- Re-run the targeted checks:
+  - `npm run build:federation -w apps/sqlite`
+  - `npm run test -w apps/sqlite -- src/host.test.ts`
+  - `npm run build -w apps/os-launcher`
+  - `npm run test -w apps/os-launcher -- src/__tests__/launcherHost.test.tsx`
+
+### Technical details
+- Correct kubeconfig used for cluster validation:
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/.cache/kubeconfig-tailnet.yaml`
+- Live sqlite manifest URL confirmed in GitOps and cluster config:
+  - `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/sqlite/versions/sha-f3b655d/mf-manifest.json`
+- SQLite follow-up commit created:
+  - `bf6f9a3` `federation: keep sqlite launcher state private`
+- `wesen-os` host-side commit is created after this diary update so the docs capture the exact reasoning behind it.

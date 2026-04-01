@@ -19,7 +19,7 @@ The main point of this ticket is not to continue coding blindly. It is to give a
 
 Current status: `active`
 
-As of `2026-04-01T19:54:00-04:00`:
+As of `2026-04-01T20:27:00-04:00`:
 
 - Phase 0 is complete and the audit output is saved in the ticket workspace.
 - Phase 2 is complete locally:
@@ -58,15 +58,29 @@ As of `2026-04-01T19:54:00-04:00`:
   - `wesen/2026-03-27--hetzner-k3s#23`
   - branch: `automation/federation-sqlite-wesen-os-sqlite-prod-sha-f3b655d`
   - manifest URL: `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/sqlite/versions/sha-f3b655d/mf-manifest.json`
-- A sqlite follow-up branch now removes the temporary helper pin:
-  - commit: `a95829b` `deploy: consume infra-tooling from main`
-  - PR: `go-go-golems/go-go-app-sqlite#6`
-  - hosted branch dry-run succeeded: `23867838529`
+- The sqlite helper-retarget PR is now merged:
+  - merge commit: `aa137d3`
+  - merged PR: `go-go-golems/go-go-app-sqlite#6`
+- The GitOps PR is now merged:
+  - merge commit: `e8391b4`
+  - merged PR: `wesen/2026-03-27--hetzner-k3s#23`
+- Argo / cluster-side rollout is confirmed:
+  - `kubectl get applications -n argocd` shows `wesen-os` `Synced` and `Healthy`
+  - the live `wesen-os` configmap contains the enabled `sqlite` manifest URL from `sha-f3b655d`
+  - `kubectl rollout status deployment/wesen-os -n wesen-os` succeeded
+- Host-side runtime verification surfaced a real frontend regression after rollout:
+  - browser bootstrap reaches both `inventory` and `sqlite` host-contract URLs successfully
+  - launcher bootstrap then fails with `Duplicate app reducer key "app_sqlite"`
+- Root cause is now identified and fixed locally:
+  - `wesen-os` still statically imported `sqliteLauncherModule` while bootstrap also loaded the federated sqlite launcher module
+  - `go-go-app-sqlite` also re-exported launcher-private `app_sqlite` state through `sharedReducers`
+  - sqlite follow-up commit: `bf6f9a3` `federation: keep sqlite launcher state private`
 - Remaining work:
-  - merge `go-go-golems/go-go-app-sqlite#6`
-  - merge `wesen/2026-03-27--hetzner-k3s#23`
-  - verify Argo/host-side rollout behavior after the GitOps change lands
-  - record sqlite as fully closed only after the workflow-retarget PR and rollout verification both land
+  - commit and push the `wesen-os` host-side composition fix
+  - publish the updated sqlite remote artifact
+  - deploy the updated `wesen-os` host build
+  - verify browser runtime behavior after both updates land
+  - record sqlite as fully closed only after the live launcher boots cleanly with the federated sqlite remote enabled
 
 ## Documents
 

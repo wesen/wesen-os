@@ -5,7 +5,6 @@ import { arcPlayerLauncherModule } from '@go-go-golems/arc-agi-player/launcher';
 import { appsBrowserLauncherModule } from '@go-go-golems/apps-browser/launcher';
 import { hypercardToolsLauncherModule } from '@go-go-golems/hypercard-tools/launcher';
 import { richWidgetsLauncherModule } from '@go-go-golems/os-widgets/launcher';
-import { sqliteLauncherModule } from '@go-go-golems/sqlite/launcher';
 import { todoLauncherModule } from '@go-go-golems/todo/launcher';
 import { assistantLauncherModule } from './assistantModule';
 import { hypercardReplLauncherModule } from './hypercardReplModule';
@@ -27,7 +26,6 @@ export const launcherModules: LaunchableAppModule[] = [
   hypercardReplLauncherModule,
   jsReplLauncherModule,
   ...listRuntimeFederatedLauncherModules(),
-  sqliteLauncherModule,
   todoLauncherModule,
   crmLauncherModule,
   bookTrackerLauncherModule,

@@ -44,11 +44,23 @@
 
 ## Phase 6. Close The Reuse Proof
 
-- [ ] Merge the sqlite workflow-retarget PR (`go-go-app-sqlite#6`).
+- [x] Merge the sqlite workflow-retarget PR (`go-go-app-sqlite#6`).
 - [x] Merge the sqlite source-repo PR.
-- [ ] Merge the resulting GitOps PR.
+- [x] Merge the resulting GitOps PR.
 - [ ] Verify Argo rollout and host-side registry behavior.
 - [ ] Record sqlite as the second app that proves the reusable federated release model.
+
+## Phase 7. Fix Post-Rollout Runtime Composition
+
+- [x] Verify the merged GitOps config reached the live cluster.
+- [x] Confirm the live `wesen-os` configmap contains the sqlite manifest URL.
+- [x] Reproduce the live browser failure after rollout.
+- [x] Identify the duplicate sqlite registration path in the host and remote code.
+- [x] Remove launcher-private sqlite state from the federated host contract.
+- [x] Remove the static sqlite launcher module mount from `wesen-os`.
+- [ ] Push the sqlite follow-up fix and publish a new sqlite remote version.
+- [ ] Push the `wesen-os` host-side fix and deploy it.
+- [ ] Verify the live launcher boots cleanly with sqlite enabled.
 
 ## Notes
 
@@ -62,14 +74,15 @@
   - `go-go-app-sqlite`: `252a69c` `deploy: wire sqlite federation publish workflow`
   - `go-go-app-sqlite`: `2cf8bca` `deploy: pass storage creds to sqlite publish step`
 - Open PRs:
-  - `go-go-golems/go-go-app-sqlite#6`
-  - `wesen/2026-03-27--hetzner-k3s#23`
+  - N/A for the original merge path; rollout follow-up PRs are still to be created
 - Merged source PRs:
   - `go-go-golems/go-go-app-sqlite#4`
   - `go-go-golems/go-go-app-sqlite#5`
+  - `go-go-golems/go-go-app-sqlite#6`
+  - `wesen/2026-03-27--hetzner-k3s#23`
 - Hosted workflow proof:
   - dry-run success: `23866303115`
   - live publish success: `23866354328`
   - branch dry-run against `infra-tooling@main`: `23867838529`
 - Current follow-through blocker:
-  - sqlite still needs the tiny follow-up PR `#6` merged so `main` stops pinning `infra-tooling` to the old feature branch ref.
+  - the live cluster now has sqlite enabled, but the frontend host still crashes during launcher bootstrap because sqlite is registered both statically and through federation.
