@@ -635,6 +635,72 @@ The remaining proof points are:
 2. tighten docs around the split-token bootstrap
 3. optionally modernize the workflow actions that still warn about Node 20 deprecation
 
+## 2026-04-01: Resolving The First Real GitOps PR Conflict
+
+The first successful shared-helper handoff created:
+
+- `wesen/2026-03-27--hetzner-k3s#19`
+
+That was good, but it immediately hit a normal GitOps reality:
+
+- another PR had merged first
+- so the generated automation branch was now conflicting with `main`
+
+The conflict was in exactly one file:
+
+- `gitops/kustomize/wesen-os/configmap.yaml`
+
+### What had changed on each side
+
+By the time I looked:
+
+- current `main` had the inventory manifest at:
+  - `sha-fea7b7a`
+- PR `#19` wanted to move it to:
+  - `sha-8bee502`
+
+So the merge conflict was not conceptual. It was only the expected single-line collision inside the embedded `federation.registry.json` block.
+
+### Resolution strategy
+
+The correct resolution was:
+
+- keep current `main`
+- keep the already-merged surrounding configmap shape
+- keep the **newest** immutable inventory manifest URL
+
+That means the resolved file should point to:
+
+- `sha-8bee502`
+
+not backslide to either:
+
+- `sha-1a32286`
+- `sha-fea7b7a`
+
+### What I did
+
+1. checked out the PR branch locally:
+   - `automation/federation-inventory-wesen-os-inventory-prod-sha-8bee502`
+2. fetched fresh `origin/main`
+3. merged `origin/main`
+4. resolved `gitops/kustomize/wesen-os/configmap.yaml`
+5. validated with:
+   - `kubectl kustomize gitops/kustomize/wesen-os`
+6. committed:
+   - `d3c57d5` `Resolve inventory federation manifest conflict`
+7. pushed the branch back to origin
+
+### Why this matters
+
+This is the first proof that the shared-helper flow still behaves well under normal concurrent GitOps traffic:
+
+- the generated PR was reviewable
+- the conflict was narrow and understandable
+- the repair was a straightforward “keep newest immutable manifest” update
+
+So the next operator looking at one of these automation PRs should expect exactly this kind of maintenance behavior when concurrent GitOps changes land first.
+
 ## 2026-03-31: Extracting The First Shared Toolkit Into `infra-tooling`
 
 With the ticket-side prototypes validated, I created the first real shared home in:

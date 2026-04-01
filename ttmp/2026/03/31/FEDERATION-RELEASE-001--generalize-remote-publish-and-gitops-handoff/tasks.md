@@ -69,6 +69,7 @@
   - `K3S_REPO_READ_TOKEN` for checkout
   - `GITOPS_PR_TOKEN` for push + PR creation
 - [x] Prove the first successful real shared-helper GitOps PR creation path from `go-go-app-inventory`.
+- [x] Resolve the first post-creation merge conflict on the resulting K3s PR and keep the newest immutable manifest URL.
 
 ## Phase 4: Define K3s-Side Reuse
 
