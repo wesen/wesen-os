@@ -513,6 +513,57 @@ You want to see:
 - new live config value
 - no manual restart
 
+## What The Live Validation Should Show
+
+When this refactor is working correctly in the cluster, the observations should change in a very specific way.
+
+### Before The Refactor
+
+Typical old behavior:
+
+1. a GitOps PR changes the ConfigMap content
+2. Argo reports `Synced`
+3. the public API still serves the old config
+4. an operator has to run:
+   - `kubectl rollout restart deploy/wesen-os`
+
+The mismatch is:
+
+- desired state changed
+- running pod state did not
+
+### After The Refactor
+
+Expected new behavior:
+
+1. a GitOps PR changes one of the generator input files
+2. the rendered ConfigMap name changes
+3. the rendered Deployment changes with it
+4. Kubernetes rolls the Deployment automatically
+5. the new pod starts with the new config files
+6. both:
+   - `/config/federation.registry.json` inside the pod
+   - `/api/os/federation-registry` from the live host
+   show the same new value
+
+### The Concrete Signals To Check
+
+The live validation pass should confirm all of these:
+
+- Argo application:
+  - `status.sync.status == Synced`
+  - `status.health.status == Healthy`
+- Deployment:
+  - rollout completes without a manual restart
+- Pod filesystem:
+  - `/config/federation.registry.json` contains the expected new manifest URL
+- Public API:
+  - `https://wesen-os.yolo.scapegoat.dev/api/os/federation-registry` returns the same expected manifest URL
+
+If the ConfigMap changed but the in-pod file and public API did not, the rollout trigger still is not working.
+
+If the in-pod file changed but the public API did not, then the process is likely still reading stale state internally.
+
 ## What Could Go Wrong
 
 ### 1. Kustomize name rewriting does not hit the field you expect

@@ -203,3 +203,80 @@ with:
 - a link to the new Kustomize pattern doc
 
 That should make the operational lesson discoverable even for someone who never reads the longer tutorial first.
+
+## 2026-04-01: Opening The K3s Refactor PR
+
+With the first implementation slice rendered cleanly and the K3s-side docs tightened, I opened the review PR for the package refactor:
+
+- `wesen/2026-03-27--hetzner-k3s#20`
+
+The point of opening the PR at this stage, instead of waiting until every possible live validation is done, is that the code change itself is already reviewable and bounded:
+
+- generated config inputs exist as real files
+- the handwritten inline ConfigMap is gone
+- the Deployment no longer relies on `subPath`
+- the Kustomize render proves the generated-name rollout trigger exists
+
+So the branch is now in the right state for normal GitOps review:
+
+- implementation visible in one place
+- operator-facing docs next to the implementation
+- validation commands included in the PR description
+
+This also means the ticket now has a concrete external reference for future discussion rather than only local commits.
+
+## 2026-04-01: Finishing The Pattern-Level Documentation
+
+After opening the PR, I closed the remaining documentation tasks in the K3s doc itself instead of leaving them only in the ticket.
+
+I extended:
+
+- `docs/kustomize-generated-config-rollout-pattern.md`
+
+with two pieces that were still missing:
+
+1. a decision guide for choosing between:
+   - generated config with automatic rollout
+   - true hot reload without `subPath`
+   - manual restart / manual revision bump
+2. a reusable checklist for applying this pattern to future Kustomize packages
+
+That matters because “use generated config” is only helpful if operators and future implementers also know when **not** to use it.
+
+The document now reads as a proper platform pattern page instead of only a `wesen-os` postmortem:
+
+- it teaches the default choice
+- it explains the alternatives
+- and it gives a concrete checklist for repeating the pattern safely
+
+At this point, the remaining work is no longer design or local render mechanics. The next step is the live validation slice after merge:
+
+- Argo sync state
+- rollout behavior
+- live API value
+- in-pod config file contents
+
+## 2026-04-01: Preparing The Live Validation Pass
+
+Before any post-merge cluster verification happens, I added a dedicated replay helper:
+
+- `scripts/03-check-live-wesen-os-config-rollout.sh`
+
+This script is intentionally narrow. It does not try to mutate the cluster or decide policy. It only reads the exact signals we care about for this refactor:
+
+1. Argo application sync/health/operation phase
+2. Deployment rollout status
+3. the mounted in-pod `/config/federation.registry.json`
+4. the live public `/api/os/federation-registry` response
+
+That is the right preparation step because the hardest part of these rollout investigations is often not the cluster behavior itself but the lack of a disciplined, repeatable check sequence.
+
+Now the ticket has:
+
+- a local render checker
+- a live cluster checker
+- a design guide
+- platform docs
+- and an open K3s PR
+
+So the remaining gap is genuinely the live merge/rollout proof, not missing instrumentation.

@@ -47,7 +47,7 @@
 - [x] Validate:
   - `kubectl kustomize gitops/kustomize/wesen-os`
   - diff against current rendered output
-- [ ] Commit the K3s package refactor as its own bounded slice.
+- [x] Commit the K3s package refactor as its own bounded slice.
 
 ## Phase 3: Prove Argo / Rollout Behavior
 
@@ -60,8 +60,17 @@
 ## Phase 4: Document The Reusable Pattern
 
 - [x] Add a follow-up note in the K3s repo docs explaining the pattern.
-- [ ] Document when to prefer:
+- [x] Document when to prefer:
   - Kustomize-generated config rollout
   - hot reload without `subPath`
   - explicit manual restart annotations
-- [ ] Record a reusable checklist for future Kustomize packages in this platform.
+- [x] Record a reusable checklist for future Kustomize packages in this platform.
+
+## Phase 5: Prepare The Live Validation Slice
+
+- [x] Add a replay helper for post-merge live validation:
+  - Argo app health
+  - rollout status
+  - live `/api/os/federation-registry`
+  - in-pod `/config/federation.registry.json`
+- [x] Document the expected before/after observations for the live validation pass.

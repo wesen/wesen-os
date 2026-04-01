@@ -26,3 +26,5 @@ This ticket is also meant to teach Kustomize to a new intern in the context of a
 ## Scripts
 
 - [scripts/01-audit-current-wesen-os-kustomize.sh](./scripts/01-audit-current-wesen-os-kustomize.sh)
+- [scripts/02-check-generated-configmap-rollout-shape.sh](./scripts/02-check-generated-configmap-rollout-shape.sh)
+- [scripts/03-check-live-wesen-os-config-rollout.sh](./scripts/03-check-live-wesen-os-config-rollout.sh)
