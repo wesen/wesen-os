@@ -685,6 +685,41 @@ So the right operational sequence is:
 2. bridge the consumer workflow to that branch
 3. merge the shared repo PR
 4. remove the temporary `ref` pin
+
+## 2026-04-01: Temporary Bridge Validated In CI
+
+After publishing the `infra-tooling` branch and pinning the inventory workflow to:
+
+- `ref: task/os-openai-app-server`
+
+I triggered the workflow manually on the inventory branch:
+
+- repo: `go-go-golems/go-go-app-inventory`
+- branch: `task/inventory-infra-tooling-federation-release`
+- run: `23850184226`
+
+That run completed successfully.
+
+### What this proves
+
+It proves the previous CI failure was correctly diagnosed:
+
+- the shared updater path itself was fine
+- the consumer workflow was failing only because it checked out an `infra-tooling` branch that did not yet contain the extracted files
+
+Once the workflow was pointed at a published branch that actually contains:
+
+- `scripts/federation/update_federation_gitops_target.py`
+
+the workflow moved past the original blocker and succeeded.
+
+### Remaining cleanup
+
+The bridge is intentionally temporary. The remaining work is still:
+
+1. merge `go-go-golems/infra-tooling#1`
+2. switch the inventory workflow back from the temporary branch pin to `infra-tooling` `main`
+3. rerun once more to prove the stable default-branch consumption model
 - platform package version variable when needed
 
 It also captures:
