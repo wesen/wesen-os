@@ -478,3 +478,101 @@ This was a straightforward but important fix. The sqlite workflow now mirrors in
 ### Technical details
 - New sqlite commit:
   - `2cf8bca` `deploy: pass storage creds to sqlite publish step`
+
+## Step 6: Run the hosted workflow, capture the first real CI failure on main, and open the follow-up sqlite fix PR
+
+Once the sqlite workflow existed on the default branch, I could finally test the hosted path for real. That exposed the next concrete issue immediately: the `publish-federation-remote` workflow now dispatches correctly, but the `Build sqlite federation artifact` step on `main` still fails because the merged sqlite branch left workspace-only TypeScript path aliases in the default `tsconfig.json`.
+
+This is a better failure than before because it is now a genuine hosted build failure with exact logs. The root cause is that CI checks out only `go-go-app-sqlite`, but the default sqlite TS config still tries to resolve `../../../go-go-os-frontend/packages/...`. I fixed that on the revived sqlite branch by splitting the TS config into published and workspace variants, kept local federation build validation green, and opened a new sqlite PR for those post-merge CI fixes.
+
+### Prompt Context
+
+**User prompt (verbatim):** "alright, i merged the pr on go-go-app-sqlite, you can now continue testing, right?"
+
+**Assistant interpretation:** Resume hosted validation now that the sqlite workflow is on the default branch and see how far the real GitHub-side release path gets.
+
+**Inferred user intent:** Move from preparation into actual hosted verification and surface the next real blocker, if any.
+
+**Commit (code):**
+- `3ed4095` — `build: split sqlite tsconfig for published CI`
+
+### What I did
+- Verified sqlite PR `#4` was merged and the workflow was now registered on GitHub.
+- Confirmed the sqlite repo still had the required variables and secrets.
+- Triggered hosted workflow runs and inspected their results.
+- Collected failure logs for:
+  - run `23865927540`
+  - run `23866017591`
+- Identified the shared root cause from the logs:
+  - Vite/esbuild tried to parse `/home/runner/work/go-go-app-sqlite/go-go-os-frontend/packages/os-shell/tsconfig.json`
+  - that path does not exist in a plain repo checkout
+- Updated the sqlite repo to use:
+  - `tsconfig.json` as the published/default config
+  - `tsconfig.workspace.json` for local sibling-workspace resolution
+  - `tsconfig.published.json` for explicit published type-checking
+- Updated the sqlite `typecheck` script to target `tsconfig.workspace.json`.
+- Revalidated locally:
+  - `npm run build:federation -w apps/sqlite` passes
+- Opened follow-up PR:
+  - `go-go-golems/go-go-app-sqlite#5`
+
+### Why
+- Once the workflow is on `main`, the next meaningful source of truth is the real hosted run, not more local inference.
+- The failure log pointed directly to a default-config problem rather than a GitOps or secret problem.
+- Splitting workspace-only TS settings away from the published/default config matches the pattern inventory already uses.
+
+### What worked
+- The workflow is now registered and dispatchable on GitHub.
+- Hosted runs produced precise failure logs.
+- The local federation build still passes after the TS config split.
+- The CI-oriented fix is now pushed and reviewable in sqlite PR `#5`.
+
+### What didn't work
+- Hosted runs on `main` failed in the same place:
+
+```text
+[vite:esbuild] parsing /home/runner/work/go-go-app-sqlite/go-go-os-frontend/packages/os-shell/tsconfig.json failed: Error: ENOENT: no such file or directory
+```
+
+- `gh workflow run ... --ref task/sqlite-federation-release-reuse` still resulted in runs against `main`, so I could not get GitHub to exercise the revived branch head directly through workflow dispatch.
+- `npm run typecheck:published -w apps/sqlite` still fails locally due package surface/type mismatches:
+  - `jsxDEV` typing mismatch in `react/jsx-runtime`
+  - `FederatedAppHostContract` missing from the published `@go-go-golems/os-shell` package surface
+
+### What I learned
+- The first real hosted blocker after workflow registration is not secrets or GitOps access. It is the sqlite build’s default TS config.
+- The default/published config and the local workspace config must be separated if this repo is going to build correctly in CI.
+- The published type surface likely still needs cleanup later, but it is not the specific blocker for the current hosted federation build path.
+
+### What was tricky to build
+- The subtle part was that GitHub workflow dispatch appears to keep targeting `main` even when I passed the revived feature branch ref. That meant the only trustworthy hosted signal I could get was from `main`, not from the follow-up branch head.
+- Another sharp edge is that the local `typecheck:published` signal is broader than the current hosted-build blocker. It found additional published-surface issues, but I deliberately did not widen scope further because the workflow does not run that check right now.
+
+### What warrants a second pair of eyes
+- Whether sqlite PR `#5` should be merged immediately as a CI unbreaker before spending time on the published type-surface mismatches.
+- Whether the published `@go-go-golems/os-shell` package is actually missing `FederatedAppHostContract`, or whether sqlite should consume a different exported contract type for published builds.
+
+### What should be done in the future
+- Merge `go-go-golems/go-go-app-sqlite#5`.
+- Rerun `publish-federation-remote` on `main` after that merge.
+- If the hosted build gets past the artifact step, continue with dry-run GitOps validation.
+- Revisit `typecheck:published` only after the hosted workflow path is green enough to move forward.
+
+### Code review instructions
+- Review the CI fix in:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite/apps/sqlite/tsconfig.json`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite/apps/sqlite/tsconfig.workspace.json`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite/apps/sqlite/tsconfig.published.json`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite/apps/sqlite/package.json`
+- Review hosted failure evidence with:
+  - `gh run view 23865927540 -R go-go-golems/go-go-app-sqlite --log-failed`
+  - `gh run view 23866017591 -R go-go-golems/go-go-app-sqlite --log-failed`
+
+### Technical details
+- Hosted failing runs:
+  - `23865927540`
+  - `23866017591`
+- New sqlite PR:
+  - `go-go-golems/go-go-app-sqlite#5`
+- New sqlite commit:
+  - `3ed4095` `build: split sqlite tsconfig for published CI`

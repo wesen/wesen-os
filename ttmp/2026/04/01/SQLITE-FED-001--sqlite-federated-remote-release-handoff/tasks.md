@@ -62,6 +62,6 @@
   - `go-go-app-sqlite`: `2cf8bca` `deploy: pass storage creds to sqlite publish step`
 - Open PRs:
   - `go-go-golems/infra-tooling#3`
-  - `go-go-golems/go-go-app-sqlite#4`
+  - `go-go-golems/go-go-app-sqlite#5`
 - GitHub workflow blocker:
-  - `publish-federation-remote.yml` cannot be dispatched yet because it is not present on the default branch of `go-go-app-sqlite`.
+  - hosted workflow runs on `main` currently fail in the sqlite build step until PR `#5` lands.
