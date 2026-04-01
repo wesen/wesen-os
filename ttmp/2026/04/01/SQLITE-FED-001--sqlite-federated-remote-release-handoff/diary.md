@@ -413,3 +413,68 @@ HTTP 404: Not Found (https://api.github.com/repos/go-go-golems/go-go-app-sqlite/
 - Configured sqlite GitHub variables:
   - `GO_GO_OS_PLATFORM_VERSION=0.1.0-canary.5`
   - `SQLITE_FEDERATION_PUBLIC_BASE_URL=https://scapegoat-federation-assets.fsn1.your-objectstorage.com`
+
+## Step 5: Address the sqlite workflow review finding about missing object-storage credentials
+
+After the sqlite PR was up, a workflow review comment pointed out a real regression in the publish step. The sqlite workflow validated that the Hetzner object storage credentials existed, but the subsequent publish step only forwarded bucket, endpoint, region, and public base URL. Because GitHub Actions step environments are isolated, that meant the actual upload step would lose the credentials needed by the AWS-compatible client path during non-dry-run publishes.
+
+This was a straightforward but important fix. The sqlite workflow now mirrors inventory by passing `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` into the publish step, sourced from the Hetzner-named GitHub secrets. That keeps the secret naming stable at the repo boundary while satisfying the credential names expected by the upload path.
+
+### Prompt Context
+
+**User prompt (verbatim):** ".github/workflows/publish-federation-remote.yml\nComment on lines +170 to +174\n        env:\n          HETZNER_OBJECT_STORAGE_BUCKET: ${{ secrets.HETZNER_OBJECT_STORAGE_BUCKET }}\n          HETZNER_OBJECT_STORAGE_ENDPOINT: ${{ secrets.HETZNER_OBJECT_STORAGE_ENDPOINT }}\n          HETZNER_OBJECT_STORAGE_REGION: ${{ secrets.HETZNER_OBJECT_STORAGE_REGION }}\n          SQLITE_FEDERATION_PUBLIC_BASE_URL: ${{ vars.SQLITE_FEDERATION_PUBLIC_BASE_URL }}\n@chatgpt-codex-connector\nchatgpt-codex-connector bot\n8 minutes ago\n\nP1 Badge Pass storage credentials to publish command\n\nThe publish step only sets bucket/endpoint/region/base URL, but omits HETZNER_OBJECT_STORAGE_ACCESS_KEY_ID and HETZNER_OBJECT_STORAGE_SECRET_ACCESS_KEY even though the previous step validates them. GitHub Actions step environments are isolated, so those credentials do not carry over automatically; in non-dry-run executions this can make publish_federation_remote.py (or its underlying S3 client) fail authentication and block remote publication.\n\nUseful? React with 👍 / 👎.\n@wesen"
+
+**Assistant interpretation:** Apply the review fix in the sqlite workflow so the publish step actually receives the object-storage credentials it needs.
+
+**Inferred user intent:** Resolve a real release-path bug before the workflow is merged or exercised for a live publish.
+
+**Commit (code):** `2cf8bca` — `deploy: pass storage creds to sqlite publish step`
+
+### What I did
+- Compared the sqlite publish step against the working inventory workflow.
+- Updated:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite/.github/workflows/publish-federation-remote.yml`
+- Added these env vars to the sqlite publish step:
+  - `AWS_ACCESS_KEY_ID: ${{ secrets.HETZNER_OBJECT_STORAGE_ACCESS_KEY_ID }}`
+  - `AWS_SECRET_ACCESS_KEY: ${{ secrets.HETZNER_OBJECT_STORAGE_SECRET_ACCESS_KEY }}`
+- Committed and pushed the fix to:
+  - `task/sqlite-federation-release-reuse`
+
+### Why
+- The review finding is correct.
+- The previous validation step and the publish step are separate GitHub Actions steps, so step-local env does not persist.
+- Without these env vars, a real publish would likely fail when the AWS-compatible upload path tries to authenticate.
+
+### What worked
+- The inventory workflow provided a direct known-good reference.
+- The fix is minimal and does not change repo secret names or the publish helper interface.
+- The patch is now on the sqlite PR branch.
+
+### What didn't work
+- N/A. This change was a direct correction with no additional blocker.
+
+### What I learned
+- The sqlite workflow had drifted from the working inventory pattern in exactly one critical place: credential propagation to the publish step.
+- This is the kind of regression that local dry-run validation will not catch, because the dry-run path does not need live object-storage authentication.
+
+### What was tricky to build
+- The only subtlety was keeping the external secret contract unchanged. The workflow stores the credentials under Hetzner-named GitHub secrets, but the actual upload path expects the AWS-style environment variable names, so the correct fix is translation at the step boundary rather than renaming repository secrets.
+
+### What warrants a second pair of eyes
+- Whether the sqlite PR review should explicitly call out that this fix aligns the workflow with inventory’s existing publish-step credential model.
+
+### What should be done in the future
+- Re-run GitHub dry-run validation once the workflow is registered on the default branch.
+- Keep comparing sqlite workflow changes against inventory until the shared helper path is fully stabilized.
+
+### Code review instructions
+- Review:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite/.github/workflows/publish-federation-remote.yml`
+- Compare against:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-inventory/.github/workflows/publish-federation-remote.yml`
+- Confirm branch head:
+  - `git -C /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite log -1 --oneline`
+
+### Technical details
+- New sqlite commit:
+  - `2cf8bca` `deploy: pass storage creds to sqlite publish step`

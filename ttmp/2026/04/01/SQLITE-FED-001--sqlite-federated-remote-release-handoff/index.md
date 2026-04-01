@@ -19,7 +19,7 @@ The main point of this ticket is not to continue coding blindly. It is to give a
 
 Current status: `active`
 
-As of `2026-04-01T14:52:33-04:00`:
+As of `2026-04-01T15:04:58-04:00`:
 
 - Phase 0 is complete and the audit output is saved in the ticket workspace.
 - Phase 2 is complete locally:
@@ -37,6 +37,8 @@ As of `2026-04-01T14:52:33-04:00`:
 - SQLite repository variables are now configured on GitHub:
   - `GO_GO_OS_PLATFORM_VERSION=0.1.0-canary.5`
   - `SQLITE_FEDERATION_PUBLIC_BASE_URL=https://scapegoat-federation-assets.fsn1.your-objectstorage.com`
+- The sqlite workflow branch now includes a follow-up review fix:
+  - `2cf8bca` passes `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` into the publish step so non-dry-run object-storage uploads can authenticate
 - A shared-helper gap was found and fixed locally in `infra-tooling`:
   - the registry patcher now inserts a missing remote entry instead of failing when `sqlite` is absent
 - Remaining blocker:

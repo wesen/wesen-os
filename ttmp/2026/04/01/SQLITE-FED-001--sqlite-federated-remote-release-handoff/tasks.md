@@ -59,6 +59,7 @@
   - `infra-tooling`: `5af1142` `federation: add missing remotes to registry patcher`
   - `go-go-app-sqlite`: `325fdb9` `federation: add sqlite remote artifact build`
   - `go-go-app-sqlite`: `252a69c` `deploy: wire sqlite federation publish workflow`
+  - `go-go-app-sqlite`: `2cf8bca` `deploy: pass storage creds to sqlite publish step`
 - Open PRs:
   - `go-go-golems/infra-tooling#3`
   - `go-go-golems/go-go-app-sqlite#4`
