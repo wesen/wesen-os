@@ -14,31 +14,31 @@
 
 ## Phase 2. Validate SQLite Artifact Generation
 
-- [ ] Run `npm run build:federation -w apps/sqlite`.
-- [ ] Inspect `dist-federation/mf-manifest.json`.
-- [ ] Inspect `dist-federation/sqlite-host-contract.js`.
-- [ ] Compare the output shape against inventory.
-- [ ] Fix any sqlite-specific build/runtime issues before touching workflow automation.
+- [x] Run `npm run build:federation -w apps/sqlite`.
+- [x] Inspect `dist-federation/mf-manifest.json`.
+- [x] Inspect `dist-federation/sqlite-host-contract.js`.
+- [x] Compare the output shape against inventory.
+- [x] Fix any sqlite-specific build/runtime issues before touching workflow automation.
 
 ## Phase 3. Add Repo-Local Release Metadata
 
-- [ ] Add `deploy/federation-gitops-targets.json` to `go-go-app-sqlite`.
-- [ ] Target the K3s JSON registry file:
+- [x] Add `deploy/federation-gitops-targets.json` to `go-go-app-sqlite`.
+- [x] Target the K3s JSON registry file:
   - `gitops/kustomize/wesen-os/config/federation.registry.json`
-- [ ] Use `remote_id: "sqlite"`.
+- [x] Use `remote_id: "sqlite"`.
 
 ## Phase 4. Add Source-Repo Workflow
 
-- [ ] Add a thin `publish-federation-remote` workflow to sqlite.
-- [ ] Checkout `infra-tooling`.
-- [ ] Checkout private K3s repo for dry-run using `K3S_REPO_READ_TOKEN`.
-- [ ] Use shared helper scripts from `infra-tooling`.
-- [ ] Keep sqlite-specific behavior limited to build command and target metadata.
+- [x] Add a thin `publish-federation-remote` workflow to sqlite.
+- [x] Checkout `infra-tooling`.
+- [x] Checkout private K3s repo for dry-run using `K3S_REPO_READ_TOKEN`.
+- [x] Use shared helper scripts from `infra-tooling`.
+- [x] Keep sqlite-specific behavior limited to build command and target metadata.
 
 ## Phase 5. Validate The Release Path
 
 - [ ] Run the workflow in dry-run mode.
-- [ ] Verify the K3s diff against the real `federation.registry.json` file.
+- [x] Verify the K3s diff against the real `federation.registry.json` file.
 - [ ] Run the workflow in real PR mode using `GITOPS_PR_TOKEN`.
 - [ ] Verify a GitOps PR is opened against the K3s repo.
 
@@ -54,4 +54,8 @@
 - Saved audit artifact:
   - `logs/2026-04-01-audit.txt`
 - Current shared-helper blocker:
-  - `infra-tooling` branch `task/federation-publish-helper` exists locally at `c943970` but does not currently track an upstream branch.
+  - `infra-tooling` branch `task/federation-publish-helper` now includes local commit `5af1142`, but the branch still does not currently exist on `origin`.
+- Local validation commits:
+  - `infra-tooling`: `5af1142` `federation: add missing remotes to registry patcher`
+  - `go-go-app-sqlite`: `325fdb9` `federation: add sqlite remote artifact build`
+  - `go-go-app-sqlite`: `252a69c` `deploy: wire sqlite federation publish workflow`

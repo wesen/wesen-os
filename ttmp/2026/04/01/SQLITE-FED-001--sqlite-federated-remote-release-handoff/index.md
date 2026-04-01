@@ -19,16 +19,22 @@ The main point of this ticket is not to continue coding blindly. It is to give a
 
 Current status: `active`
 
-As of `2026-04-01T14:08:11-04:00`:
+As of `2026-04-01T14:29:09-04:00`:
 
-- Phase 0 audit capture is complete and saved in the ticket workspace.
-- The sqlite worktree still matches the handoff description:
-  - `apps/sqlite/package.json` is modified
-  - `apps/sqlite/src/host.ts` is untracked
-  - `apps/sqlite/vite.federation.config.ts` is untracked
-  - `apps/sqlite/src/federation-shared/` is untracked
-- `infra-tooling` branch `task/federation-publish-helper` is still local-only with no upstream tracking branch.
-- `infra-tooling` already contains direct JSON target-file support and the shared example target metadata already includes `wesen-os-sqlite-prod`.
+- Phase 0 is complete and the audit output is saved in the ticket workspace.
+- Phase 2 is complete locally:
+  - `npm run build:federation -w apps/sqlite` passes
+  - `dist-federation/mf-manifest.json` has the expected sqlite host-contract shape
+  - `dist-federation/sqlite-host-contract.js` exports `sqliteHostContract`
+- Phase 3 is complete locally:
+  - `go-go-app-sqlite` now has `deploy/federation-gitops-targets.json`
+- Phase 4 is complete locally:
+  - `go-go-app-sqlite` now has a thin `publish-federation-remote` workflow that consumes `infra-tooling`
+- Local dry-run validation against the real K3s checkout now succeeds and produces the expected `sqlite` entry diff for `federation.registry.json`.
+- A shared-helper gap was found and fixed locally in `infra-tooling`:
+  - the registry patcher now inserts a missing remote entry instead of failing when `sqlite` is absent
+- Remaining blocker:
+  - `infra-tooling` branch `task/federation-publish-helper` is still local-only and not pushed to `origin`, so the sqlite workflow cannot run on GitHub yet.
 
 ## Documents
 
