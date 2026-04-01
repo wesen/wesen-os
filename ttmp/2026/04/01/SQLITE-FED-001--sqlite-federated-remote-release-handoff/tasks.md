@@ -2,15 +2,15 @@
 
 ## Phase 0. Freeze The Current State
 
-- [ ] Run the audit script and save the output for the next engineer.
-- [ ] Confirm the current `infra-tooling` helper branch/head.
-- [ ] Confirm the current sqlite worktree changes still match this handoff ticket.
+- [x] Run the audit script and save the output for the next engineer.
+- [x] Confirm the current `infra-tooling` helper branch/head.
+- [x] Confirm the current sqlite worktree changes still match this handoff ticket.
 
 ## Phase 1. Publish Or Review The Shared Helper Layer
 
 - [ ] Confirm `infra-tooling` branch `task/federation-publish-helper` is pushed.
-- [ ] Confirm the shared helper branch includes direct JSON target-file support.
-- [ ] Confirm the example target metadata already includes `wesen-os-sqlite-prod`.
+- [x] Confirm the shared helper branch includes direct JSON target-file support.
+- [x] Confirm the example target metadata already includes `wesen-os-sqlite-prod`.
 
 ## Phase 2. Validate SQLite Artifact Generation
 
@@ -48,3 +48,10 @@
 - [ ] Merge the resulting GitOps PR.
 - [ ] Verify Argo rollout and host-side registry behavior.
 - [ ] Record sqlite as the second app that proves the reusable federated release model.
+
+## Notes
+
+- Saved audit artifact:
+  - `logs/2026-04-01-audit.txt`
+- Current shared-helper blocker:
+  - `infra-tooling` branch `task/federation-publish-helper` exists locally at `c943970` but does not currently track an upstream branch.
