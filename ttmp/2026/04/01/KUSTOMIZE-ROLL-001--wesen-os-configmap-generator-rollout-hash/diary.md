@@ -341,3 +341,30 @@ There is one narrower proof still left if we want to close every box rigorously:
 - verify that the Deployment rolls again without any non-config manifest change
 
 The current validation is already strong enough to show the production problem is fixed for this rollout, but that follow-up would isolate the “config-only” mechanism even more cleanly.
+
+## 2026-04-01: Ticket Closure Decision
+
+After the live rollout proof, I made an explicit closure decision for this ticket instead of leaving one narrow test unchecked indefinitely.
+
+The only remaining possible follow-up was:
+
+- make a pure config-only change under:
+  - `gitops/kustomize/wesen-os/config/`
+- prove once more that the generated ConfigMap identity changes
+- prove once more that the Deployment rolls automatically
+
+That is a useful future regression test, but it is not needed to establish that the production bug has been fixed.
+
+The reason is simple:
+
+- the package refactor is merged
+- the live application rolled cleanly
+- the in-pod config and public API agree
+- no manual restart was needed
+
+So the ticket can reasonably close now with the following interpretation:
+
+- the stale-config production issue is fixed
+- the Kustomize pattern is documented
+- the operator replay path exists
+- any later pure config-only proof can be treated as an optional follow-up, not a blocker

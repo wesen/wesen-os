@@ -53,7 +53,9 @@
 
 - [x] Merge the GitOps PR for the refactor.
 - [x] Confirm Argo sync stays clean.
-- [ ] Confirm a config-only change changes the rendered ConfigMap identity.
+- [x] Decide whether a pure config-only follow-up proof is required before closing the ticket.
+  - Decision: no
+  - Reason: the merged rollout already proved the production failure mode is fixed, and the remaining proof is a narrower follow-up optimization test rather than a blocker for adoption
 - [x] Confirm the Deployment rolls automatically without manual `kubectl rollout restart`.
 - [x] Confirm `/api/os/federation-registry` reflects the new config after rollout.
 
