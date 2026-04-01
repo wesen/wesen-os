@@ -720,6 +720,63 @@ The bridge is intentionally temporary. The remaining work is still:
 1. merge `go-go-golems/infra-tooling#1`
 2. switch the inventory workflow back from the temporary branch pin to `infra-tooling` `main`
 3. rerun once more to prove the stable default-branch consumption model
+
+## 2026-04-01: Addressing `infra-tooling` PR Review Comments
+
+After opening `go-go-golems/infra-tooling#1`, the review surfaced three actionable problems in the shared toolkit itself.
+
+### 1. Template was calling the federation updater incorrectly
+
+The workflow template still used:
+
+- `--all-targets`
+
+but `update_federation_gitops_target.py` only supports:
+
+- `--target`
+
+I fixed the template to use:
+
+- `--target <target-name>`
+
+instead.
+
+### 2. Template did not wire object-storage env explicitly
+
+The template referenced:
+
+- `HETZNER_OBJECT_STORAGE_BUCKET`
+- `HETZNER_OBJECT_STORAGE_ENDPOINT`
+- `HETZNER_OBJECT_STORAGE_REGION`
+- `FEDERATION_REMOTE_PUBLIC_BASE_URL`
+
+without showing how they enter the environment.
+
+I fixed that by adding an explicit `env:` block wired from:
+
+- GitHub secrets
+- GitHub vars
+
+That makes the template actually usable by a source repo instead of relying on hidden ambient configuration.
+
+### 3. `open_gitops_pr.py` was not retry-safe for deterministic branch names
+
+The script generated a deterministic branch name and pushed before checking whether a PR for that branch already existed. That makes retries brittle when the same image tag is reused.
+
+I fixed that by:
+
+- checking for an existing PR before attempting the push/open sequence
+- short-circuiting cleanly when an open PR already exists for that branch
+
+### Validation
+
+I validated the fixes with:
+
+- `yq eval '.' templates/github/publish-federated-remote.template.yml`
+- `python3 -m py_compile scripts/gitops/open_gitops_pr.py`
+- `python3 scripts/gitops/open_gitops_pr.py --config /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/deploy/gitops-targets.json --target wesen-os-prod --image ghcr.io/wesen/wesen-os:sha-example --gitops-repo-dir /home/manuel/code/wesen/2026-03-27--hetzner-k3s --dry-run`
+
+So the review changes are not just syntactic; they are now validated against the real local GitOps checkout as well.
 - platform package version variable when needed
 
 It also captures:
