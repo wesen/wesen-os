@@ -38,7 +38,7 @@
   - `inventory`
   - future apps like `sqlite` or `gepa`
 - [x] Avoid hardcoding `inventory` strings in the reusable path.
-- [ ] Define idempotent PR update behavior.
+- [x] Define idempotent PR update behavior.
 
 ## Phase 3: Turn The Workflow Into A Template
 
@@ -56,10 +56,13 @@
   - repo-local `deploy/federation-gitops-targets.json`
   - `infra-tooling` checkout in CI
   - shared `update_federation_gitops_target.py`
+- [x] Add a shared PR-capable federation GitOps helper to `infra-tooling`.
+- [x] Switch `go-go-app-inventory` to the PR-capable shared helper while preserving workflow-dispatch dry-run mode.
 - [x] Write a detailed intern-facing failure-analysis guide for the first real `infra-tooling` consumption failure.
 - [x] Publish the extracted `infra-tooling` contents to GitHub `main`.
 - [x] Temporarily pin the inventory workflow checkout `ref` to the branch that actually contains the extracted helpers until the shared repo PR merges.
 - [x] Remove the temporary inventory workflow checkout pin after `infra-tooling` `main` contains the extracted helpers and prove the workflow against `main`.
+- [x] Reintroduce a temporary inventory workflow checkout pin for the next `infra-tooling` feature branch and prove the branch workflow with the PR-capable helper.
 
 ## Phase 4: Define K3s-Side Reuse
 

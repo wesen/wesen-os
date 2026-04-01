@@ -13,5 +13,6 @@ Track the work needed to turn the current inventory-specific remote publish flow
 - [design/02-generalized-federated-remote-release-guide.md](./design/02-generalized-federated-remote-release-guide.md)
 - [design/03-standard-secret-bootstrap-for-federated-remotes.md](./design/03-standard-secret-bootstrap-for-federated-remotes.md)
 - [design/04-infra-tooling-consumption-failure-analysis-and-onboarding-guide.md](./design/04-infra-tooling-consumption-failure-analysis-and-onboarding-guide.md)
+- [design/05-shared-federation-gitops-pr-helper.md](./design/05-shared-federation-gitops-pr-helper.md)
 - [tasks.md](./tasks.md)
 - [diary.md](./diary.md)

@@ -322,6 +322,125 @@ With the bridge removed and `main` consumption proven, the next work item for th
 - move from dry-run GitOps diff to actual GitOps PR creation using the shared helper path
 - then prove the same pattern on a second app so the reuse story is not inventory-only
 
+## 2026-04-01: Adding The Shared PR-Capable Federation Helper
+
+After the stable `infra-tooling` main proof, the next missing piece was obvious:
+
+- the shared path could validate a GitOps diff
+- but it still could not perform the actual GitOps handoff for federation manifests
+
+That meant the reusable flow was still incomplete.
+
+### What I added
+
+I implemented a new shared helper in `infra-tooling`:
+
+- `scripts/federation/open_federation_gitops_pr.py`
+
+This helper is the federation-manifest counterpart to the existing image helper:
+
+- `scripts/gitops/open_gitops_pr.py`
+
+It can now:
+
+1. read `federation-manifest` target metadata
+2. patch the correct remote entry inside `federation.registry.json`
+3. run in local dry-run mode against a checked-out GitOps repo
+4. or clone the GitOps repo, commit the patch on a deterministic branch, push it, and open a PR
+
+I also updated the reusable template in `infra-tooling`:
+
+- `templates/github/publish-federated-remote.template.yml`
+
+so the documented shared workflow now shows both modes:
+
+- dispatch dry-run
+- real PR creation
+
+### Local validation
+
+Before touching the inventory workflow, I validated the shared helper locally with:
+
+- `python3 -m py_compile ...`
+- a real dry-run against the actual K3s checkout using:
+  - `scripts/federation/open_federation_gitops_pr.py`
+  - `workspace-links/go-go-app-inventory/deploy/federation-gitops-targets.json`
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s`
+
+That dry-run produced the expected diff in:
+
+- `gitops/kustomize/wesen-os/configmap.yaml`
+
+without mutating the working tree.
+
+### Inventory workflow migration
+
+I then updated:
+
+- `workspace-links/go-go-app-inventory/.github/workflows/publish-federation-remote.yml`
+
+The workflow now behaves like this:
+
+1. workflow dispatch with `dry_run=true`
+   - checks out the private K3s repo
+   - runs `open_federation_gitops_pr.py --gitops-repo-dir .gitops --dry-run`
+   - skips real PR creation
+
+2. push to `main` or `dry_run=false`
+   - skips the local GitOps checkout
+   - runs `open_federation_gitops_pr.py --push --open-pr`
+
+That is the first real source-repo migration from “shared dry-run only” to “shared PR-capable helper.”
+
+### Why the temporary bridge came back
+
+This change introduced a new shared file in `infra-tooling`, which meant the same distribution constraint reappeared for the next feature slice:
+
+- `infra-tooling` main did not yet contain `open_federation_gitops_pr.py`
+
+So I deliberately reintroduced the temporary bridge in the inventory workflow:
+
+- `ref: task/os-openai-app-server`
+
+on the `infra-tooling` checkout step.
+
+This is not backsliding. It is the same controlled publication bridge pattern used successfully in the previous slice.
+
+### GitHub validation
+
+I pushed the new shared-helper branch and opened:
+
+- `go-go-golems/infra-tooling#2`
+
+I pushed the inventory branch update and validated it on GitHub with:
+
+- workflow run: `23851087827`
+- repo: `go-go-golems/go-go-app-inventory`
+- ref: `task/inventory-infra-tooling-federation-release`
+
+That run passed.
+
+Important detail:
+
+- it passed in workflow-dispatch dry-run mode
+- so the real `--push --open-pr` path is implemented but still not yet exercised in this ticket slice
+
+### Why this matters
+
+At this point the reusable pattern now has all of the structural pieces it previously lacked:
+
+1. shared extraction in `infra-tooling`
+2. shared dry-run validation
+3. shared PR-capable federation helper
+4. source-repo workflow migration to that helper
+
+The remaining work is no longer architecture. It is rollout:
+
+- merge `infra-tooling#2`
+- remove the temporary bridge again
+- prove stable `infra-tooling` `main`
+- then execute the first real GitOps PR creation through the shared helper
+
 ## 2026-03-31: Extracting The First Shared Toolkit Into `infra-tooling`
 
 With the ticket-side prototypes validated, I created the first real shared home in:
