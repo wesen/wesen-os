@@ -441,6 +441,99 @@ The remaining work is no longer architecture. It is rollout:
 - prove stable `infra-tooling` `main`
 - then execute the first real GitOps PR creation through the shared helper
 
+## 2026-04-01: Stable `infra-tooling` Main Re-Proof And First Real PR Attempt
+
+After the user merged `go-go-golems/infra-tooling#2`, I repeated the same stabilization sequence as the previous bridge removal:
+
+1. removed the temporary `ref: task/os-openai-app-server` pin from:
+   - `workspace-links/go-go-app-inventory/.github/workflows/publish-federation-remote.yml`
+2. validated the workflow YAML locally
+3. pushed that cleanup to the inventory branch
+4. reran the inventory workflow in dispatch dry-run mode against `infra-tooling` `main`
+
+### Stable `main` proof
+
+That dry-run validation succeeded:
+
+- run: `23851540210`
+
+This matters because it proves the second shared-helper slice is now also properly published in `infra-tooling` `main`. The inventory workflow no longer needs a branch bridge for the PR-capable helper.
+
+### First real shared-helper PR-creation attempt
+
+With the stable `main` proof complete, I immediately ran the same workflow again but with:
+
+- `dry_run=false`
+
+The goal was to exercise the actual `--push --open-pr` path in:
+
+- `.infra-tooling/scripts/federation/open_federation_gitops_pr.py`
+
+That run was:
+
+- `23851610070`
+
+### What succeeded in the real path
+
+The workflow got much further than earlier iterations:
+
+1. source repo checkout
+2. `infra-tooling` checkout from `main`
+3. package install
+4. federation build
+5. real object-storage upload
+6. manifest URL resolution
+7. private GitOps repo clone
+8. target-file patch
+9. deterministic branch creation
+10. Git commit
+
+So the code path itself is now proven through the mutation boundary.
+
+### Exact blocker
+
+The failure happened at:
+
+- `git push origin automation/federation-inventory-wesen-os-inventory-prod-sha-fea7b7a`
+
+with:
+
+- `remote: Permission to wesen/2026-03-27--hetzner-k3s.git denied to wesen.`
+- `fatal: unable to access 'https://github.com/wesen/2026-03-27--hetzner-k3s.git/': The requested URL returned error: 403`
+
+The helper also printed the exact diff it had prepared before failing, which is useful because it proves the content mutation itself was correct:
+
+- old manifest URL: `sha-1a32286`
+- new manifest URL: `sha-fea7b7a`
+
+### What this means
+
+This is not a logic bug in the shared helper.
+
+It means the current `GITOPS_PR_TOKEN` stored in `go-go-app-inventory` still only has read access to the K3s repo. That matches the earlier operator shortcut: the repo secret was seeded from a fine-grained token intended for private checkout, not for branch push and PR creation.
+
+So the boundary is now very clear:
+
+- read-only token is sufficient for:
+  - private checkout
+  - dry-run validation
+- read-only token is **not** sufficient for:
+  - `git push`
+  - GitOps PR creation
+
+### Correct next step
+
+The next real action is no longer code. It is operator setup:
+
+1. replace `GITOPS_PR_TOKEN` in `go-go-app-inventory` with a write-capable token for:
+   - `wesen/2026-03-27--hetzner-k3s`
+2. preferably split the current overloaded secret into:
+   - `K3S_REPO_READ_TOKEN`
+   - `GITOPS_PR_TOKEN`
+3. rerun the exact same workflow with `dry_run=false`
+
+Once that token is fixed, the first full reusable federation handoff should complete without any new code changes.
+
 ## 2026-03-31: Extracting The First Shared Toolkit Into `infra-tooling`
 
 With the ticket-side prototypes validated, I created the first real shared home in:
