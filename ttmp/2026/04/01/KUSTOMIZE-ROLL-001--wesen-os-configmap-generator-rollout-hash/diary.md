@@ -24,3 +24,21 @@ The guide in this ticket is intentionally tied to the real package:
 - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os`
 
 instead of teaching Kustomize in the abstract.
+
+I also added:
+
+- `scripts/01-audit-current-wesen-os-kustomize.sh`
+
+to replay the current package shape and verify the starting point before any implementation work begins.
+
+After writing the ticket bundle, I uploaded it to reMarkable as:
+
+- `KUSTOMIZE-ROLL-001 Kustomize Config Generator Guide`
+
+under:
+
+- `/ai/2026/04/01/KUSTOMIZE-ROLL-001`
+
+and verified the upload with:
+
+- `remarquee cloud ls /ai/2026/04/01/KUSTOMIZE-ROLL-001`
