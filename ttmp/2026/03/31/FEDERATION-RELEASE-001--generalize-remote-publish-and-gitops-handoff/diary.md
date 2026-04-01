@@ -490,6 +490,53 @@ I left an inline note in the workflow that this should later become a dedicated 
 - `K3S_REPO_READ_TOKEN`
 
 That way the workflow is correct today, and the future least-privilege cleanup is still visible in review.
+
+## 2026-04-01: Removing GoReleaser From `go-go-app-inventory`
+
+The inventory repo kept tripping pushes with a completely separate problem from the federation work:
+
+- the repo still carried stock GoReleaser/binary-release scaffolding
+- the pre-push hook ran `make goreleaser`
+- that path assumed a releasable binary existed
+- but this repo does not have a real releaseable CLI path beyond a local seeding utility
+
+Originally I partially patched the placeholder by replacing `cmd/XXX` with `cmd/inventory-seed`, but that was still the wrong shape. The user clarified the correct intent:
+
+- remove the releasing steps altogether
+
+### What I removed
+
+In `go-go-app-inventory` I removed the release machinery entirely:
+
+- deleted `.goreleaser.yaml`
+- removed `goreleaser`, `release`, and `install` targets from `Makefile`
+- removed the `pre-push.release` hook from `lefthook.yml`
+
+I also kept the harmless Makefile cleanup from the earlier pass:
+
+- `TAPES=$(wildcard doc/vhs/*.tape)` instead of `ls doc/vhs/*tape`
+
+so the repo stops printing noisy `ls: cannot access 'doc/vhs/*tape'` errors on every hook run.
+
+### Validation
+
+I validated the post-removal shape with:
+
+- `rg -n "goreleaser|cmd/XXX|go-go-golems/XXX" ...`
+- `make lint`
+- `go test ./...`
+
+All of those now pass for the real remaining repo responsibilities.
+
+### Why this matters for FEDERATION-RELEASE-001
+
+This was not just repo hygiene. It directly affected the first generalized-consumer PR because every push to the inventory branch was getting blocked by unrelated fake release scaffolding. Removing the release machinery is the correct fix because the repo's actual deployment path here is:
+
+- frontend package build
+- federated remote publish
+- GitOps handoff
+
+not Homebrew/NFPM/Fury CLI binary release automation.
 - platform package version variable when needed
 
 It also captures:
