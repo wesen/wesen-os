@@ -19,7 +19,7 @@ The main point of this ticket is not to continue coding blindly. It is to give a
 
 Current status: `active`
 
-As of `2026-04-01T14:29:09-04:00`:
+As of `2026-04-01T14:52:33-04:00`:
 
 - Phase 0 is complete and the audit output is saved in the ticket workspace.
 - Phase 2 is complete locally:
@@ -31,10 +31,16 @@ As of `2026-04-01T14:29:09-04:00`:
 - Phase 4 is complete locally:
   - `go-go-app-sqlite` now has a thin `publish-federation-remote` workflow that consumes `infra-tooling`
 - Local dry-run validation against the real K3s checkout now succeeds and produces the expected `sqlite` entry diff for `federation.registry.json`.
+- The participating feature branches are now pushed and reviewable on GitHub:
+  - `infra-tooling` PR: `go-go-golems/infra-tooling#3`
+  - `go-go-app-sqlite` PR: `go-go-golems/go-go-app-sqlite#4`
+- SQLite repository variables are now configured on GitHub:
+  - `GO_GO_OS_PLATFORM_VERSION=0.1.0-canary.5`
+  - `SQLITE_FEDERATION_PUBLIC_BASE_URL=https://scapegoat-federation-assets.fsn1.your-objectstorage.com`
 - A shared-helper gap was found and fixed locally in `infra-tooling`:
   - the registry patcher now inserts a missing remote entry instead of failing when `sqlite` is absent
 - Remaining blocker:
-  - `infra-tooling` branch `task/federation-publish-helper` is still local-only and not pushed to `origin`, so the sqlite workflow cannot run on GitHub yet.
+  - GitHub Actions `workflow_dispatch` still cannot run `publish-federation-remote.yml` yet because that workflow file does not exist on the default branch of `go-go-app-sqlite`; it currently exists only on PR `#4`.
 
 ## Documents
 

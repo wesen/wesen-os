@@ -8,7 +8,7 @@
 
 ## Phase 1. Publish Or Review The Shared Helper Layer
 
-- [ ] Confirm `infra-tooling` branch `task/federation-publish-helper` is pushed.
+- [x] Confirm `infra-tooling` branch `task/federation-publish-helper` is pushed.
 - [x] Confirm the shared helper branch includes direct JSON target-file support.
 - [x] Confirm the example target metadata already includes `wesen-os-sqlite-prod`.
 
@@ -54,8 +54,13 @@
 - Saved audit artifact:
   - `logs/2026-04-01-audit.txt`
 - Current shared-helper blocker:
-  - `infra-tooling` branch `task/federation-publish-helper` now includes local commit `5af1142`, but the branch still does not currently exist on `origin`.
+  - `infra-tooling` branch `task/federation-publish-helper` is now pushed and tracked on `origin`.
 - Local validation commits:
   - `infra-tooling`: `5af1142` `federation: add missing remotes to registry patcher`
   - `go-go-app-sqlite`: `325fdb9` `federation: add sqlite remote artifact build`
   - `go-go-app-sqlite`: `252a69c` `deploy: wire sqlite federation publish workflow`
+- Open PRs:
+  - `go-go-golems/infra-tooling#3`
+  - `go-go-golems/go-go-app-sqlite#4`
+- GitHub workflow blocker:
+  - `publish-federation-remote.yml` cannot be dispatched yet because it is not present on the default branch of `go-go-app-sqlite`.

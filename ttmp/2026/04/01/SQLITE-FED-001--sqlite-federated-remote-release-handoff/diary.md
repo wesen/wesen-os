@@ -315,3 +315,101 @@ ValueError: remoteId 'sqlite' not found in registry
   - `5af1142` `federation: add missing remotes to registry patcher`
 - Verified K3s dry-run diff target:
   - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/config/federation.registry.json`
+
+## Step 4: Push the branches, open both PRs, and verify the GitHub-side blocker precisely
+
+After the local wiring was complete, the next step was to make the work reachable from GitHub and try the real GitHub-side entrypoint. That part mostly succeeded: both branches are now pushed, both source PRs exist, and the sqlite repository has the variables and secrets it needs for the dry-run path.
+
+The important result is that the remaining blocker is now very specific. The sqlite workflow cannot be dispatched yet, not because of missing secrets or bad branch state, but because `publish-federation-remote.yml` does not exist on the default branch of `go-go-app-sqlite` yet. GitHub’s Actions API returns `404` for that workflow name even though the file exists on the feature branch and in PR `#4`.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, do it"
+
+**Assistant interpretation:** Push the prepared branches, make the work reviewable upstream, and continue into the actual GitHub-side validation path.
+
+**Inferred user intent:** Move from local-only proof to real hosted integration work and eliminate any remaining “not yet published” blockers.
+
+**Commit (code):** N/A for this diary entry. This step mainly changed remote Git state and GitHub repository metadata.
+
+### What I did
+- Pushed the `infra-tooling` helper branch:
+  - `task/federation-publish-helper -> origin/task/federation-publish-helper`
+- Pushed the sqlite release branch:
+  - `task/sqlite-federation-release-reuse -> origin/task/sqlite-federation-release-reuse`
+- Verified GitHub authentication with:
+  - `gh auth status`
+- Checked sqlite repo Actions configuration:
+  - `gh workflow list -R go-go-golems/go-go-app-sqlite`
+- Attempted to dispatch the sqlite dry-run workflow:
+  - `gh workflow run publish-federation-remote.yml -R go-go-golems/go-go-app-sqlite --ref task/sqlite-federation-release-reuse -f platform_version=0.1.0-canary.5 -f dry_run=true -f remote_version=sha-manualdryrun`
+- Confirmed the workflow file exists on the branch:
+  - `gh api 'repos/go-go-golems/go-go-app-sqlite/contents/.github/workflows/publish-federation-remote.yml?ref=task/sqlite-federation-release-reuse' --jq .path`
+- Created PRs:
+  - `go-go-golems/infra-tooling#3`
+  - `go-go-golems/go-go-app-sqlite#4`
+- Configured sqlite GitHub repository variables:
+  - `GO_GO_OS_PLATFORM_VERSION=0.1.0-canary.5`
+  - `SQLITE_FEDERATION_PUBLIC_BASE_URL=https://scapegoat-federation-assets.fsn1.your-objectstorage.com`
+- Fixed the sqlite PR body after an earlier shell-substitution mistake removed literal text from the body.
+
+### Why
+- Local commits are not enough; the sqlite workflow explicitly checks out `infra-tooling` from GitHub.
+- Running the real GitHub-side dry-run path is the only way to prove that repo settings, workflow registration, and branch visibility are all correct.
+- Repository variables had to be created so the future workflow does not depend on always passing manual inputs.
+
+### What worked
+- Both branches pushed cleanly and now track `origin`.
+- Both PRs are open and reviewable.
+- SQLite repository secrets already existed:
+  - `GITOPS_PR_TOKEN`
+  - `K3S_REPO_READ_TOKEN`
+- SQLite repository variables are now set.
+- The workflow file is present on the sqlite feature branch and visible through the GitHub contents API.
+
+### What didn't work
+- The GitHub workflow dispatch failed with:
+
+```text
+HTTP 404: Not Found (https://api.github.com/repos/go-go-golems/go-go-app-sqlite/actions/workflows/publish-federation-remote.yml)
+```
+
+- `gh workflow list -R go-go-golems/go-go-app-sqlite` does not include `publish-federation-remote.yml`, confirming that GitHub has not registered it as a runnable workflow on the repository yet.
+- An earlier `gh pr create` command for the sqlite PR body used backticks in a shell string and triggered accidental command substitution, which stripped the literal validation line from the initial PR body.
+
+### What I learned
+- The next blocker is not configuration data anymore. It is GitHub Actions workflow registration semantics.
+- Having a workflow file on a feature branch is not sufficient for `gh workflow run` when GitHub does not recognize that workflow on the repository yet.
+- The sqlite repo is now configured closely enough that merging PR `#4` should unblock workflow dispatch, assuming the helper branch or helper merge remains available.
+
+### What was tricky to build
+- The subtle part was distinguishing between “the workflow file exists in git” and “GitHub recognizes the workflow as dispatchable.” Those are separate states, and the GitHub API behavior makes that distinction very explicit with the `404`.
+- The PR body update also had a sharp shell edge: unquoted backticks in a CLI body argument are treated by the shell as command substitution. That did not break the PR creation itself, but it did silently damage the body content until I corrected it.
+
+### What warrants a second pair of eyes
+- Whether to merge `infra-tooling#3` first and then retarget the sqlite workflow to `infra-tooling@main` before merging sqlite PR `#4`.
+- Whether it is acceptable to merge sqlite PR `#4` specifically to register the workflow on the default branch before doing the first real hosted dry-run.
+
+### What should be done in the future
+- Merge or at least review `go-go-golems/infra-tooling#3`.
+- Decide whether sqlite PR `#4` should merge before the first hosted dry-run, since GitHub cannot dispatch the workflow until that file is recognized on the repository.
+- After the workflow is registered on the default branch, rerun the dry-run path and then test real GitOps PR mode.
+
+### Code review instructions
+- Review the upstream PRs:
+  - `https://github.com/go-go-golems/infra-tooling/pull/3`
+  - `https://github.com/go-go-golems/go-go-app-sqlite/pull/4`
+- Confirm sqlite repo settings with:
+  - `gh variable list -R go-go-golems/go-go-app-sqlite`
+  - `gh secret list -R go-go-golems/go-go-app-sqlite`
+- Reproduce the current GitHub blocker with:
+  - `gh workflow list -R go-go-golems/go-go-app-sqlite`
+  - `gh workflow run publish-federation-remote.yml -R go-go-golems/go-go-app-sqlite --ref task/sqlite-federation-release-reuse -f platform_version=0.1.0-canary.5 -f dry_run=true -f remote_version=sha-manualdryrun`
+
+### Technical details
+- Open upstream PRs:
+  - `go-go-golems/infra-tooling#3`
+  - `go-go-golems/go-go-app-sqlite#4`
+- Configured sqlite GitHub variables:
+  - `GO_GO_OS_PLATFORM_VERSION=0.1.0-canary.5`
+  - `SQLITE_FEDERATION_PUBLIC_BASE_URL=https://scapegoat-federation-assets.fsn1.your-objectstorage.com`
