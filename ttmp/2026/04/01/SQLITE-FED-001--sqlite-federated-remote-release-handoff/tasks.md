@@ -44,6 +44,7 @@
 
 ## Phase 6. Close The Reuse Proof
 
+- [ ] Merge the sqlite workflow-retarget PR (`go-go-app-sqlite#6`).
 - [x] Merge the sqlite source-repo PR.
 - [ ] Merge the resulting GitOps PR.
 - [ ] Verify Argo rollout and host-side registry behavior.
@@ -53,15 +54,15 @@
 
 - Saved audit artifact:
   - `logs/2026-04-01-audit.txt`
-- Current shared-helper blocker:
-  - `infra-tooling` branch `task/federation-publish-helper` is now pushed and tracked on `origin`.
+- Shared-helper status:
+  - `go-go-golems/infra-tooling#3` is merged on `main` as `dc99431`
 - Local validation commits:
   - `infra-tooling`: `5af1142` `federation: add missing remotes to registry patcher`
   - `go-go-app-sqlite`: `325fdb9` `federation: add sqlite remote artifact build`
   - `go-go-app-sqlite`: `252a69c` `deploy: wire sqlite federation publish workflow`
   - `go-go-app-sqlite`: `2cf8bca` `deploy: pass storage creds to sqlite publish step`
 - Open PRs:
-  - `go-go-golems/infra-tooling#3`
+  - `go-go-golems/go-go-app-sqlite#6`
   - `wesen/2026-03-27--hetzner-k3s#23`
 - Merged source PRs:
   - `go-go-golems/go-go-app-sqlite#4`
@@ -69,5 +70,6 @@
 - Hosted workflow proof:
   - dry-run success: `23866303115`
   - live publish success: `23866354328`
+  - branch dry-run against `infra-tooling@main`: `23867838529`
 - Current follow-through blocker:
-  - the shared helper branch still lives on `go-go-golems/infra-tooling#3`; sqlite is proven, but the helper should still be merged or otherwise stabilized before calling the reuse path fully closed.
+  - sqlite still needs the tiny follow-up PR `#6` merged so `main` stops pinning `infra-tooling` to the old feature branch ref.

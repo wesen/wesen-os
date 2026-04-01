@@ -860,3 +860,82 @@ I used this cleanup pass to move the operator-facing bootstrap into `infra-tooli
   - `bash -n` passed for the new script
 - Remaining intentional temporary dependency:
   - sqlite workflow still checks out `infra-tooling` ref `task/federation-publish-helper`
+
+## Step 10: Retarget sqlite from the temporary helper branch to `infra-tooling@main`
+
+Once `go-go-golems/infra-tooling#3` merged, the temporary sqlite workflow pin was no longer just inelegant; it was stale. At that point the correct follow-up was very small but important: remove the explicit `ref: task/federation-publish-helper` from sqlite so the workflow consumes the shared helper from `infra-tooling` default branch instead of continuing to depend on a ticket-era task ref.
+
+I made that retarget as a separate sqlite follow-up commit and validated it with a hosted dry-run on the branch. That keeps the source-repo proof honest: sqlite is no longer only known to work against the temporary helper branch, it is also proven against the merged helper state on `infra-tooling@main`.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, i merged https://github.com/go-go-golems/infra-tooling/pull/3"
+
+**Assistant interpretation:** Continue from the merged shared-helper PR by removing the now-stale branch pin in sqlite and revalidating the workflow against `infra-tooling@main`.
+
+**Inferred user intent:** Finish the shared-helper stabilization step rather than leaving sqlite permanently pinned to a temporary feature branch.
+
+**Commit (code):** `a95829b` — `deploy: consume infra-tooling from main`
+
+### What I did
+- Verified `infra-tooling` `main` now contains the merged helper:
+  - `dc99431` `Merge pull request #3 from go-go-golems/task/federation-publish-helper`
+- Updated:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite/.github/workflows/publish-federation-remote.yml`
+- Removed the temporary workflow checkout pin:
+  - deleted `ref: task/federation-publish-helper`
+- Validated the workflow file locally with:
+  - `python3` + `yaml.safe_load(...)`
+- Pushed the sqlite branch and opened:
+  - `go-go-golems/go-go-app-sqlite#6`
+- Triggered hosted dry-run on the branch:
+  - run `23867838529`
+  - URL: `https://github.com/go-go-golems/go-go-app-sqlite/actions/runs/23867838529`
+
+### Why
+- The helper branch had served its purpose. Continuing to pin sqlite to it after merge would create unnecessary drift between sqlite and the actual shared default branch.
+- This follow-up is small enough that it should be isolated from the earlier feature work instead of buried inside the bigger sqlite migration PRs.
+
+### What worked
+- The sqlite workflow now consumes `infra-tooling@main`.
+- The branch dry-run succeeded on GitHub after the pin was removed.
+- The dispatch correctly ran against the sqlite branch head:
+  - `headSha: a95829bd5e2a93189c329bbc8d6e48e804cfce16`
+
+### What didn't work
+- N/A. The retarget itself was straightforward and the hosted dry-run stayed green.
+
+### What I learned
+- The earlier issue where workflow dispatch behaved ambiguously against branch refs is not blocking now. This retarget validation clearly ran against the branch head and provides a clean hosted signal for the follow-up PR.
+- After the helper merge, the remaining blockers are fully downstream again: merging sqlite PR `#6`, merging the GitOps PR, and verifying rollout.
+
+### What was tricky to build
+- The only subtle part was sequencing. I waited until `infra-tooling` `main` visibly contained `dc99431` before removing the sqlite ref pin, because doing that earlier would have made the workflow depend on an incompletely updated shared default branch.
+
+### What warrants a second pair of eyes
+- Review that sqlite PR `#6` is intentionally only the ref-pin removal and does not carry unrelated cleanup.
+
+### What should be done in the future
+- Merge `go-go-golems/go-go-app-sqlite#6`.
+- Merge `wesen/2026-03-27--hetzner-k3s#23`.
+- Verify Argo / host-side rollout behavior.
+- After rollout is verified, close out the ticket as the second proven consumer.
+
+### Code review instructions
+- Review the sqlite workflow diff:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite/.github/workflows/publish-federation-remote.yml`
+- Review hosted validation:
+  - `gh run view 23867838529 -R go-go-golems/go-go-app-sqlite --json jobs`
+  - `gh run view 23867838529 -R go-go-golems/go-go-app-sqlite --log`
+- Review follow-up PR:
+  - `https://github.com/go-go-golems/go-go-app-sqlite/pull/6`
+
+### Technical details
+- Merged infra-tooling helper on `main`:
+  - `dc99431`
+- New sqlite follow-up commit:
+  - `a95829b` `deploy: consume infra-tooling from main`
+- New sqlite follow-up PR:
+  - `go-go-golems/go-go-app-sqlite#6`
+- Successful hosted branch dry-run:
+  - `23867838529`

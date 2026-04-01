@@ -19,7 +19,7 @@ The main point of this ticket is not to continue coding blindly. It is to give a
 
 Current status: `active`
 
-As of `2026-04-01T19:18:00-04:00`:
+As of `2026-04-01T19:54:00-04:00`:
 
 - Phase 0 is complete and the audit output is saved in the ticket workspace.
 - Phase 2 is complete locally:
@@ -51,16 +51,22 @@ As of `2026-04-01T19:18:00-04:00`:
   - dry-run succeeded: `23866303115`
   - live publish succeeded: `23866354328`
   - both runs built `apps/sqlite/dist-federation`, published or dry-ran the manifest path, and exercised the shared `infra-tooling` helper workflow
-- A shared-helper gap was found and fixed locally in `infra-tooling`:
-  - the registry patcher now inserts a missing remote entry instead of failing when `sqlite` is absent
+- The shared helper is now merged on `infra-tooling` `main`:
+  - merge commit: `dc99431`
+  - merged PR: `go-go-golems/infra-tooling#3`
 - The live publish opened the expected GitOps PR:
   - `wesen/2026-03-27--hetzner-k3s#23`
   - branch: `automation/federation-sqlite-wesen-os-sqlite-prod-sha-f3b655d`
   - manifest URL: `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/sqlite/versions/sha-f3b655d/mf-manifest.json`
+- A sqlite follow-up branch now removes the temporary helper pin:
+  - commit: `a95829b` `deploy: consume infra-tooling from main`
+  - PR: `go-go-golems/go-go-app-sqlite#6`
+  - hosted branch dry-run succeeded: `23867838529`
 - Remaining work:
+  - merge `go-go-golems/go-go-app-sqlite#6`
   - merge `wesen/2026-03-27--hetzner-k3s#23`
   - verify Argo/host-side rollout behavior after the GitOps change lands
-  - merge or otherwise land `infra-tooling#3`, then retarget sqlite away from the helper feature branch
+  - record sqlite as fully closed only after the workflow-retarget PR and rollout verification both land
 
 ## Documents
 
