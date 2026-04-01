@@ -576,3 +576,197 @@ This is a better failure than before because it is now a genuine hosted build fa
   - `go-go-golems/go-go-app-sqlite#5`
 - New sqlite commit:
   - `3ed4095` `build: split sqlite tsconfig for published CI`
+
+## Step 7: Seed the missing Hetzner object-storage secrets into sqlite and prove the hosted dry-run on main
+
+Once sqlite PR `#5` was merged, the build-side blocker was gone, but the first automatic `main` run still failed before publish. That failure was useful because it isolated the remaining gap cleanly: the sqlite repo had the public base URL variable and the GitOps/K3s tokens, but it never received the five Hetzner object-storage secrets that inventory had been bootstrapped with earlier.
+
+I followed the same operator path inventory used, pulling the object-storage values from the Terraform-backed environment under `/home/manuel/code/wesen/terraform` and seeding those secrets into `go-go-app-sqlite`. After that bootstrap, the hosted dry-run on merged `main` passed end to end and showed the expected `sqlite` registry diff against the real K3s JSON target file.
+
+### Prompt Context
+
+**User prompt (verbatim):** "it's merged"
+
+**Assistant interpretation:** Resume immediately from the merged sqlite follow-up PR, fix the remaining repo configuration blocker, and rerun the hosted validation path.
+
+**Inferred user intent:** Move the ticket past local prep and branch-level fixes into a clean GitHub-side dry-run on the actual default branch.
+
+### What I did
+- Confirmed the merged sqlite `main` head:
+  - `f3b655dfd641439687d8de5897dfed996b586cf1`
+- Confirmed GitHub auth and repo configuration state with:
+  - `gh auth status`
+  - `gh secret list --repo go-go-golems/go-go-app-sqlite`
+  - `gh variable list --repo go-go-golems/go-go-app-sqlite`
+- Verified that sqlite still lacked:
+  - `HETZNER_OBJECT_STORAGE_ACCESS_KEY_ID`
+  - `HETZNER_OBJECT_STORAGE_SECRET_ACCESS_KEY`
+  - `HETZNER_OBJECT_STORAGE_BUCKET`
+  - `HETZNER_OBJECT_STORAGE_ENDPOINT`
+  - `HETZNER_OBJECT_STORAGE_REGION`
+- Reused the same Terraform-backed source of truth inventory used:
+  - `/home/manuel/code/wesen/terraform`
+  - `AWS_PROFILE=manuel direnv exec /home/manuel/code/wesen/terraform bash -lc '...'`
+- Seeded sqlite repo secrets from that environment:
+  - bucket: `scapegoat-federation-assets`
+  - endpoint: `https://fsn1.your-objectstorage.com`
+  - region: `fsn1`
+- Triggered hosted dry-run:
+  - `gh workflow run publish-federation-remote.yml --repo go-go-golems/go-go-app-sqlite --ref main -f dry_run=true -f remote_version=sha-manualdryrun-main-20260401a`
+- Watched and inspected the run:
+  - run `23866303115`
+  - URL: `https://github.com/go-go-golems/go-go-app-sqlite/actions/runs/23866303115`
+
+### Why
+- The merged sqlite code was now good enough that the next blocker had to come from hosted configuration, not local source changes.
+- Inventory already established the operator pattern for sourcing these secrets from the Terraform env rather than inventing repo-specific values by hand.
+- A successful hosted dry-run on `main` is the exact proof needed before attempting a real publish and GitOps PR open.
+
+### What worked
+- GitHub secret bootstrap succeeded for all five missing Hetzner entries.
+- The hosted dry-run completed successfully on merged `main`.
+- The dry-run built `apps/sqlite/dist-federation`, resolved the expected manifest path, and exercised the GitOps registry patch path through `infra-tooling`.
+- The dry-run diff added the expected entry to `gitops/kustomize/wesen-os/config/federation.registry.json`:
+  - `remoteId: "sqlite"`
+  - `manifestUrl: https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/sqlite/versions/sha-manualdryrun-main-20260401a/mf-manifest.json`
+
+### What didn't work
+- The merge-triggered hosted run on `main` had previously failed with missing publish config before I seeded the secrets:
+
+```text
+Missing required publish configuration: HETZNER_OBJECT_STORAGE_ACCESS_KEY_ID
+Missing required publish configuration: HETZNER_OBJECT_STORAGE_SECRET_ACCESS_KEY
+Missing required publish configuration: HETZNER_OBJECT_STORAGE_BUCKET
+Missing required publish configuration: HETZNER_OBJECT_STORAGE_ENDPOINT
+Missing required publish configuration: HETZNER_OBJECT_STORAGE_REGION
+```
+
+- `rg` against `infra-tooling` from the `wesen-os` repo root initially failed because I passed a non-existent relative directory name instead of the absolute workspace path:
+
+```text
+rg: infra-tooling: No such file or directory (os error 2)
+```
+
+### What I learned
+- The hosted `main` path was fully blocked by repo bootstrap state after PR `#5` merged; no further sqlite code change was required to get the dry-run green.
+- Inventory’s secret-bootstrap pattern is reusable as-is for sqlite when the same object-storage tenancy is intended.
+- The shared helper path now works on merged sqlite `main`, not just on a feature branch.
+
+### What was tricky to build
+- The sharp edge here was separating “workflow logic is wrong” from “repo configuration is incomplete.” The successful feature-branch dry-run had already shown the logic was sound, but the failed `main` run proved that GitHub repo bootstrap still mattered independently of code merges.
+- Another subtlety is avoiding secret leakage while still verifying the source environment. I only recorded non-sensitive metadata like bucket name, endpoint, and region, and used `gh secret set` via stdin for the actual credentials.
+
+### What warrants a second pair of eyes
+- Whether `go-go-app-sqlite` should get its own sqlite-specific bootstrap script alongside inventory so future operators do not have to adapt the inventory-oriented one manually.
+
+### What should be done in the future
+- Run the live publish path now that dry-run is green.
+- Merge the resulting GitOps PR after reviewing the registry diff.
+- Later, standardize the public-base-url variable naming and bootstrap script naming across remotes.
+
+### Code review instructions
+- Confirm repo secret state with:
+  - `gh secret list -R go-go-golems/go-go-app-sqlite`
+- Review the successful dry-run with:
+  - `gh run view 23866303115 -R go-go-golems/go-go-app-sqlite --json jobs`
+  - `gh run view 23866303115 -R go-go-golems/go-go-app-sqlite --log`
+- Compare the object-storage bootstrap pattern against:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/41-seed-inventory-federation-gh-config.sh`
+
+### Technical details
+- Successful hosted dry-run:
+  - `23866303115`
+- Dry-run sqlite manifest URL:
+  - `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/sqlite/versions/sha-manualdryrun-main-20260401a/mf-manifest.json`
+- Repo bootstrap metadata used:
+  - bucket: `scapegoat-federation-assets`
+  - endpoint: `https://fsn1.your-objectstorage.com`
+  - region: `fsn1`
+
+## Step 8: Run the live sqlite publish on main and open the real GitOps PR
+
+With the dry-run green on merged `main`, the last meaningful proof in this ticket was the real publish path. I dispatched the workflow in non-dry-run mode against the same merged sqlite `main` SHA, which uploaded the sqlite federation artifacts to Hetzner object storage and then used the shared GitOps helper path to open a PR against the K3s repo.
+
+This is the key handoff proof the ticket was aiming for. SQLite is now not just locally wired or dry-run validated; it has successfully published a real remote artifact version and created the GitOps change needed to register that remote in the host-side federation registry.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 7)
+
+**Assistant interpretation:** Continue immediately after the successful dry-run and prove the real publish path while the merged `main` state and repo bootstrap are both known-good.
+
+**Inferred user intent:** Finish the reusable-release proof as far as possible from the source-repo side before handing off to GitOps merge and rollout verification.
+
+### What I did
+- Triggered the live hosted workflow:
+  - `gh workflow run publish-federation-remote.yml --repo go-go-golems/go-go-app-sqlite --ref main -f dry_run=false`
+- Watched and inspected the live run:
+  - run `23866354328`
+  - URL: `https://github.com/go-go-golems/go-go-app-sqlite/actions/runs/23866354328`
+- Confirmed the workflow resolved the default remote version:
+  - `sha-f3b655d`
+- Confirmed live uploads from the hosted logs:
+  - `sqlite.css`
+  - `mf-manifest.json`
+  - `sqlite-host-contract.js`
+  - `sqlite-host-contract.js.map`
+- Confirmed the live manifest URL:
+  - `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/sqlite/versions/sha-f3b655d/mf-manifest.json`
+- Confirmed the helper opened the GitOps PR:
+  - `wesen/2026-03-27--hetzner-k3s#23`
+  - `https://github.com/wesen/2026-03-27--hetzner-k3s/pull/23`
+- Confirmed the GitOps helper branch and commit from hosted logs:
+  - branch: `automation/federation-sqlite-wesen-os-sqlite-prod-sha-f3b655d`
+  - commit: `7d99cc4`
+
+### Why
+- Dry-run success removed the remaining uncertainty around source-repo setup.
+- The ticket specifically calls for proving both the dry-run path and the real GitOps PR creation path.
+- The only remaining proof after this is downstream: GitOps PR merge and actual rollout behavior.
+
+### What worked
+- The full live publish path succeeded on merged sqlite `main`.
+- The workflow uploaded the sqlite federation artifacts to the object-storage versioned prefix for `sha-f3b655d`.
+- The shared GitOps helper created and pushed the automation branch.
+- The shared helper opened K3s PR `#23` with the expected `sqlite` manifest URL patch against `federation.registry.json`.
+
+### What didn't work
+- N/A. The live publish path completed successfully.
+
+### What I learned
+- The reusable federated remote release model is now proven end to end for sqlite from the source-repo side.
+- The helper branch in `infra-tooling` is sufficient for a second app, even before that helper PR is merged to `main`.
+- The remaining risk is no longer in sqlite source-repo automation. It is operational follow-through: merging the GitOps PR and verifying rollout behavior.
+
+### What was tricky to build
+- The sequencing mattered. If I had attempted the live publish before fixing the repo bootstrap state, the failure would have been noisy and potentially misleading because both object-storage upload and GitOps PR creation depend on that same repo config.
+- Another sharp edge is that the workflow still checks out `infra-tooling` by feature-branch ref. That is acceptable for the proof, but it is not the final stable state if this is going to be treated as a normalized release path rather than a ticket-local validation branch.
+
+### What warrants a second pair of eyes
+- Review the K3s PR carefully to confirm no unrelated registry churn was introduced and that the target environment should in fact receive the sqlite remote now.
+- Review whether sqlite should continue pointing at `infra-tooling` branch `task/federation-publish-helper` or whether that helper needs to be merged and retargeted before declaring the release workflow productionized.
+
+### What should be done in the future
+- Merge `wesen/2026-03-27--hetzner-k3s#23`.
+- Verify Argo/host rollout behavior after the registry change lands.
+- Merge or land `go-go-golems/infra-tooling#3`, then retarget sqlite workflow checkout to a stable ref.
+- Record sqlite as the second successful consumer of the reusable federated remote release path once rollout is verified.
+
+### Code review instructions
+- Review the successful live run with:
+  - `gh run view 23866354328 -R go-go-golems/go-go-app-sqlite --json jobs`
+  - `gh run view 23866354328 -R go-go-golems/go-go-app-sqlite --log`
+- Review the resulting GitOps PR:
+  - `https://github.com/wesen/2026-03-27--hetzner-k3s/pull/23`
+- Confirm the open GitOps PR from CLI:
+  - `gh pr list -R wesen/2026-03-27--hetzner-k3s --state open`
+
+### Technical details
+- Successful hosted live publish:
+  - `23866354328`
+- Live sqlite manifest URL:
+  - `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/sqlite/versions/sha-f3b655d/mf-manifest.json`
+- Resulting GitOps PR:
+  - `wesen/2026-03-27--hetzner-k3s#23`
+- GitOps automation branch:
+  - `automation/federation-sqlite-wesen-os-sqlite-prod-sha-f3b655d`

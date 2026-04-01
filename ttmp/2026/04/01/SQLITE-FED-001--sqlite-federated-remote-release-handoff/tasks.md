@@ -37,14 +37,14 @@
 
 ## Phase 5. Validate The Release Path
 
-- [ ] Run the workflow in dry-run mode.
+- [x] Run the workflow in dry-run mode.
 - [x] Verify the K3s diff against the real `federation.registry.json` file.
-- [ ] Run the workflow in real PR mode using `GITOPS_PR_TOKEN`.
-- [ ] Verify a GitOps PR is opened against the K3s repo.
+- [x] Run the workflow in real PR mode using `GITOPS_PR_TOKEN`.
+- [x] Verify a GitOps PR is opened against the K3s repo.
 
 ## Phase 6. Close The Reuse Proof
 
-- [ ] Merge the sqlite source-repo PR.
+- [x] Merge the sqlite source-repo PR.
 - [ ] Merge the resulting GitOps PR.
 - [ ] Verify Argo rollout and host-side registry behavior.
 - [ ] Record sqlite as the second app that proves the reusable federated release model.
@@ -62,6 +62,12 @@
   - `go-go-app-sqlite`: `2cf8bca` `deploy: pass storage creds to sqlite publish step`
 - Open PRs:
   - `go-go-golems/infra-tooling#3`
+  - `wesen/2026-03-27--hetzner-k3s#23`
+- Merged source PRs:
+  - `go-go-golems/go-go-app-sqlite#4`
   - `go-go-golems/go-go-app-sqlite#5`
-- GitHub workflow blocker:
-  - hosted workflow runs on `main` currently fail in the sqlite build step until PR `#5` lands.
+- Hosted workflow proof:
+  - dry-run success: `23866303115`
+  - live publish success: `23866354328`
+- Current follow-through blocker:
+  - the shared helper branch still lives on `go-go-golems/infra-tooling#3`; sqlite is proven, but the helper should still be merged or otherwise stabilized before calling the reuse path fully closed.
