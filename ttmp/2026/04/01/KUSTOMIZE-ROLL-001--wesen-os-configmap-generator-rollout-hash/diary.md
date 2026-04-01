@@ -150,3 +150,56 @@ The important thing is that the change is still local and reviewable:
 - no cluster mutation yet
 - no Argo behavior assumptions yet
 - just a clean rendered-package proof that the generated-name rollout mechanism now exists
+
+## 2026-04-01: Adding The K3s-Side Pattern Documentation
+
+With the first implementation slice rendered successfully, I added the platform-side documentation immediately while the mechanics were still fresh.
+
+The two K3s doc changes are:
+
+- new doc:
+  - `docs/kustomize-generated-config-rollout-pattern.md`
+- FAQ update:
+  - `docs/operator-troubleshooting-faq.md`
+
+### Why this was worth doing now
+
+The production symptom that triggered this ticket is exactly the kind of thing a future operator will hit without understanding why:
+
+- ConfigMap changed
+- Argo is `Synced`
+- app still serves old config
+
+That is not a generic Kubernetes mystery for this repo anymore. We now know the specific pattern that caused it:
+
+- handwritten inline ConfigMap
+- `subPath` file mounts
+- no automatic rollout trigger on config changes
+
+So I documented the solution in the K3s repo while the example was still concrete rather than waiting until the end and risking a vague retrospective write-up.
+
+### What the new doc teaches
+
+The new doc explains:
+
+- when to use `configMapGenerator`
+- how generated ConfigMap names act like config hashes
+- why the Deployment changes when config changes
+- why that triggers rollout
+- when this pattern is a better fit than hot reload
+- how it applies specifically to `wesen-os`
+
+### What the FAQ entry adds
+
+The FAQ now has an operator symptom entry for:
+
+- Argo says `Synced`, but the app still serves old config
+
+with:
+
+- what it means
+- why it happens here
+- the immediate safe fix
+- a link to the new Kustomize pattern doc
+
+That should make the operational lesson discoverable even for someone who never reads the longer tutorial first.

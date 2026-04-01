@@ -59,7 +59,7 @@
 
 ## Phase 4: Document The Reusable Pattern
 
-- [ ] Add a follow-up note in the K3s repo docs explaining the pattern.
+- [x] Add a follow-up note in the K3s repo docs explaining the pattern.
 - [ ] Document when to prefer:
   - Kustomize-generated config rollout
   - hot reload without `subPath`
