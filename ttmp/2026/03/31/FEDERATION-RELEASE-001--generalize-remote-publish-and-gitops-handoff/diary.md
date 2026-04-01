@@ -631,6 +631,60 @@ I verified the upload with:
 - `remarquee cloud ls /ai/2026/04/01/FEDERATION-RELEASE-001 --long --non-interactive`
 
 and confirmed the document exists there.
+
+## 2026-04-01: Publishing `infra-tooling` And Bridging The Inventory Workflow
+
+After the failure analysis, I fixed the actual delivery problem in two layers.
+
+### Layer 1: publish the shared repo branch for review
+
+I pushed the local `infra-tooling` extraction branch and opened the first PR there:
+
+- branch:
+  - `task/os-openai-app-server`
+- PR:
+  - `https://github.com/go-go-golems/infra-tooling/pull/1`
+
+That PR now contains the extracted federation helpers plus the platform image-deployment templates that were still only local before:
+
+- federation docs
+- federation target examples
+- federation patch/update scripts
+- generic GitOps PR opener
+- image-based deployment examples/templates
+
+### Layer 2: temporarily pin the inventory workflow to the branch that actually contains the helpers
+
+Because `go-go-golems/infra-tooling` `main` is still on the initial commit, simply publishing the PR is not enough to unblock `go-go-app-inventory` immediately.
+
+So I also patched the inventory workflow to use:
+
+- `ref: task/os-openai-app-server`
+
+for the `infra-tooling` checkout step, with an inline note that this is only a bridge until `infra-tooling` `main` is updated.
+
+This is intentionally temporary. The desired steady state remains:
+
+- source repos consume `infra-tooling` `main`
+
+not task branches.
+
+### Why both layers are necessary
+
+If I only patched the workflow:
+
+- CI would start depending on a local-only or unexplained branch state
+
+If I only opened the `infra-tooling` PR:
+
+- `go-go-app-inventory` `main` would still fail until that PR merges
+
+So the right operational sequence is:
+
+1. publish the shared repo branch publicly
+2. bridge the consumer workflow to that branch
+3. merge the shared repo PR
+4. remove the temporary `ref` pin
 - platform package version variable when needed
 
 It also captures:
