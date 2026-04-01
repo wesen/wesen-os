@@ -534,6 +534,107 @@ The next real action is no longer code. It is operator setup:
 
 Once that token is fixed, the first full reusable federation handoff should complete without any new code changes.
 
+## 2026-04-01: Split Tokens And First Successful Real GitOps PR Creation
+
+The operator-side secret split is now in place for `go-go-app-inventory`:
+
+- `K3S_REPO_READ_TOKEN`
+- `GITOPS_PR_TOKEN`
+
+After that, I updated the workflow so the private GitOps checkout uses:
+
+- `secrets.K3S_REPO_READ_TOKEN`
+
+while the actual PR-creation step continues to use:
+
+- `secrets.GITOPS_PR_TOKEN`
+
+That change landed on the inventory branch in commit:
+
+- `8bee502`
+
+### One correction during rollout
+
+I initially dispatched a real workflow run before pushing the branch commit that contained the token-split workflow edit.
+
+That was just operator sloppiness during execution, not a code problem. I caught it immediately by checking:
+
+- local branch head
+- upstream branch head
+
+and then pushed the branch before triggering the final validation run.
+
+### Successful end-to-end run
+
+The successful real run is:
+
+- `23852417685`
+
+Source repo:
+
+- `go-go-golems/go-go-app-inventory`
+
+Workflow:
+
+- `publish-federation-remote`
+
+Head SHA:
+
+- `8bee502bc4909eb417581b23ac8eacde03891532`
+
+### What this successful run proved
+
+This is the first full successful reusable federation handoff through the shared helper path.
+
+The run completed:
+
+1. source repo checkout
+2. `infra-tooling` checkout from `main`
+3. package install
+4. inventory federation build
+5. immutable object-storage upload
+6. manifest URL computation
+7. shared federation helper clone of the private K3s repo
+8. patch of `gitops/kustomize/wesen-os/configmap.yaml`
+9. deterministic branch creation
+10. Git push
+11. GitHub PR creation
+
+### Concrete output
+
+The shared helper opened:
+
+- `wesen/2026-03-27--hetzner-k3s#19`
+- URL: `https://github.com/wesen/2026-03-27--hetzner-k3s/pull/19`
+
+Branch:
+
+- `automation/federation-inventory-wesen-os-inventory-prod-sha-8bee502`
+
+Title:
+
+- `Deploy inventory for wesen-os-inventory-prod using sha-8bee502`
+
+### Why this matters
+
+This is the milestone the ticket was trying to reach:
+
+- a source repo can now use shared `infra-tooling`
+- publish a federated remote
+- and open the corresponding GitOps PR automatically
+
+without inventory-specific local patch logic and without manually editing the K3s repo.
+
+### What remains after this milestone
+
+The next meaningful work for this ticket is no longer “make inventory work.” That is done.
+
+The remaining proof points are:
+
+1. generalize the same pattern to a second app
+2. tighten docs around the split-token bootstrap
+3. optionally modernize the workflow actions that still warn about Node 20 deprecation
+
 ## 2026-03-31: Extracting The First Shared Toolkit Into `infra-tooling`
 
 With the ticket-side prototypes validated, I created the first real shared home in:

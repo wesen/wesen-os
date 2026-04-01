@@ -65,9 +65,10 @@
 - [x] Reintroduce a temporary inventory workflow checkout pin for the next `infra-tooling` feature branch and prove the branch workflow with the PR-capable helper.
 - [x] Remove the second temporary inventory workflow checkout pin after `infra-tooling` `main` contains the PR-capable helper and prove the workflow against `main`.
 - [x] Exercise the first real shared-helper GitOps PR creation path and capture the exact blocker.
-- [ ] Replace the temporary read-only `GITOPS_PR_TOKEN` in `go-go-app-inventory` with a write-capable token for `wesen/2026-03-27--hetzner-k3s`, or split it into:
+- [x] Replace the temporary read-only `GITOPS_PR_TOKEN` in `go-go-app-inventory` with split tokens:
   - `K3S_REPO_READ_TOKEN` for checkout
   - `GITOPS_PR_TOKEN` for push + PR creation
+- [x] Prove the first successful real shared-helper GitOps PR creation path from `go-go-app-inventory`.
 
 ## Phase 4: Define K3s-Side Reuse
 
