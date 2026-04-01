@@ -75,8 +75,13 @@ As of `2026-04-01T20:27:00-04:00`:
   - `wesen-os` still statically imported `sqliteLauncherModule` while bootstrap also loaded the federated sqlite launcher module
   - `go-go-app-sqlite` also re-exported launcher-private `app_sqlite` state through `sharedReducers`
   - sqlite follow-up commit: `bf6f9a3` `federation: keep sqlite launcher state private`
+  - sqlite follow-up PR: `go-go-golems/go-go-app-sqlite#7`
+  - sqlite hosted dry-run on the fix branch succeeded: `23869267352`
+  - `wesen-os` follow-up commit: `4ab9593` `fix(launcher): stop double-loading sqlite module`
+  - `wesen-os` follow-up PR: `wesen/wesen-os#11`
 - Remaining work:
-  - commit and push the `wesen-os` host-side composition fix
+  - merge `go-go-golems/go-go-app-sqlite#7`
+  - merge `wesen/wesen-os#11`
   - publish the updated sqlite remote artifact
   - deploy the updated `wesen-os` host build
   - verify browser runtime behavior after both updates land

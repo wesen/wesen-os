@@ -58,8 +58,10 @@
 - [x] Identify the duplicate sqlite registration path in the host and remote code.
 - [x] Remove launcher-private sqlite state from the federated host contract.
 - [x] Remove the static sqlite launcher module mount from `wesen-os`.
-- [ ] Push the sqlite follow-up fix and publish a new sqlite remote version.
-- [ ] Push the `wesen-os` host-side fix and deploy it.
+- [x] Push the sqlite follow-up fix and open a review PR.
+- [x] Push the `wesen-os` host-side fix and open a review PR.
+- [ ] Publish a new sqlite remote version.
+- [ ] Deploy the updated `wesen-os` host build.
 - [ ] Verify the live launcher boots cleanly with sqlite enabled.
 
 ## Notes
@@ -74,7 +76,8 @@
   - `go-go-app-sqlite`: `252a69c` `deploy: wire sqlite federation publish workflow`
   - `go-go-app-sqlite`: `2cf8bca` `deploy: pass storage creds to sqlite publish step`
 - Open PRs:
-  - N/A for the original merge path; rollout follow-up PRs are still to be created
+  - `go-go-golems/go-go-app-sqlite#7`
+  - `wesen/wesen-os#11`
 - Merged source PRs:
   - `go-go-golems/go-go-app-sqlite#4`
   - `go-go-golems/go-go-app-sqlite#5`
@@ -84,5 +87,6 @@
   - dry-run success: `23866303115`
   - live publish success: `23866354328`
   - branch dry-run against `infra-tooling@main`: `23867838529`
+  - branch dry-run for the runtime-fix sqlite follow-up: `23869267352`
 - Current follow-through blocker:
   - the live cluster now has sqlite enabled, but the frontend host still crashes during launcher bootstrap because sqlite is registered both statically and through federation.

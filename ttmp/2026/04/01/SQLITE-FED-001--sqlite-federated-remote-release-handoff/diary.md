@@ -1082,3 +1082,94 @@ TypeError: (0 , __vite_ssr_import_0__.createSelector) is not a function
 - SQLite follow-up commit created:
   - `bf6f9a3` `federation: keep sqlite launcher state private`
 - `wesen-os` host-side commit is created after this diary update so the docs capture the exact reasoning behind it.
+
+## Step 12: Push the runtime-fix branches, open review PRs, and revalidate sqlite on GitHub
+
+After the local fix passed its targeted checks, the next safe checkpoint was to get the follow-up branches public and make sure the sqlite remote change still works in hosted Actions. I treated that as a separate step because the ticket had already shown the cost of stopping at local proof while the real problem lived one environment further downstream.
+
+### Prompt Context
+
+**User prompt (verbatim):** no new prompt; this step continues the same execution request to work task by task, commit at appropriate intervals, and keep a detailed diary.
+
+**Assistant interpretation:** Publish the runtime-fix commits so they are reviewable, then gather one fresh hosted signal from GitHub Actions before asking for another merge.
+
+**Inferred user intent:** Do not hand off another local-only hypothesis. Leave the repo state in a reviewable, externally validated form.
+
+**Commit (code):**
+- sqlite repo commit already created in the previous step: `bf6f9a3`
+- `wesen-os` commit created before this publication step: `4ab9593` — `fix(launcher): stop double-loading sqlite module`
+
+### What I did
+- Created fresh follow-up branches instead of reusing already-merged PR branches:
+  - `go-go-app-sqlite`: `task/sqlite-federation-runtime-fix`
+  - `wesen-os`: `task/sqlite-federation-runtime-fix`
+- Pushed both branches to origin.
+- Opened review PRs:
+  - `go-go-golems/go-go-app-sqlite#7`
+  - `wesen/wesen-os#11`
+- Triggered a hosted sqlite workflow dry-run on the new sqlite runtime-fix branch:
+  - workflow: `publish-federation-remote`
+  - branch: `task/sqlite-federation-runtime-fix`
+  - head SHA: `bf6f9a3d8991470f8bc40d7d359b34060e8b511b`
+  - run: `23869267352`
+- Watched the hosted run to completion with:
+  - `gh run watch 23869267352 -R go-go-golems/go-go-app-sqlite --exit-status`
+
+### Why
+- The previous sqlite PR branches were already merged. Reusing them would muddle review history and make it harder to distinguish the rollout follow-up from the original release-path work.
+- A green hosted dry-run on the new sqlite branch proves that the host-contract cleanup did not break the shared release workflow.
+
+### What worked
+- Both branches pushed cleanly.
+- Both follow-up PRs were created without needing to reshuffle commits.
+- Hosted sqlite dry-run `23869267352` succeeded on the new branch.
+- The run exercised the full dry-run path again:
+  - checkout
+  - install
+  - sqlite federation artifact build
+  - dry-run publish helper
+  - dry-run GitOps target update
+
+### What didn't work
+- `gh pr create` warned about unrelated uncommitted files in the outer `wesen-os` workspace, but that warning was only about the broader working tree. The relevant repo commits were already clean and pushed, so I did not treat the warning as a blocker.
+- The hosted run still emits the known Node 20 deprecation annotation for:
+  - `actions/setup-node@v4`
+  - `actions/upload-artifact@v4`
+
+- That remains cleanup debt, not a blocker for the sqlite runtime fix.
+
+### What I learned
+- The sqlite remote fix is not just locally correct; it also preserves the GitHub-side release path.
+- The remaining risk now sits entirely in merge/deploy sequencing between the updated sqlite remote and the updated `wesen-os` host.
+
+### What was tricky to build
+- The main decision was branch hygiene. It is technically possible to keep adding commits to an already-merged branch, but doing that would make the review surface harder to reason about. Fresh branches keep the runtime-fix scope explicit and avoid confusing it with the earlier federation rollout work.
+
+### What warrants a second pair of eyes
+- Review the `wesen-os` PR with the live browser failure in mind, not just the diff. The code change is tiny, but it matters because it changes how sqlite is sourced into the launcher.
+- Review whether sqlite PR `#7` should merge before `wesen-os#11`, or whether both should simply land back-to-back before the next live verification pass.
+
+### What should be done in the future
+- Merge `go-go-golems/go-go-app-sqlite#7`.
+- Merge `wesen/wesen-os#11`.
+- Trigger a new real sqlite publish from merged `main`.
+- Deploy merged `wesen-os` `main`.
+- Re-run live browser verification and close the ticket only if the launcher boots without the duplicate reducer error.
+
+### Code review instructions
+- Review PRs:
+  - `https://github.com/go-go-golems/go-go-app-sqlite/pull/7`
+  - `https://github.com/wesen/wesen-os/pull/11`
+- Review hosted sqlite validation:
+  - `https://github.com/go-go-golems/go-go-app-sqlite/actions/runs/23869267352`
+
+### Technical details
+- Public follow-up branches:
+  - `origin/task/sqlite-federation-runtime-fix` in `go-go-app-sqlite`
+  - `origin/task/sqlite-federation-runtime-fix` in `wesen-os`
+- Public follow-up PRs:
+  - `go-go-golems/go-go-app-sqlite#7`
+  - `wesen/wesen-os#11`
+- Hosted sqlite runtime-fix dry-run:
+  - run `23869267352`
+  - conclusion: `success`
