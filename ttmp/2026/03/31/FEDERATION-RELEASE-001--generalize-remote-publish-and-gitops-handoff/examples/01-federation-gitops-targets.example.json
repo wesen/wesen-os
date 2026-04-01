@@ -6,11 +6,7 @@
       "remote_id": "inventory",
       "gitops_repo": "wesen/2026-03-27--hetzner-k3s",
       "gitops_branch": "main",
-      "target_file": "gitops/kustomize/wesen-os/configmap.yaml",
-      "config_key": "federation.registry.json",
-      "match": {
-        "remoteId": "inventory"
-      }
+      "target_file": "gitops/kustomize/wesen-os/config/federation.registry.json"
     },
     {
       "name": "wesen-os-sqlite-prod",
@@ -18,11 +14,7 @@
       "remote_id": "sqlite",
       "gitops_repo": "wesen/2026-03-27--hetzner-k3s",
       "gitops_branch": "main",
-      "target_file": "gitops/kustomize/wesen-os/configmap.yaml",
-      "config_key": "federation.registry.json",
-      "match": {
-        "remoteId": "sqlite"
-      }
+      "target_file": "gitops/kustomize/wesen-os/config/federation.registry.json"
     }
   ]
 }

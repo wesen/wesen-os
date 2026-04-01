@@ -1,6 +1,6 @@
 # Generalized Federated Remote Release Guide
 
-This document turns the currently working `inventory` release path into a reusable design for future federated apps.
+This document turns the original `inventory` release path into a reusable design that is now proven by both `inventory` and `sqlite`.
 
 The goal is not to describe federation in the abstract. The goal is to define a repeatable delivery pattern that can be used by:
 
@@ -13,20 +13,20 @@ without rewriting one-off GitHub workflows and GitOps patch logic each time.
 
 ## Problem Statement
 
-The current system works, but it is still too specific to `inventory`.
+The current system now works for two apps, but the docs still need to reflect the final reusable shape instead of the older inventory-only assumptions.
 
-Today, the working path is:
+Today, the proven path is:
 
 ```text
-go-go-app-inventory
+go-go-app-<app>
   -> build dist-federation
   -> upload immutable files to object storage
   -> produce manifest URL
-  -> manually or semi-manually update wesen-os federation.registry.json
+  -> update wesen-os federation.registry.json through shared helper logic
   -> deployed host loads that remote
 ```
 
-That is enough to prove the system, but not enough to operate multiple apps safely.
+That is enough to prove the source-repo side of the system, but rollout verification still lives downstream in GitOps and Argo.
 
 The main reuse problems are:
 
@@ -148,17 +148,12 @@ Recommended shape:
 {
   "targets": [
     {
-      "name": "wesen-os-inventory-staging",
+      "name": "wesen-os-sqlite-prod",
       "kind": "federation-manifest",
-      "remoteId": "inventory",
-      "gitopsRepo": "wesen/2026-03-27--hetzner-k3s",
-      "gitopsBranch": "main",
-      "targetFile": "gitops/kustomize/wesen-os/configmap.yaml",
-      "configMapKey": "federation.registry.json",
-      "hostAppId": "wesen-os",
-      "match": {
-        "remoteId": "inventory"
-      }
+      "remote_id": "sqlite",
+      "gitops_repo": "wesen/2026-03-27--hetzner-k3s",
+      "gitops_branch": "main",
+      "target_file": "gitops/kustomize/wesen-os/config/federation.registry.json"
     }
   ]
 }
@@ -170,8 +165,7 @@ It captures:
 
 - which GitOps repo to patch
 - which file to patch
-- which embedded config payload to modify
-- which registry entry to replace
+- which remote ID to update or append
 
 without embedding inventory-specific patch code.
 
@@ -184,33 +178,35 @@ Concrete example captured in this ticket:
 The patch operation should be data-driven and look like this:
 
 ```text
-load YAML file
-  -> locate data["federation.registry.json"]
-  -> parse embedded JSON
+load federation.registry.json
+  -> parse JSON
   -> find remotes[i] where remoteId == target.remoteId
-  -> replace manifestUrl
+  -> replace or append manifestUrl
   -> set enabled=true
-  -> write JSON back into YAML
+  -> write JSON back to target file
 ```
 
 Pseudocode:
 
 ```python
-doc = yaml_load(target_file)
-registry = json.loads(doc["data"][config_map_key])
+registry = json.loads(target_file.read_text())
 
 matched = False
 for remote in registry["remotes"]:
-    if remote["remoteId"] == target["remoteId"]:
+    if remote["remoteId"] == target["remote_id"]:
         remote["manifestUrl"] = manifest_url
         remote["enabled"] = True
         matched = True
 
 if not matched:
-    raise RuntimeError(f"remoteId {target['remoteId']} not found")
+    registry["remotes"].append({
+        "remoteId": target["remote_id"],
+        "mode": "remote-manifest",
+        "enabled": True,
+        "manifestUrl": manifest_url,
+    })
 
-doc["data"][config_map_key] = json.dumps(registry, indent=2)
-yaml_dump(doc, target_file)
+target_file.write_text(json.dumps(registry, indent=2) + "\n")
 ```
 
 Prototype helper captured in this ticket:
@@ -379,16 +375,11 @@ without treating the cluster repo as a runtime tool library.
 
 ### Recommended concrete packaging
 
-Short term:
+Current state:
 
-- keep the prototype helpers in ticket/reference form
-- copy the generic helper into the first source repo that uses it
-- make the workflow thin and data-driven
-
-Medium term:
-
-- move the generic helper(s) into a small shared repo or shared tooling package
-- let source repos vendor or install that helper
+- the publish and GitOps helpers live in `infra-tooling`
+- sqlite proves the second source repo can use those shared helpers
+- bootstrap and onboarding docs now need to point at the shared scripts instead of ticket-local prototypes
 
 K3s repo:
 
@@ -401,7 +392,6 @@ Good K3s-repo reusable assets:
 
 - docs describing the remote-release flow
 - example `federation.registry.json` entries
-- example `configmap.yaml` layout
 - naming conventions for host app targets
 - canonical target file paths
 

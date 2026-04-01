@@ -5,7 +5,22 @@
 
 ## Purpose
 
-Track the work needed to turn the current inventory-specific remote publish flow into a reusable pattern for future apps.
+Track the work needed to turn the original inventory-specific remote publish flow into a reusable pattern for additional federated apps.
+
+## Status
+
+As of `2026-04-01`:
+
+- the shared source-repo release path is proven by:
+  - `go-go-app-inventory`
+  - `go-go-app-sqlite`
+- sqlite dry-run and live hosted publishes both succeeded on `main`
+- sqlite opened the expected GitOps PR:
+  - `wesen/2026-03-27--hetzner-k3s#23`
+- the remaining work is downstream stabilization:
+  - merge and verify the sqlite GitOps PR / rollout
+  - merge or otherwise land `go-go-golems/infra-tooling#3`
+  - retarget sqlite away from the temporary helper branch ref
 
 ## Documents
 

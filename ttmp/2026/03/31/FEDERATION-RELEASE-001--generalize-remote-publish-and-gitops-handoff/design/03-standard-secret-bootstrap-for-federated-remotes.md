@@ -2,6 +2,11 @@
 
 This page captures the standard bootstrap inputs a source repo needs before it can use the generalized federated remote release pattern.
 
+This bootstrap is now proven by:
+
+- `go-go-app-inventory`
+- `go-go-app-sqlite`
+
 It exists because the release mechanics themselves can be generic, but the first-run operator setup still needs an explicit checklist.
 
 ## Required Inputs
@@ -40,6 +45,34 @@ gh variable set <REMOTE_PUBLIC_BASE_URL_VAR> --repo <owner>/<repo> --body "https
 gh variable set GO_GO_OS_PLATFORM_VERSION --repo <owner>/<repo> --body "<platform-version>"
 ```
 
+## Reusable Script
+
+The generic object-storage bootstrap now lives in `infra-tooling`:
+
+- `/home/manuel/workspaces/2026-03-02/os-openai-app-server/infra-tooling/scripts/federation/bootstrap_federation_source_repo_from_terraform.sh`
+
+Example:
+
+```bash
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/infra-tooling/scripts/federation/bootstrap_federation_source_repo_from_terraform.sh \
+  go-go-golems/go-go-app-sqlite \
+  SQLITE_FEDERATION_PUBLIC_BASE_URL \
+  0.1.0-canary.5
+```
+
+That script seeds:
+
+- the five `HETZNER_OBJECT_STORAGE_*` secrets
+- the remote public base URL variable
+- `GO_GO_OS_PLATFORM_VERSION` when provided
+
+It does not seed:
+
+- `GITOPS_PR_TOKEN`
+- `K3S_REPO_READ_TOKEN`
+
+Those remain separate because they do not come from the Terraform object-storage environment.
+
 ## Inventory Example
 
 The current inventory-shaped example is:
@@ -54,6 +87,17 @@ gh secret set GITOPS_PR_TOKEN --repo go-go-golems/go-go-app-inventory
 
 gh variable set INVENTORY_FEDERATION_PUBLIC_BASE_URL --repo go-go-golems/go-go-app-inventory --body "https://scapegoat-federation-assets.fsn1.your-objectstorage.com"
 gh variable set GO_GO_OS_PLATFORM_VERSION --repo go-go-golems/go-go-app-inventory --body "0.1.0-canary.5"
+```
+
+## SQLite Example
+
+The sqlite bootstrap is now the second concrete proof:
+
+```bash
+/home/manuel/workspaces/2026-03-02/os-openai-app-server/infra-tooling/scripts/federation/bootstrap_federation_source_repo_from_terraform.sh \
+  go-go-golems/go-go-app-sqlite \
+  SQLITE_FEDERATION_PUBLIC_BASE_URL \
+  0.1.0-canary.5
 ```
 
 ## What Should Become Generic

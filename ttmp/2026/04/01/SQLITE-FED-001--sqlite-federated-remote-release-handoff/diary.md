@@ -782,3 +782,81 @@ This is the key handoff proof the ticket was aiming for. SQLite is now not just 
 - External verification:
   - manifest URL returned `HTTP/2 200`
   - PR diff adds only the `sqlite` entry in `gitops/kustomize/wesen-os/config/federation.registry.json`
+
+## Step 9: Normalize the docs and bootstrap path now that sqlite is a proven second consumer
+
+After the hosted proof was complete, the remaining gaps were not release failures. They were stale docs and tooling shape. Several documents still described sqlite as future work, and the only concrete bootstrap script still lived under an old inventory-focused ticket path instead of the shared tooling repo where future operators would actually look first.
+
+I used this cleanup pass to move the operator-facing bootstrap into `infra-tooling`, refresh the sqlite repo README with the release path and required repo configuration, and update the older federation-generalization ticket so it no longer contradicts the fact that sqlite has already succeeded on the source-repo side.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, do it"
+
+**Assistant interpretation:** Apply the actual cleanup updates that the successful sqlite proof now justifies, rather than just listing them.
+
+**Inferred user intent:** Leave the reusable federation path in a better documented and more operator-ready state now that sqlite has proven it.
+
+### What I did
+- In `infra-tooling` I added:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/infra-tooling/scripts/federation/bootstrap_federation_source_repo_from_terraform.sh`
+- In `infra-tooling` I updated:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/infra-tooling/docs/federation/secret-bootstrap.md`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/infra-tooling/README.md`
+- In `go-go-app-sqlite` I updated:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite/README.md`
+- In the older federation-generalization ticket I updated:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/index.md`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/tasks.md`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/examples/01-federation-gitops-targets.example.json`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/design/02-generalized-federated-remote-release-guide.md`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/design/03-standard-secret-bootstrap-for-federated-remotes.md`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/diary.md`
+- Validated the new bootstrap script with:
+  - `bash -n /home/manuel/workspaces/2026-03-02/os-openai-app-server/infra-tooling/scripts/federation/bootstrap_federation_source_repo_from_terraform.sh`
+
+### Why
+- The old inventory-only seed script had become the de facto operator recipe even though the reusable tooling now belongs in `infra-tooling`.
+- The sqlite repo itself needed a repo-local explanation of the federation release path so people do not have to infer it from CI.
+- The older generalization ticket had become misleading after sqlite succeeded and needed to stop presenting that work as merely planned.
+
+### What worked
+- The reusable bootstrap path is now in the shared tooling repo where future source repos can actually reuse it.
+- The sqlite README now documents the build artifact, workflow, required secrets/vars, and manifest shape.
+- The older federation-generalization ticket now reflects the real direct-JSON target shape and the fact that sqlite is already proven on the source-repo side.
+
+### What didn't work
+- I did not change the sqlite workflow away from `ref: task/federation-publish-helper` yet, because that would be premature until `go-go-golems/infra-tooling#3` lands or an equivalent stable ref exists.
+
+### What I learned
+- The most important “post-success” cleanup was not code in the release path itself. It was moving operator knowledge out of ticket-local, inventory-specific documents and into the shared tooling repo and repo-local READMEs.
+- The remaining instability is now mostly around helper-branch pinning and downstream rollout, not around source-repo release mechanics.
+
+### What was tricky to build
+- The sharp edge was deciding what to normalize now versus what would be misleading to normalize early. The bootstrap script and docs were safe to generalize immediately because they already matched the successful sqlite run. The workflow checkout ref is different: the successful proof still depends on the helper feature branch, so pretending it is stable today would make the docs less accurate, not more.
+
+### What warrants a second pair of eyes
+- Review whether the new bootstrap script name and argument contract are the ones we want to keep long term in `infra-tooling`.
+- Review whether the generalization ticket now draws the line clearly enough between “source-repo proof is done” and “rollout proof is still pending.”
+
+### What should be done in the future
+- Merge or otherwise land `go-go-golems/infra-tooling#3`.
+- Retarget sqlite away from `task/federation-publish-helper`.
+- Merge `wesen/2026-03-27--hetzner-k3s#23` and verify rollout.
+- Decide later whether inventory should also switch from its repo-local publish helper to the shared publish helper.
+
+### Code review instructions
+- Review the new reusable bootstrap script:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/infra-tooling/scripts/federation/bootstrap_federation_source_repo_from_terraform.sh`
+- Review the sqlite release README section:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-sqlite/README.md`
+- Review the corrected generalized target example:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/examples/01-federation-gitops-targets.example.json`
+
+### Technical details
+- New infra-tooling script:
+  - `bootstrap_federation_source_repo_from_terraform.sh`
+- Validation:
+  - `bash -n` passed for the new script
+- Remaining intentional temporary dependency:
+  - sqlite workflow still checks out `infra-tooling` ref `task/federation-publish-helper`

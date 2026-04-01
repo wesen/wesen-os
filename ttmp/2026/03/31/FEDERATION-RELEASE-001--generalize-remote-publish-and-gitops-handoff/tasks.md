@@ -34,9 +34,9 @@
 
 - [x] Design a generic patch helper that updates one remote entry in `federation.registry.json` inside YAML.
 - [x] Prove the patch helper against the current `wesen-os` configmap shape on a temp copy.
-- [ ] Make it work for:
+- [x] Make it work for:
   - `inventory`
-  - future apps like `sqlite` or `gepa`
+  - `sqlite`
 - [x] Avoid hardcoding `inventory` strings in the reusable path.
 - [x] Define idempotent PR update behavior.
 
@@ -79,10 +79,39 @@
   - template `federation.registry.json` entry shape
   - maybe helper scripts
 - [x] Avoid putting source-repo CI logic into the K3s repo.
-- [ ] Add docs that explain how a new app opts into the shared remote-release pattern.
+- [x] Add docs that explain how a new app opts into the shared remote-release pattern.
 
 ## Phase 5: Prove Reuse
 
-- [ ] Apply the generalized pattern to a second app.
-- [ ] Confirm the second app does not need inventory-specific workflow edits.
-- [ ] Update docs with the final “how to onboard a new federated app” recipe.
+- [x] Add second-app migration tasks for `go-go-app-sqlite` to this ticket before implementation starts.
+- [x] Extract the generic object-storage federation publish helper into `infra-tooling`.
+- [ ] Make `go-go-app-inventory` eligible to consume the extracted publish helper path instead of only its repo-local script.
+- [x] Create a `go-go-app-sqlite` feature branch for the second-app migration.
+- [x] Add the minimum federation artifact surface to `go-go-app-sqlite`:
+  - `src/host.ts`
+  - `vite.federation.config.ts`
+  - shared runtime shim modules
+  - `build:federation`
+- [x] Add repo-local remote-release metadata to `go-go-app-sqlite`:
+  - `deploy/federation-gitops-targets.json`
+- [x] Add `publish-federation-remote.yml` to `go-go-app-sqlite` using shared helpers from `infra-tooling`.
+- [x] Keep the second-app workflow thin:
+  - repo-specific build
+  - repo-specific target config
+  - shared publish helper
+  - shared GitOps PR helper
+- [x] Validate the `sqlite` federation artifact locally.
+- [x] Validate the `sqlite` workflow shape locally:
+  - YAML parses
+  - dry-run publish helper plan is correct
+  - dry-run GitOps patch targets the right K3s file
+- [x] Confirm the second app does not need inventory-specific workflow edits.
+- [x] Update docs with the final “how to onboard a new federated app” recipe.
+
+## Remaining Follow-Through
+
+- [ ] Merge `wesen/2026-03-27--hetzner-k3s#23`.
+- [ ] Verify Argo / host-side rollout behavior for sqlite.
+- [ ] Merge or otherwise land `go-go-golems/infra-tooling#3`.
+- [ ] Retarget sqlite workflow checkout away from `task/federation-publish-helper`.
+- [ ] Decide whether inventory should also switch from its repo-local publish script to the shared publish helper.
