@@ -181,6 +181,13 @@ describe('launcher host wiring', () => {
     expect(docsSource).not.toContain('@go-go-golems/inventory/src/');
   });
 
+  it('does not statically import the federated sqlite launcher module', () => {
+    const moduleSource = readFileSync(new URL('../app/modules.tsx', import.meta.url), 'utf8');
+
+    expect(moduleSource).not.toContain("@go-go-golems/sqlite/launcher");
+    expect(moduleSource).not.toContain('sqliteLauncherModule');
+  });
+
   it('prevents placeholder module labels from being reintroduced', () => {
     const moduleUrls = [
       new URL('../../../../../go-go-app-inventory/apps/inventory/src/launcher/module.tsx', import.meta.url),

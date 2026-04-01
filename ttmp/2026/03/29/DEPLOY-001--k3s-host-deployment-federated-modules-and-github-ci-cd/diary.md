@@ -4091,3 +4091,119 @@ So the new checklist for keeping this source PR mergeable is now explicit:
 1. inventory gitlink must point at merged `main`
 2. frontend gitlink must point at merged `main`
 3. only then can `publish-host-image` get past recursive checkout and exercise the actual Docker build path
+
+## 2026-03-31: Fixing Object Storage CORS For The Live Hosted Remote
+
+After the deployed host started loading the hosted inventory manifest URL, the next real browser failure moved out of the host entirely and into object storage:
+
+- deployed page: `https://wesen-os.yolo.scapegoat.dev/`
+- manifest URL: `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-1a32286/mf-manifest.json`
+- browser error:
+  - `Cross-Origin Request Blocked`
+  - `Access-Control-Allow-Origin missing`
+
+That is the expected next step in the rollout sequence:
+
+- host config is correct
+- manifest exists and is public
+- browser fetch still fails because the bucket does not yet emit CORS headers for the host origin
+
+### What I changed
+
+I made the desired federation bucket CORS policy explicit in the Terraform stack:
+
+- `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod/main.tf`
+- `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod/variables.tf`
+- `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod/outputs.tf`
+
+The stack now records the intended browser policy with:
+
+- allowed origins:
+  - `https://wesen-os.yolo.scapegoat.dev`
+  - `http://localhost:4175`
+  - `http://127.0.0.1:4175`
+- allowed methods:
+  - `GET`
+  - `HEAD`
+- allowed headers:
+  - `*`
+- exposed headers:
+  - `ETag`
+  - `Content-Length`
+  - `Content-Type`
+  - `x-amz-version-id`
+
+The MinIO Terraform provider in this repo does not manage bucket CORS directly, so I added reproducible operator helpers in the ticket:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/47-apply-federation-bucket-cors.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/48-check-federation-bucket-cors.sh`
+
+`47-...` applies the policy with:
+
+- `aws s3api put-bucket-cors`
+
+and immediately reads it back with:
+
+- `aws s3api get-bucket-cors`
+
+`48-...` validates the browser-facing response with:
+
+- `curl -I -H "Origin: ..."`
+
+### Why I treated this as infrastructure, not app code
+
+This is not something the launcher or the remote should paper over. The browser is enforcing cross-origin fetch rules correctly. The durable fix belongs at the asset-host boundary.
+
+That means:
+
+- the bucket must advertise explicit cross-origin read permissions for the host origin
+- local dev origins should be included too so the hosted remote can still be exercised from the Vite dev server
+
+Once this policy is applied, the next verification step is straightforward:
+
+1. confirm the manifest response now includes `Access-Control-Allow-Origin`
+2. reload `https://wesen-os.yolo.scapegoat.dev/`
+3. verify the hosted remote loads without the manifest fetch failure
+
+### Live apply and verification
+
+I applied the live bucket CORS rule with:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/47-apply-federation-bucket-cors.sh`
+
+The bucket readback confirmed the intended rule:
+
+- origins:
+  - `https://wesen-os.yolo.scapegoat.dev`
+  - `http://localhost:4175`
+  - `http://127.0.0.1:4175`
+- methods:
+  - `GET`
+  - `HEAD`
+
+I then verified the live response headers with:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/48-check-federation-bucket-cors.sh`
+- `curl -I -H 'Origin: https://wesen-os.yolo.scapegoat.dev' https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-1a32286/inventory-host-contract.js`
+
+Both the manifest and the remote JS entry now return:
+
+- `access-control-allow-origin: https://wesen-os.yolo.scapegoat.dev`
+
+I also rechecked the deployed host runtime registry:
+
+- `curl -fsSL https://wesen-os.yolo.scapegoat.dev/api/os/federation-registry`
+
+and it now returns JSON, not the earlier HTML fallback:
+
+- remote id: `inventory`
+- mode: `remote-manifest`
+- manifest URL: `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-1a32286/mf-manifest.json`
+
+### One infrastructure footnote
+
+I attempted a fresh `terraform validate` in the federation bucket stack, but the command tried to refresh remote state and hit an unrelated access problem on the shared tfstate bucket:
+
+- `403 Forbidden` on `go-go-golems-tf-state`
+
+That does not invalidate the live CORS fix. The policy was applied successfully with the S3 API against the actual federation bucket, and the live HTTP responses prove it.

@@ -1,0 +1,20 @@
+{
+  "targets": [
+    {
+      "name": "wesen-os-inventory-prod",
+      "kind": "federation-manifest",
+      "remote_id": "inventory",
+      "gitops_repo": "wesen/2026-03-27--hetzner-k3s",
+      "gitops_branch": "main",
+      "target_file": "gitops/kustomize/wesen-os/config/federation.registry.json"
+    },
+    {
+      "name": "wesen-os-sqlite-prod",
+      "kind": "federation-manifest",
+      "remote_id": "sqlite",
+      "gitops_repo": "wesen/2026-03-27--hetzner-k3s",
+      "gitops_branch": "main",
+      "target_file": "gitops/kustomize/wesen-os/config/federation.registry.json"
+    }
+  ]
+}
