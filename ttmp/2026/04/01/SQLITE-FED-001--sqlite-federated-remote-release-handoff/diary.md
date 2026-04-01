@@ -729,6 +729,11 @@ This is the key handoff proof the ticket was aiming for. SQLite is now not just 
 - The workflow uploaded the sqlite federation artifacts to the object-storage versioned prefix for `sha-f3b655d`.
 - The shared GitOps helper created and pushed the automation branch.
 - The shared helper opened K3s PR `#23` with the expected `sqlite` manifest URL patch against `federation.registry.json`.
+- The published manifest is externally reachable:
+  - `curl -I -sSfL https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/sqlite/versions/sha-f3b655d/mf-manifest.json`
+  - result: `HTTP/2 200`
+- The GitOps PR diff is scoped correctly:
+  - it only adds the `sqlite` remote entry to `gitops/kustomize/wesen-os/config/federation.registry.json`
 
 ### What didn't work
 - N/A. The live publish path completed successfully.
@@ -760,6 +765,10 @@ This is the key handoff proof the ticket was aiming for. SQLite is now not just 
   - `https://github.com/wesen/2026-03-27--hetzner-k3s/pull/23`
 - Confirm the open GitOps PR from CLI:
   - `gh pr list -R wesen/2026-03-27--hetzner-k3s --state open`
+- Confirm the manifest is publicly fetchable:
+  - `curl -I -sSfL https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/sqlite/versions/sha-f3b655d/mf-manifest.json`
+- Confirm the GitOps diff is scoped to the registry file:
+  - `gh pr diff 23 -R wesen/2026-03-27--hetzner-k3s | rg -n "federation.registry.json|remoteId|manifestUrl|sqlite" -C 3`
 
 ### Technical details
 - Successful hosted live publish:
@@ -770,3 +779,6 @@ This is the key handoff proof the ticket was aiming for. SQLite is now not just 
   - `wesen/2026-03-27--hetzner-k3s#23`
 - GitOps automation branch:
   - `automation/federation-sqlite-wesen-os-sqlite-prod-sha-f3b655d`
+- External verification:
+  - manifest URL returned `HTTP/2 200`
+  - PR diff adds only the `sqlite` entry in `gitops/kustomize/wesen-os/config/federation.registry.json`
