@@ -602,6 +602,35 @@ This is the first clear proof that `FEDERATION-RELEASE-001` is now about more th
 - branch/default-branch stability
 
 That is exactly why this failure deserved a detailed design/reference guide instead of only a short bug note.
+
+## 2026-04-01: reMarkable Delivery
+
+After writing and committing the new failure-analysis/onboarding guide, I bundled the current ticket reference set and uploaded it to reMarkable.
+
+### Uploaded bundle
+
+- name:
+  - `FEDERATION-RELEASE-001 Shared Federation Release Guide`
+- remote dir:
+  - `/ai/2026/04/01/FEDERATION-RELEASE-001`
+
+### Included documents
+
+- `index.md`
+- `analysis/01-generalized-remote-release-template-analysis.md`
+- `design/02-generalized-federated-remote-release-guide.md`
+- `design/03-standard-secret-bootstrap-for-federated-remotes.md`
+- `design/04-infra-tooling-consumption-failure-analysis-and-onboarding-guide.md`
+- `tasks.md`
+- `diary.md`
+
+### Verification
+
+I verified the upload with:
+
+- `remarquee cloud ls /ai/2026/04/01/FEDERATION-RELEASE-001 --long --non-interactive`
+
+and confirmed the document exists there.
 - platform package version variable when needed
 
 It also captures:
