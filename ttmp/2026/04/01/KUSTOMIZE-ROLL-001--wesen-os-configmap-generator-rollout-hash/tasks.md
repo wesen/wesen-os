@@ -51,11 +51,11 @@
 
 ## Phase 3: Prove Argo / Rollout Behavior
 
-- [ ] Merge the GitOps PR for the refactor.
-- [ ] Confirm Argo sync stays clean.
+- [x] Merge the GitOps PR for the refactor.
+- [x] Confirm Argo sync stays clean.
 - [ ] Confirm a config-only change changes the rendered ConfigMap identity.
-- [ ] Confirm the Deployment rolls automatically without manual `kubectl rollout restart`.
-- [ ] Confirm `/api/os/federation-registry` reflects the new config after rollout.
+- [x] Confirm the Deployment rolls automatically without manual `kubectl rollout restart`.
+- [x] Confirm `/api/os/federation-registry` reflects the new config after rollout.
 
 ## Phase 4: Document The Reusable Pattern
 

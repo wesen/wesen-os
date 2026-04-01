@@ -280,3 +280,64 @@ Now the ticket has:
 - and an open K3s PR
 
 So the remaining gap is genuinely the live merge/rollout proof, not missing instrumentation.
+
+## 2026-04-01: Live Validation After Merge
+
+After `wesen/2026-03-27--hetzner-k3s#20` was merged, I ran the replay helper:
+
+- `scripts/03-check-live-wesen-os-config-rollout.sh`
+
+The result was the exact healthy state this refactor was meant to create.
+
+### Observed live state
+
+Argo application status:
+
+- `Synced`
+- `Healthy`
+- operation phase `Succeeded`
+
+Deployment status:
+
+- `deployment "wesen-os" successfully rolled out`
+
+In-pod file:
+
+- `/config/federation.registry.json`
+  contained:
+  - `sha-8bee502`
+
+Public API:
+
+- `https://wesen-os.yolo.scapegoat.dev/api/os/federation-registry`
+  also returned:
+  - `sha-8bee502`
+
+### Why this matters
+
+This is the operational proof that the old failure mode is gone for this rollout path.
+
+Previously, the system could reach a bad state like:
+
+- ConfigMap desired state updated
+- Argo reconciled it
+- public API still served stale config
+- manual rollout restart required
+
+Now, after the refactor:
+
+- the Deployment rolled successfully
+- the pod mounted the expected config
+- the public endpoint served the same value
+- no manual `kubectl rollout restart` was needed
+
+### What is still worth proving later
+
+There is one narrower proof still left if we want to close every box rigorously:
+
+- make a pure config-only follow-up change under:
+  - `gitops/kustomize/wesen-os/config/`
+- verify that the generated ConfigMap identity changes again
+- verify that the Deployment rolls again without any non-config manifest change
+
+The current validation is already strong enough to show the production problem is fixed for this rollout, but that follow-up would isolate the “config-only” mechanism even more cleanly.
