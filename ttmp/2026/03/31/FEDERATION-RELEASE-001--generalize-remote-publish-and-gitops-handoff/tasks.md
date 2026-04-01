@@ -57,8 +57,9 @@
   - `infra-tooling` checkout in CI
   - shared `update_federation_gitops_target.py`
 - [x] Write a detailed intern-facing failure-analysis guide for the first real `infra-tooling` consumption failure.
-- [ ] Publish the extracted `infra-tooling` contents to GitHub `main`.
+- [x] Publish the extracted `infra-tooling` contents to GitHub `main`.
 - [x] Temporarily pin the inventory workflow checkout `ref` to the branch that actually contains the extracted helpers until the shared repo PR merges.
+- [x] Remove the temporary inventory workflow checkout pin after `infra-tooling` `main` contains the extracted helpers and prove the workflow against `main`.
 
 ## Phase 4: Define K3s-Side Reuse
 

@@ -259,6 +259,69 @@ This records the standard secret and variable set a source repo needs before it 
 - `GITOPS_PR_TOKEN`
 - public base URL variable
 
+## 2026-04-01: Publishing `infra-tooling` And Removing The Inventory Bridge
+
+The ticket reached the first real distribution checkpoint today.
+
+### What happened first
+
+The original `go-go-app-inventory` workflow failure was correct and useful:
+
+- the workflow checked out `go-go-golems/infra-tooling`
+- then tried to run:
+  - `.infra-tooling/scripts/federation/update_federation_gitops_target.py`
+- but the shared repo `main` branch did not contain the extracted helper files yet
+
+That meant the failure was **not** a logic bug in the shared updater. It was a publication problem: the consumer workflow was reading from GitHub `main`, while the real extracted toolkit only existed locally and on a feature branch.
+
+### Temporary bridge
+
+To prove that diagnosis before changing more code, I took the minimal bridge step:
+
+1. pushed the extracted `infra-tooling` branch upstream
+2. opened `go-go-golems/infra-tooling#1`
+3. temporarily pinned the inventory workflow checkout to:
+   - `ref: task/os-openai-app-server`
+
+That bridge was validated by inventory Actions run:
+
+- `23850184226`
+
+which passed and proved that the shared updater path itself was sound.
+
+### After `infra-tooling` PR #1 merged
+
+After the user merged `go-go-golems/infra-tooling#1`, I removed the temporary branch pin from:
+
+- `workspace-links/go-go-app-inventory/.github/workflows/publish-federation-remote.yml`
+
+so the workflow once again checked out plain `infra-tooling` `main`.
+
+I validated that stable state by dispatching the inventory workflow directly against the branch:
+
+- workflow: `publish-federation-remote.yml`
+- ref: `task/inventory-infra-tooling-federation-release`
+- run: `23850644368`
+
+That run succeeded end to end.
+
+### Why this matters
+
+This is the first proof that the extracted shared-tooling repo is not just an archive or ticket artifact. A live source repo can now:
+
+1. check out `infra-tooling` from GitHub `main`
+2. build its federated artifact
+3. run the shared dry-run GitOps updater against the private K3s repo
+
+without relying on local branches or unpublished helper files.
+
+### Remaining follow-up after this proof
+
+With the bridge removed and `main` consumption proven, the next work item for this ticket is no longer distribution. It is process:
+
+- move from dry-run GitOps diff to actual GitOps PR creation using the shared helper path
+- then prove the same pattern on a second app so the reuse story is not inventory-only
+
 ## 2026-03-31: Extracting The First Shared Toolkit Into `infra-tooling`
 
 With the ticket-side prototypes validated, I created the first real shared home in:
