@@ -461,6 +461,35 @@ was the right move here. The alternative would have been blocking the shared-too
 ### Why this matters for the ticket
 
 This is now the first externally reviewable proof that `infra-tooling` is not just a local extraction. A real source repo PR exists that depends on the shared helper path and repo-local metadata shape.
+
+## 2026-03-31: Handling Private GitOps Repo Checkout
+
+After opening the inventory PR, a review comment pointed out a real nuance:
+
+- `go-go-golems/infra-tooling` is public
+- `wesen/2026-03-27--hetzner-k3s` is private
+
+That means the `actions/checkout` step for the GitOps repo should not rely on the default workflow token. For now I updated the inventory workflow to use:
+
+- `secrets.GITOPS_PR_TOKEN`
+
+for the private GitOps checkout as well.
+
+### Why I accepted that for now
+
+This is not ideal least-privilege, but it is operationally correct and unblocks the workflow:
+
+- the repo already needs `GITOPS_PR_TOKEN` later for real PR creation
+- the current slice only uses it for checkout
+- adding the explicit token now prevents the dry-run job from failing on a private repo
+
+### Follow-up note left in code
+
+I left an inline note in the workflow that this should later become a dedicated read-only token, for example:
+
+- `K3S_REPO_READ_TOKEN`
+
+That way the workflow is correct today, and the future least-privilege cleanup is still visible in review.
 - platform package version variable when needed
 
 It also captures:
