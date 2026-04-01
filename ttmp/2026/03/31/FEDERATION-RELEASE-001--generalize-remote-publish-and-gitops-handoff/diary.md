@@ -537,6 +537,71 @@ This was not just repo hygiene. It directly affected the first generalized-consu
 - GitOps handoff
 
 not Homebrew/NFPM/Fury CLI binary release automation.
+
+## 2026-04-01: First Real `infra-tooling` Consumption Failure In CI
+
+After merging the inventory PR and wiring the `GITOPS_PR_TOKEN` secret, the workflow moved past the private GitOps repo checkout and failed later in the shared-helper dry-run step.
+
+### Exact failing run
+
+- repo: `go-go-golems/go-go-app-inventory`
+- run: `23848590919`
+- step:
+  - `Dry-run GitOps federation target update via infra-tooling`
+
+### Exact error
+
+```text
+python3: can't open file '/home/runner/work/go-go-app-inventory/go-go-app-inventory/.infra-tooling/scripts/federation/update_federation_gitops_target.py': [Errno 2] No such file or directory
+```
+
+### What I confirmed immediately
+
+This is not:
+
+- a patch-helper logic error
+- a bad `manifest_url`
+- a K3s auth problem
+- a Python syntax problem
+
+It is a repository distribution problem: the workflow checked out `go-go-golems/infra-tooling`, but the checked-out GitHub contents did not contain the extracted script path.
+
+### Local evidence that explains the mismatch
+
+Local `infra-tooling` state shows:
+
+- local branch:
+  - `task/os-openai-app-server`
+- extracted commits:
+  - `3ff2a2c`
+  - `752f68a`
+- remote `origin/main`:
+  - still at `7aaad0b` initial commit
+
+That means the local extracted toolkit exists, but the GitHub default branch consumed by Actions does not yet have it.
+
+### What I added because of this
+
+I wrote a full reference doc:
+
+- `design/04-infra-tooling-consumption-failure-analysis-and-onboarding-guide.md`
+
+That document is meant to be the intern-facing explanation of:
+
+1. the full repository/control-plane architecture
+2. why the local dry-run proof passed while CI failed
+3. how to reason about shared-tooling distribution problems
+4. what the resolution options are
+
+### The main conclusion
+
+This is the first clear proof that `FEDERATION-RELEASE-001` is now about more than just extracting scripts. We have crossed into:
+
+- shared-tooling publication
+- CI consumption contracts
+- branch/default-branch stability
+
+That is exactly why this failure deserved a detailed design/reference guide instead of only a short bug note.
 - platform package version variable when needed
 
 It also captures:
