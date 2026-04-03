@@ -5,19 +5,23 @@ import {
 import { formatAppKey } from '@go-go-golems/os-shell';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@go-go-golems/inventory/launcher', () => ({
-  inventoryStack: {
-    id: 'inventory',
-    title: 'Shop Inventory',
-    homeSurface: 'home',
-    surfaces: {
-      home: {
-        id: 'home',
-        title: 'Home',
-        icon: '📦',
-        type: 'surface',
+vi.mock('@go-go-golems/inventory/host', () => ({
+  inventoryHostContract: {
+    runtimeBundles: [
+      {
+        id: 'inventory',
+        title: 'Shop Inventory',
+        homeSurface: 'home',
+        surfaces: {
+          home: {
+            id: 'home',
+            title: 'Home',
+            icon: '📦',
+            type: 'surface',
+          },
+        },
       },
-    },
+    ],
   },
 }));
 

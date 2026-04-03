@@ -2204,3 +2204,2094 @@ For this platform, the second behavior is the correct default once the GitOps PR
 - commit and push the matching K3s doc correction
 - set `GITOPS_PR_TOKEN` in `wesen/wesen-os`
 - rerun or wait for the next `main` publish to prove the GitOps PR job no longer silently skips
+
+## 2026-03-29: Federation Kickoff, Inventory Contract Audit
+
+With `wesen-os` live on K3s, the deployment half of `DEPLOY-001` is no longer the critical path. I switched the ticket focus to the first real federation step: make one app consumable through a single explicit host contract before introducing runtime remote loading.
+
+### Why start here
+
+The host still consumes app code in a package-linked way. That is expected today, but it is not yet shaped like a future federated remote. The key smell I wanted to remove first was “host reaches into several unrelated public entrypoints for one app.”
+
+`inventory` was already the agreed first remote candidate, so I treated it as the first contract-hardening target.
+
+### Files reviewed in this audit
+
+- `apps/os-launcher/src/app/modules.tsx`
+- `apps/os-launcher/src/app/store.ts`
+- `apps/os-launcher/src/app/registerAppsBrowserDocs.ts`
+- `apps/os-launcher/src/app/hypercardReplModule.tsx`
+- `apps/os-launcher/src/app/runtimeDebugModule.tsx`
+- `apps/os-launcher/src/app/taskManagerModule.tsx`
+- `apps/os-launcher/src/__tests__/launcherHost.test.tsx`
+- `workspace-links/go-go-app-inventory/apps/inventory/package.json`
+- `workspace-links/go-go-app-inventory/apps/inventory/src/index.ts`
+- `workspace-links/go-go-app-inventory/apps/inventory/src/reducers.ts`
+- `workspace-links/go-go-app-inventory/apps/inventory/src/launcher/public.ts`
+- `workspace-links/go-go-app-inventory/apps/inventory/src/domain/vmmeta.ts`
+- `workspace-links/go-go-os-frontend/packages/os-shell/src/index.ts`
+- `workspace-links/go-go-os-frontend/packages/os-shell/src/contracts/launchableAppModule.ts`
+- `workspace-links/go-go-os-frontend/packages/os-shell/src/store/createLauncherStore.ts`
+
+### What I found
+
+The host currently depends on `inventory` through three separate public surfaces:
+
+- `@go-go-golems/inventory/launcher`
+  - for `inventoryLauncherModule`
+  - for `inventoryStack`
+- `@go-go-golems/inventory/reducers`
+  - for `inventoryReducer`
+  - for `salesReducer`
+- `@go-go-golems/inventory`
+  - for `INVENTORY_VM_PACK_METADATA`
+
+That fragmentation shows up in several host files:
+
+- `apps/os-launcher/src/app/modules.tsx`
+- `apps/os-launcher/src/app/store.ts`
+- `apps/os-launcher/src/app/registerAppsBrowserDocs.ts`
+- `apps/os-launcher/src/app/hypercardReplModule.tsx`
+- `apps/os-launcher/src/app/runtimeDebugModule.tsx`
+- `apps/os-launcher/src/app/taskManagerModule.tsx`
+
+This is still a valid package API, but it is the wrong shape for the future remote-loading story. A federated remote wants one stable host-facing contract. The host should not need to know that launcher state, docs metadata, and runtime bundles live behind different import paths.
+
+### Decision for the first implementation slice
+
+The first federation-enabling code change should be deliberately small:
+
+1. add a generic host-contract type to `@go-go-golems/os-shell`
+2. add a dedicated `@go-go-golems/inventory/host` export
+3. move the inventory host-facing values behind one contract object
+4. switch `apps/os-launcher` to consume that contract everywhere
+5. tighten host tests so they enforce the new single-entrypoint rule
+
+That does **not** make inventory a real remote yet. It is still statically linked package code. But it gives us the right abstraction boundary so the later Module Federation loader can replace one import surface instead of many unrelated ones.
+
+### Ticket helper added
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/25-audit-inventory-host-surface.sh`
+
+This helper is intentionally small and boring. Its only job is to capture the current import surface and public exports so later diary/doc updates can compare “before” and “after” without hand-reconstructing the audit.
+
+### What happens next
+
+- update the task board with concrete inventory-federation slices
+- add the shared host-contract type in `os-shell`
+- add the dedicated inventory host export
+- switch the host imports
+- run host tests and typechecks
+
+## 2026-03-29: First Federation Code Slice, Collapse Inventory To One Host Contract
+
+After the audit, I implemented the first real code step toward federation. The scope was intentionally narrow: do not add dynamic loading yet, do not add Module Federation config yet, and do not redesign the launcher. Just replace the fragmented `inventory` host surface with one explicit contract boundary.
+
+### Design decision
+
+I chose a dedicated package subpath:
+
+- `@go-go-golems/inventory/host`
+
+That subpath now acts as the single launcher-facing boundary for `inventory`. This is the same shape we are likely to want later when the app stops being linked locally and starts being loaded through a remote entrypoint or manifest-backed host contract.
+
+To avoid making the contract inventory-specific, I also added a generic type in `@go-go-golems/os-shell`:
+
+- `FederatedAppHostContract`
+
+It currently includes:
+
+- `remoteId`
+- `launcherModule`
+- `sharedReducers`
+- `docsMetadata`
+- `runtimeBundles`
+
+That is enough for the current launcher integration points and small enough to evolve safely later.
+
+### Files changed
+
+In `go-go-os-frontend`:
+
+- `workspace-links/go-go-os-frontend/packages/os-shell/src/contracts/federatedAppHostContract.ts`
+- `workspace-links/go-go-os-frontend/packages/os-shell/src/index.ts`
+
+In `go-go-app-inventory`:
+
+- `workspace-links/go-go-app-inventory/apps/inventory/src/host.ts`
+- `workspace-links/go-go-app-inventory/apps/inventory/package.json`
+
+In `wesen-os`:
+
+- `apps/os-launcher/src/app/modules.tsx`
+- `apps/os-launcher/src/app/store.ts`
+- `apps/os-launcher/src/app/registerAppsBrowserDocs.ts`
+- `apps/os-launcher/src/app/hypercardReplModule.tsx`
+- `apps/os-launcher/src/app/runtimeDebugModule.tsx`
+- `apps/os-launcher/src/app/taskManagerModule.tsx`
+- `apps/os-launcher/src/app/runtimeDebugModule.test.tsx`
+- `apps/os-launcher/src/__tests__/launcherHost.test.tsx`
+
+### What changed in behavior
+
+Before this step, the host reached into:
+
+- `@go-go-golems/inventory/launcher`
+- `@go-go-golems/inventory/reducers`
+- `@go-go-golems/inventory`
+
+After this step, the production host code reaches into:
+
+- `@go-go-golems/inventory/host`
+
+The contract object carries the same data the launcher previously pulled from three separate entrypoints:
+
+- launcher module
+- shared reducers
+- docs metadata
+- runtime stack bundle
+
+That is a better pre-federation shape because the future runtime loader only needs to replace one stable boundary.
+
+### One failure along the way
+
+The implementation passed `apps/os-launcher` typecheck immediately, but the first focused test run failed:
+
+- command:
+  - `npm run test -w apps/os-launcher -- --run runtimeDebugModule registerAppsBrowserDocs launcherHost`
+- failure:
+  - `runtimeDebugModule.test.tsx` timed out after 5000ms
+
+The root cause was not a real runtime regression. I had updated the production import path to `@go-go-golems/inventory/host` but left one test mock on the old path:
+
+- stale mock:
+  - `vi.mock('@go-go-golems/inventory/launcher', ...)`
+
+That meant the test imported the real module graph instead of the stubbed host contract. After switching the mock to:
+
+- `vi.mock('@go-go-golems/inventory/host', ...)`
+
+the focused test set passed cleanly.
+
+### Validation
+
+Commands run:
+
+- `npm run typecheck -w apps/os-launcher`
+- `npm run typecheck -w workspace-links/go-go-app-inventory/apps/inventory`
+- `npm run test -w apps/os-launcher -- --run runtimeDebugModule registerAppsBrowserDocs launcherHost`
+
+All three passed after the mock-path correction.
+
+### Ticket helper added
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/26-validate-inventory-host-contract.sh`
+
+This helper reruns the exact narrow validation loop for this slice and also prints the launcher’s remaining `inventory` import surface so future diary/doc work can verify that the collapse stayed intact.
+
+### What this does not solve yet
+
+This is still package-linked composition, not real runtime federation.
+
+The remaining gaps are now clearer than before:
+
+- the host still statically imports `inventory`
+- there is no manifest or remote registry yet
+- there is no runtime timeout/failure UX for a missing remote
+- there is no object-storage upload flow yet
+
+That is fine. The point of this slice was to create the correct contract boundary before we introduce runtime loading machinery.
+
+## 2026-03-29: Second Federation Code Slice, Centralize The Launcher-Side Seam
+
+The first code slice got the host onto `@go-go-golems/inventory/host`, but the integration knowledge was still spread across several launcher files. That is better than before, but still not the best seam for future remote loading.
+
+So the next step was to move the launcher-side package touchpoint into one local registry/adapter file:
+
+- `apps/os-launcher/src/app/localFederatedAppContracts.ts`
+
+### Why this matters
+
+For future federation, the host should eventually be able to swap:
+
+- “import local package contract”
+
+for:
+
+- “load remote contract from manifest/remote module”
+
+If package knowledge is spread across `modules.tsx`, `store.ts`, `registerAppsBrowserDocs.ts`, `hypercardReplModule.tsx`, `runtimeDebugModule.tsx`, and `taskManagerModule.tsx`, that later swap becomes tedious and error-prone.
+
+By centralizing that package touchpoint into one local adapter file, the host now has a much clearer seam:
+
+- launcher production code reads from `localFederatedAppContracts.ts`
+- that local file is the only production place that imports `@go-go-golems/inventory/host`
+
+That is still not dynamic federation, but it is the correct host-side structure for getting there.
+
+### Files changed
+
+- `apps/os-launcher/src/app/localFederatedAppContracts.ts`
+- `apps/os-launcher/src/app/modules.tsx`
+- `apps/os-launcher/src/app/store.ts`
+- `apps/os-launcher/src/app/registerAppsBrowserDocs.ts`
+- `apps/os-launcher/src/app/hypercardReplModule.tsx`
+- `apps/os-launcher/src/app/runtimeDebugModule.tsx`
+- `apps/os-launcher/src/app/taskManagerModule.tsx`
+- `apps/os-launcher/src/__tests__/launcherHost.test.tsx`
+
+### New local adapter responsibilities
+
+The new file owns these helper surfaces:
+
+- `inventoryLocalContract`
+- `localFederatedAppContracts`
+- `listLocalFederatedLauncherModules()`
+- `collectLocalFederatedSharedReducers()`
+- `listLocalFederatedDocsMounts()`
+- `listLocalFederatedRuntimeBundles()`
+
+That means the rest of the launcher now consumes:
+
+- launcher modules
+- reducers
+- docs mounts
+- runtime bundles
+
+through local helpers instead of importing the inventory package directly.
+
+### One type issue I had to fix
+
+The first version of `listLocalFederatedDocsMounts()` widened metadata to `Record<string, unknown>`. That broke `apps/os-launcher` typecheck because `createVmmetaSurfaceDocsMount()` wants `VmmetaMetadata`, which requires `packId`.
+
+The fix was to keep the local docs-mount metadata typed from the actual inventory contract:
+
+- `metadata: typeof inventoryLocalContract.docsMetadata`
+
+That preserved the concrete metadata shape without inventing a new cross-package docs type in the wrong place.
+
+### Validation
+
+Commands run:
+
+- `npm run typecheck -w apps/os-launcher`
+- `npm run test -w apps/os-launcher -- --run runtimeDebugModule registerAppsBrowserDocs launcherHost`
+- `rg -n "@go-go-golems/inventory(?:/host|/launcher|/reducers|\\b)" apps/os-launcher/src apps/os-launcher/src/__tests__`
+
+Results:
+
+- launcher typecheck passed
+- focused launcher tests passed
+- production launcher imports now point at `localFederatedAppContracts.ts` instead of importing `inventory` directly
+
+There are still a couple of test-only imports of `inventory`, which is acceptable for now. The important change is that the production launcher code now has one local seam where inventory package knowledge lives.
+
+### Ticket helper added
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/27-audit-local-federated-contract-seam.sh`
+
+This helper exists so later documentation can show the exact transition from:
+
+- many production imports of `@go-go-golems/inventory/*`
+
+to:
+
+- one local seam file plus a couple of tests
+
+without relying on memory.
+
+### What should happen next
+
+The next real step should stop being about TypeScript packaging shape and start becoming about runtime behavior:
+
+- define the concrete remote registry format the host will read
+- add a host-side loader interface that can return local contracts now and remote contracts later
+- then wire the first `inventory` remote implementation path on top of that interface
+
+## 2026-03-29: Third Federation Code Slice, Introduce The Host Registry Shape
+
+With the launcher-side seam centralized, the next step was to stop treating the list of local contracts as an unstructured constant and instead give the host an explicit registry shape.
+
+I added:
+
+- `apps/os-launcher/src/app/federationRegistry.ts`
+
+This defines:
+
+- `FederatedRemoteMode`
+- `FederatedRemoteRegistryEntry`
+- `FederatedRemoteRegistry`
+- `DEFAULT_LOCAL_FEDERATION_REGISTRY`
+
+### Why this matters
+
+Before this step, the host could list local contracts, but there was no configuration model describing *why* a contract was present or how it was meant to be loaded.
+
+Now the launcher has an explicit registry entry for `inventory`:
+
+- `remoteId: 'inventory'`
+- `mode: 'local-package'`
+- `enabled: true`
+- `contractExport: '@go-go-golems/inventory/host'`
+
+That is still static and local, but it is much closer to the future runtime story. The only thing missing is the `remote-manifest` branch implementation.
+
+### Resolver behavior
+
+I updated `localFederatedAppContracts.ts` so it no longer assumes “all known contracts are always active.” Instead, it resolves contracts from `DEFAULT_LOCAL_FEDERATION_REGISTRY`.
+
+Important behavior:
+
+- disabled entries are skipped
+- unknown local remote ids fail loudly
+- non-local modes also fail loudly in the local resolver
+
+That last point matters. Silent fallback would make the eventual remote-manifest migration much harder to debug.
+
+### Validation
+
+Commands run:
+
+- `npm run typecheck -w apps/os-launcher`
+- `npm run test -w apps/os-launcher -- --run launcherHost runtimeDebugModule registerAppsBrowserDocs`
+
+Both passed.
+
+### Ticket helper added
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/28-audit-federation-registry-shape.sh`
+
+This helper prints both the new registry definition and the current local resolver so later docs can show the exact “registry exists, but remote-manifest mode is not implemented yet” state.
+
+### State after this slice
+
+The host now has three increasingly better layers:
+
+1. remote app package exposes one host contract:
+   - `@go-go-golems/inventory/host`
+2. launcher has one local seam for package touchpoints:
+   - `localFederatedAppContracts.ts`
+3. launcher has an explicit registry/config shape:
+   - `federationRegistry.ts`
+
+That is enough structure to start the next real step:
+
+- implement a remote-manifest loader path behind the same registry model
+
+without rewriting the host again from scratch.
+
+## 2026-03-30: Fourth Federation Code Slice, Add The First Manifest-Backed Loader
+
+This is the first step that actually crosses from “better static structure” into “runtime federation mechanics.”
+
+I added:
+
+- `apps/os-launcher/src/app/loadFederatedAppContracts.ts`
+- `apps/os-launcher/src/app/loadFederatedAppContracts.test.ts`
+- `apps/os-launcher/src/app/fixtures/remoteInventoryContract.mjs`
+
+and expanded:
+
+- `apps/os-launcher/src/app/federationRegistry.ts`
+
+### What this slice implements
+
+The launcher now has an async loader that can resolve contracts from the registry in two modes:
+
+1. `local-package`
+   - resolve the contract from the local registry as before
+2. `remote-manifest`
+   - fetch a manifest JSON document
+   - validate the manifest shape
+   - resolve the entry URL relative to the manifest URL
+   - dynamically import the remote module
+   - extract the configured export
+   - validate that the export looks like a `FederatedAppHostContract`
+
+That means the host can now load a manifest-backed remote contract through the same top-level API, even though the production launcher is not yet wired to use this async path during startup.
+
+### Manifest shape used in this step
+
+I added a concrete host-side manifest model in `federationRegistry.ts`:
+
+- `FederatedRemoteManifest`
+- `FederatedRemoteManifestContract`
+
+Current required fields:
+
+- `version`
+- `remoteId`
+- `contract.entry`
+- optional `contract.exportName`
+
+This is a deliberately minimal bootstrap contract. It is enough to prove the runtime loading path without forcing the full CDN/build pipeline first.
+
+### Why I treated this as valid progress even though it is not full Module Federation yet
+
+The repo still has no producer-side federation build tooling installed, and there is no emitted `mf-manifest.json` from `inventory` yet. So the pragmatic move here was:
+
+- keep the registry and manifest terminology aligned with the desired end-state
+- implement the host loader mechanics now
+- leave the producer-side build/output wiring for the next task
+
+That gives us working host behavior we can test today instead of waiting for the entire producer pipeline to exist first.
+
+### Validation
+
+Commands run:
+
+- `npm run typecheck -w apps/os-launcher`
+- `npm run test -w apps/os-launcher -- --run loadFederatedAppContracts launcherHost runtimeDebugModule registerAppsBrowserDocs`
+
+The new tests cover:
+
+- loading enabled local-package contracts from the registry
+- loading a manifest-backed contract through fetch + dynamic import
+- failing when the remote manifest/exported contract does not match the expected `remoteId`
+
+All passed.
+
+### Ticket helper added
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/29-audit-federated-loader.sh`
+
+This helper prints the registry shape, loader implementation, and loader tests together so later docs can show the exact first-runtime-loader state in one place.
+
+### What this still does not do
+
+This slice does **not** yet:
+
+- build a real `inventory` manifest from a remote build
+- upload remote assets to Hetzner
+- wire the async loader into launcher startup
+- add UI fallback behavior when a remote fails to load
+
+Those are the next tasks.
+
+## 2026-03-30: Fifth Federation Code Slice, Build A Real Inventory Artifact And Smoke It
+
+The loader path existed after the previous step, but it was still only proven against synthetic manifests and fixture modules. The next thing I wanted was a real producer artifact from `inventory` that the launcher loader could consume without any fake module object in the middle.
+
+### Producer build added
+
+In `go-go-app-inventory`, I added:
+
+- `workspace-links/go-go-app-inventory/apps/inventory/vite.federation.config.ts`
+- `build:federation` in `workspace-links/go-go-app-inventory/apps/inventory/package.json`
+
+I also refactored the shared Vite helper slightly so both the normal app build and the federation build can reuse the same frontend-resolution alias logic:
+
+- `workspace-links/go-go-app-inventory/tooling/vite/createHypercardViteConfig.ts`
+
+### What the new build emits
+
+The federation build now writes:
+
+- `dist-federation/mf-manifest.json`
+- `dist-federation/inventory-host-contract.js`
+
+Current manifest contents are intentionally minimal:
+
+- `version`
+- `remoteId`
+- `compatiblePlatformRange`
+- `contract.entry`
+- `contract.exportName`
+
+This is not full producer-side Module Federation yet. It is a minimal manifest-emitting remote artifact that matches the host loader we just built.
+
+### Real smoke path
+
+I added:
+
+- `apps/os-launcher/src/app/loadFederatedAppContracts.real.test.ts`
+
+This test is skipped unless `INVENTORY_FEDERATION_MANIFEST_FILE` is set. When enabled, it:
+
+1. uses the real built `mf-manifest.json`
+2. passes a file-backed fetcher into `loadFederatedAppContracts`
+3. loads the real built `inventory-host-contract.js`
+4. validates the loaded contract
+5. calls `buildLaunchWindow()` on the loaded launcher module
+
+So this is no longer a fake fixture pretending to be a producer build. It is the real inventory artifact going through the real host loader.
+
+### Ticket helper added
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/30-real-inventory-federation-smoke.sh`
+
+That helper does the full bounded operator loop:
+
+1. `npm run build:federation -w workspace-links/go-go-app-inventory/apps/inventory`
+2. set `INVENTORY_FEDERATION_MANIFEST_FILE`
+3. run the explicit launcher real-smoke test
+
+### Real results
+
+The build succeeded and emitted:
+
+- `dist-federation/mf-manifest.json`
+- `dist-federation/inventory-host-contract.js`
+
+The bundled contract file is currently large:
+
+- about 2.6 MB uncompressed
+
+That is expected for now because we are still bundling the entire host-contract graph rather than doing real shared singleton negotiation and remote chunk splitting.
+
+There was also one Vite warning during the producer build:
+
+- QuickJS-related code pulled in a browser-compat externalization warning for Node’s `module`
+
+The build still completed, so I recorded it as a warning rather than a blocker. It likely reflects the current broad `inventory` dependency graph more than the federation build wrapper itself.
+
+### Why I consider this “real enough”
+
+This is the first point where we can truthfully say:
+
+- the producer emits a real artifact
+- the host loader consumes that real artifact
+- the loaded contract can execute launcher behavior
+
+It is still not the final browser/runtime deployment path, but it is no longer hypothetical.
+
+### What remains
+
+The next gaps are now very concrete:
+
+- wire the async loader into actual launcher startup
+- decide how the runtime registry source is provided
+- reduce or explicitly manage shared dependencies instead of bundling the whole world into one contract file
+- eventually replace this minimal manifest with the full remote build/deploy path
+
+## 2026-03-30: Sixth Federation Code Slice, Bootstrap The Launcher Through `remote-manifest` And Capture The First Browser Runtime Blocker
+
+After the real inventory artifact smoke, the next job was to stop treating the manifest-backed loader as a side utility and actually put it on the launcher startup path. I wanted the launcher to decide at boot whether it should load the local inventory contract or the remote-manifest version, and I wanted a real browser proof rather than only a Vitest fixture.
+
+This step delivered that bootstrap wiring. It also gave us the first real browser-runtime failure after bootstrap: the launcher now boots through the remote contract path and shows the `Inventory` desktop entry, but opening the remote Inventory window crashes because the remote bundle still carries its own React/react-redux runtime instead of sharing the host singletons.
+
+### Startup wiring added
+
+I added a new launcher bootstrap entrypoint:
+
+- `apps/os-launcher/src/app/bootstrapLauncherApp.ts`
+
+Its responsibilities are:
+
+1. reset any stale in-memory federated contracts
+2. resolve the active registry from environment or from an explicit override
+3. load the active contracts through `loadFederatedAppContracts`
+4. install those contracts into runtime state
+5. then load the real launcher modules (`store`, `registry`, `App`)
+
+The actual browser entrypoint now uses that bootstrap:
+
+- `apps/os-launcher/src/main.tsx`
+
+So launcher startup is no longer hard-wired to only the local inventory package. It is now a two-step boot:
+
+1. resolve/load federation contracts
+2. load/render the real launcher app
+
+### Runtime contract seam widened from “local-only” to “bootstrapped runtime”
+
+To support that, I changed the previous local helpers in:
+
+- `apps/os-launcher/src/app/localFederatedAppContracts.ts`
+
+That file still knows how to resolve the local package contracts, but it now also owns the runtime-loaded contract list. The rest of launcher startup now reads from that runtime list instead of directly from the static local-package array:
+
+- `apps/os-launcher/src/app/modules.tsx`
+- `apps/os-launcher/src/app/store.ts`
+- `apps/os-launcher/src/app/registerAppsBrowserDocs.ts`
+- `apps/os-launcher/src/app/runtimeDebugModule.tsx`
+- `apps/os-launcher/src/app/taskManagerModule.tsx`
+- `apps/os-launcher/src/app/hypercardReplModule.tsx`
+
+That is the key architectural shift in this slice. The launcher now has one consistent “federated contract runtime state” instead of a bunch of static imports that only happened to work for the local inventory package.
+
+### Registry/env control added
+
+I extended:
+
+- `apps/os-launcher/src/app/federationRegistry.ts`
+
+to support two practical browser-proof paths:
+
+- `VITE_FEDERATION_REGISTRY_JSON`
+- `VITE_INVENTORY_REMOTE_MANIFEST_URL`
+- `VITE_INVENTORY_FEDERATION_ENABLED`
+
+That let me point the launcher at a real manifest without inventing the final registry service yet. For this phase, the environment-driven registry is enough.
+
+### Unit coverage added and reshaped
+
+I added:
+
+- `apps/os-launcher/src/app/bootstrapLauncherApp.test.ts`
+
+Initially I tried to make this test import the real `App`, `store`, and `registry` modules after bootstrapping the remote manifest path. That hung repeatedly under Vitest, not because the federation decision logic was wrong, but because the test was pulling the entire launcher runtime graph through repeated module reloads.
+
+The concrete failed command was:
+
+- `npm run test -w apps/os-launcher -- --run bootstrapLauncherApp`
+
+The repeated failure looked like:
+
+- `Error: Test timed out in 5000ms.`
+- then again after raising the timeout:
+- `Error: Test timed out in 20000ms.`
+
+I narrowed this down enough to see that the hanging portion was the “real launcher graph import under Vitest” piece, not the registry/manifest contract path itself. So I kept the unit test focused on the actual bootstrap orchestration by adding injectable module loaders to `bootstrapLauncherApp`. That way the test can still prove:
+
+- remote manifest registry resolution
+- contract loading
+- runtime contract installation
+- launcher registry creation from the bootstrapped contract
+
+without pretending Vitest is a browser-runtime integration environment.
+
+### Browser proof performed
+
+I then ran a real browser proof instead of trusting the unit test alone.
+
+The operator flow was:
+
+1. build the real inventory federation artifact
+2. copy it into a same-origin launcher static path:
+   - `apps/os-launcher/public/__federation-smoke/inventory/`
+3. start the launcher dev server with:
+   - `VITE_INVENTORY_REMOTE_MANIFEST_URL=/__federation-smoke/inventory/mf-manifest.json`
+4. open the launcher in a browser
+
+The first browser run failed during bootstrap with:
+
+- `TypeError: Failed to construct 'URL': Invalid base URL`
+
+That came from resolving a relative manifest URL as if it were already absolute. I fixed that in:
+
+- `apps/os-launcher/src/app/loadFederatedAppContracts.ts`
+
+by normalizing the manifest URL against the browser location when necessary before resolving `contract.entry`.
+
+The second browser run got further, but the loaded remote bundle failed with:
+
+- `ReferenceError: process is not defined`
+
+That came from the producer-side remote bundle still emitting raw `process.env.NODE_ENV` checks. I fixed that in:
+
+- `workspace-links/go-go-app-inventory/apps/inventory/vite.federation.config.ts`
+
+by defining:
+
+- `process.env.NODE_ENV = "production"`
+
+for the federation build.
+
+### What the real browser proof now demonstrates
+
+After those fixes, the launcher boots successfully through the remote-manifest path in the browser:
+
+- launcher page loads
+- no bootstrap error screen
+- `Inventory` appears as a desktop icon from the remote-provided contract
+
+This is the first real browser proof that the launcher is no longer relying on the local-package-only inventory path for startup.
+
+### The next blocker we exposed
+
+When I actually opened the Inventory window from that browser session, the window failed with:
+
+- `Cannot read properties of null (reading 'useContext')`
+
+This is the first real runtime boundary problem after bootstrap. It is the expected duplicate-singleton issue:
+
+- the remote bundle currently includes its own React/react-redux runtime
+- the host renders with its own Provider/React runtime
+- the remote hook layer is therefore not using the same context instance as the host
+
+So the system is now at a better place than before:
+
+- bootstrap path works
+- remote contract contributes launcher UI successfully
+- the next failure is no longer in manifest loading
+- the next failure is the shared-runtime contract between host and remote
+
+### Validation performed
+
+Commands that passed in this slice:
+
+- `npm run typecheck -w apps/os-launcher`
+- `npm run typecheck -w workspace-links/go-go-app-inventory/apps/inventory`
+- `npm run test -w apps/os-launcher -- --run bootstrapLauncherApp`
+
+Browser/operator proof:
+
+- built inventory remote artifact
+- served launcher with `VITE_INVENTORY_REMOTE_MANIFEST_URL`
+- verified launcher boot + Inventory desktop icon in Playwright
+- verified opening the Inventory window fails with the expected React/runtime singleton error
+
+### Why this is still valid progress even though the Inventory window crashes
+
+Before this slice, we did not know whether the next breakage would be:
+
+- registry resolution
+- manifest fetch
+- relative URL handling
+- dynamic import
+- host contract validation
+- launcher boot ordering
+
+Now we do.
+
+The browser proof shows that all of those layers are working. The first remaining blocker is the real architectural one we expected from the beginning: host/remote shared singletons.
+
+That means the next task is not “make the bootstrap loader work.” It already works. The next task is:
+
+- define and implement the shared-singleton strategy for browser remotes
+
+### Ticket helpers added for this slice
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/31-prepare-launcher-remote-manifest-smoke.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/32-clean-launcher-remote-manifest-smoke.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/31-launcher-remote-manifest-browser-smoke.md`
+
+## 2026-03-30: Seventh Federation Code Slice, Share React And React-Redux Between Host And Remote
+
+The last browser proof ended at the first real runtime architecture problem: the launcher could boot through the remote manifest path, but opening an Inventory window crashed with a React hook/context error. At that point the system had proven that remote manifest loading worked; what had failed was the shared runtime boundary between host and remote.
+
+I addressed that by installing a host-owned shared runtime before loading any remote contract, then making the inventory federation build alias `react`, `react/jsx-runtime`, and `react-redux` to shim modules that read from that host-installed runtime. This is still not full Module Federation plugin negotiation, but it is the first real singleton policy for browser remotes in this codebase.
+
+### Host-side shared runtime installation
+
+I added:
+
+- `apps/os-launcher/src/app/federationSharedRuntime.ts`
+
+That module imports the host's:
+
+- `react`
+- `react/jsx-runtime`
+- `react-redux`
+
+and installs them on:
+
+- `globalThis.__WESEN_FEDERATION_SHARED__`
+
+Then `bootstrapLauncherApp()` now calls `installFederationSharedRuntime()` before any remote manifest contract is loaded. That ordering matters. It ensures the remote bundle sees the shared runtime immediately when its top-level module body executes.
+
+### Remote-side shim modules
+
+In the inventory app, I added:
+
+- `workspace-links/go-go-app-inventory/apps/inventory/src/federation-shared/runtime.ts`
+- `workspace-links/go-go-app-inventory/apps/inventory/src/federation-shared/react.ts`
+- `workspace-links/go-go-app-inventory/apps/inventory/src/federation-shared/react-jsx-runtime.ts`
+- `workspace-links/go-go-app-inventory/apps/inventory/src/federation-shared/react-redux.ts`
+
+These modules do not import the real runtime packages. Instead, they:
+
+1. read `globalThis.__WESEN_FEDERATION_SHARED__`
+2. throw a clear error if the host has not installed it
+3. re-export the required runtime bindings from the host-owned module objects
+
+This is what makes the remote bundle use the host's React/react-redux context instead of shipping and using its own copy.
+
+### Producer build aliasing
+
+I then updated:
+
+- `workspace-links/go-go-app-inventory/apps/inventory/vite.federation.config.ts`
+
+The federation build now aliases these exact imports:
+
+- `react`
+- `react/jsx-runtime`
+- `react/jsx-dev-runtime`
+- `react-redux`
+
+to the shim modules above.
+
+One subtle fix was necessary here: Vite alias matching had to be exact and ordered. A naive object alias for `react` caused `react/jsx-runtime` to resolve incorrectly as `react.ts/jsx-runtime`. I replaced that with exact regex aliases in array form so `react/jsx-runtime` and `react-redux` resolve correctly before the generic `react` match.
+
+### Type/build failures during this step
+
+Two concrete issues surfaced during the first shim pass.
+
+#### TypeScript errors
+
+The first inventory typecheck failed with:
+
+- `Property 'jsxDEV' does not exist on type ... react/jsx-runtime`
+- `Property 'unstable_useCacheRefresh' does not exist on type ... react`
+
+These were not runtime blockers; they were over-eager shim exports that the installed type packages do not model. I removed those exports from the shims rather than widening the runtime contract unnecessarily.
+
+#### Alias resolution failure
+
+The first producer build failed with:
+
+- `Could not load .../src/federation-shared/react.ts/jsx-runtime`
+
+That was the alias ordering/matching bug described above. Converting to ordered exact aliases fixed it.
+
+### Real browser result after the shared-runtime fix
+
+I reran the full same-origin browser proof:
+
+1. build the inventory federation artifact
+2. sync it into `apps/os-launcher/public/__federation-smoke/inventory`
+3. boot the launcher with:
+   - `VITE_INVENTORY_REMOTE_MANIFEST_URL=/__federation-smoke/inventory/mf-manifest.json`
+4. open the launcher in a browser
+5. open the Inventory folder from the remote contract
+6. open a child window from that remote folder
+
+This time:
+
+- the launcher booted
+- the `Inventory` desktop icon appeared
+- the `Inventory Folder` window rendered successfully
+- the `Inventory Chat` child window rendered successfully
+
+The previous crash:
+
+- `Cannot read properties of null (reading 'useContext')`
+
+is gone.
+
+That means the duplicate React/react-redux runtime problem is resolved for this remote path.
+
+### What still fails in the browser, and why
+
+The remaining console errors are now backend/runtime integration errors rather than federation-rendering errors:
+
+- `profile list request failed (500)`
+- timeline/profile fetch failures under `/api/apps/inventory/api/...`
+- websocket connection failures for the inventory backend
+
+Those happen because this smoke only proves the frontend/remote integration path. It does not stand up the real inventory backend/chat websocket on `127.0.0.1:8091`.
+
+This is a much better state to be in:
+
+- frontend federation boundary is working
+- runtime child windows render
+- remaining failures are backend availability, not host/remote React isolation
+
+### Validation performed
+
+Commands run successfully:
+
+- `npm run typecheck -w apps/os-launcher`
+- `npm run typecheck -w workspace-links/go-go-app-inventory/apps/inventory`
+- `npm run build:federation -w workspace-links/go-go-app-inventory/apps/inventory`
+- `npm run test -w apps/os-launcher -- --run bootstrapLauncherApp loadFederatedAppContracts`
+
+Manual/browser validation:
+
+- launcher boot through remote manifest
+- Inventory folder render
+- Inventory Chat child window render
+
+### Ticket helper added
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/33-audit-federation-shared-runtime.sh`
+
+This helper prints the new host-side shared runtime installer, the inventory federation shims, and the producer federation config together so later docs can explain the singleton strategy from concrete files instead of prose alone.
+
+## 2026-03-30: Eighth Federation Validation Slice, Prove The Remote Path Against The Live Inventory Backend
+
+Once the browser-side singleton issue was fixed, the remaining question was whether the remote-manifest path still held up when the real backend was present instead of the earlier smoke environment. The key difference here is that this is no longer just a frontend/federation test. It exercises the launcher proxy, the inventory HTTP API, and the websocket path while the app UI is being supplied by the remote contract.
+
+The user ran that proof and confirmed it works. That changed the state of the ticket in an important way: the first federated remote is no longer just an artifact-level or render-level proof. We now have a live browser proof that the host can boot through `remote-manifest`, render the remote-provided Inventory UI, and talk to the actual backend routes the app needs.
+
+### What the successful operator path looked like
+
+The working proof used the existing `wesen-os` launcher backend as the live inventory backend and the launcher Vite dev server as the frontend shell:
+
+- backend:
+  - `go run ./cmd/wesen-os-launcher wesen-os-launcher --addr 127.0.0.1:8091 --arc-enabled=false`
+- remote artifact staging:
+  - `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/31-prepare-launcher-remote-manifest-smoke.sh`
+- frontend:
+  - `INVENTORY_CHAT_BACKEND=http://127.0.0.1:8091`
+  - `VITE_INVENTORY_REMOTE_MANIFEST_URL=/__federation-smoke/inventory/mf-manifest.json`
+  - `npm run dev-public -w apps/os-launcher -- --port 4175`
+
+That setup is important because it proves we do not need a separate one-off inventory dev backend just to validate the remote path. The normal launcher backend already provides the inventory routes the remote frontend expects.
+
+### What this proof upgrades from “assumed” to “known”
+
+Before this run, the backend-integrated part of the federation story was still only inferred from route shapes and proxy config.
+
+After this run, we know:
+
+- the launcher can boot from the remote manifest path
+- the remote-provided Inventory launcher entry appears in the shell
+- Inventory windows render through the remote bundle
+- the live inventory backend path works through the launcher proxy
+- the remaining work is no longer “prove this remote can function at all”
+- the remaining work is now “package, host, and roll it out cleanly”
+
+That is the moment where the next task should move from browser-local smoke scripts into real remote asset delivery.
+
+## 2026-03-30: Ninth Federation Delivery Slice, Add The First Immutable Hetzner Object Storage Publish Path
+
+After the live-backend proof, the next question was not about React or runtime correctness anymore. It was about deployment shape: where do the remote assets live, how are they published, and how do we make that path match the infrastructure conventions already forming in the Hetzner K3s repo.
+
+I checked `/home/manuel/code/wesen/2026-03-27--hetzner-k3s` before adding anything new. The useful pattern was already there in the backup system documentation: Terraform owns the bucket, Vault owns the credentials, GitOps or automation jobs use S3-compatible uploads at runtime, and the source repo should not invent a second credential model just because the payload is frontend assets instead of SQL dumps. That is the model this slice now follows.
+
+### Source-repo publish path added
+
+In `workspace-links/go-go-app-inventory`, I added:
+
+- `.github/workflows/publish-federation-remote.yml`
+- `scripts/publish_federation_remote.py`
+- `.gitignore` update for `dist-federation/`
+
+The workflow now does the first real remote-delivery job:
+
+1. check out the repo
+2. install Go and Node
+3. build `apps/inventory/dist-federation`
+4. validate the federation artifact
+5. upload it to an immutable object-storage prefix using AWS CLI against a Hetzner S3-compatible endpoint
+
+The current immutable path contract is:
+
+- object prefix:
+  - `remotes/inventory/versions/<remote-version>/`
+- manifest URL:
+  - `<public-base-url>/remotes/inventory/versions/<remote-version>/mf-manifest.json`
+
+That keeps the first rollout simple:
+
+- immutable versioned artifacts
+- no moving alias yet
+- no registry rewrite step yet
+
+### Why this follows the K3s repo instead of competing with it
+
+The K3s repo already documents the object-storage model as:
+
+- Terraform-owned infrastructure
+- Vault-held runtime credentials
+- S3-compatible runtime uploads
+
+The remote publish path is now intentionally aligned with that:
+
+- GitHub Actions in the source repo will consume object-storage credentials
+- the destination is a versioned immutable prefix
+- the host can later point at the manifest URL directly
+- a future channel alias or registry document can be layered on afterward if needed
+
+This is materially better than starting with a special-case upload script that only works from one laptop or that bakes provider-specific assumptions straight into the launcher.
+
+### Validation performed
+
+I validated three pieces locally before recording the step:
+
+- Python syntax:
+  - `python3 -m py_compile workspace-links/go-go-app-inventory/scripts/publish_federation_remote.py`
+- workflow structure:
+  - `yq eval '.' workspace-links/go-go-app-inventory/.github/workflows/publish-federation-remote.yml >/dev/null`
+- real artifact + dry-run publish plan:
+  - `npm run build:federation -w apps/inventory`
+  - `python3 scripts/publish_federation_remote.py --source-dir apps/inventory/dist-federation --remote-id inventory --version sha-localproof --bucket demo-bucket --endpoint https://example.invalid --region eu-central --public-base-url https://assets.example.invalid --dry-run`
+
+The dry-run plan resolved exactly to:
+
+- destination:
+  - `s3://demo-bucket/remotes/inventory/versions/sha-localproof/`
+- manifest URL:
+  - `https://assets.example.invalid/remotes/inventory/versions/sha-localproof/mf-manifest.json`
+
+That gives us a stable contract to document and to wire into the launcher later.
+
+### Ticket helpers added for this slice
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/34-audit-k3s-object-storage-pattern.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/35-check-inventory-federation-publish-path.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/34-k3s-object-storage-pattern-audit.md`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/35-inventory-federation-publish-path-check.md`
+
+### What still remains after this step
+
+This does not yet finish the remote deployment story.
+
+Still pending:
+
+- decide and configure the real public base URL
+- seed the real Hetzner Object Storage credentials into GitHub Actions
+- run the first non-dry-run remote publish on GitHub
+- configure CORS for the host domain
+- decide whether the first runtime registry source is:
+  - static JSON
+  - env-generated JSON
+  - backend-served config
+- decide whether to add a moving alias path such as `staging/current`
+
+The important point is that the system now has a real first publish path, not just a browser smoke setup under `apps/os-launcher/public/__federation-smoke`.
+
+## 2026-03-30: Tenth Federation Runtime Slice, Move Registry Resolution Onto A Host-Served Endpoint
+
+The object-storage publish workflow solved the producer side, but the host still had a structural weakness: remote discovery only came from frontend build-time env. That is acceptable for local smoke runs, but it is the wrong contract for a deployed host. A host image should be able to learn about remote manifests from runtime config, not only from the values that happened to exist when Vite bundled the SPA.
+
+I addressed that by adding a small host-served federation-registry endpoint and teaching launcher bootstrap to consult it before falling back to the local-package default. The result is a better split of responsibility: the backend owns runtime-discoverable host config, the frontend still supports env overrides for development/proof flows, and the default local inventory path remains available when the endpoint is absent.
+
+### Host endpoint added
+
+I added:
+
+- `cmd/wesen-os-launcher/federation_registry_endpoint.go`
+- `cmd/wesen-os-launcher/federation_registry_endpoint_test.go`
+
+and wired the endpoint into the launcher server in:
+
+- `cmd/wesen-os-launcher/main.go`
+
+The new endpoint is:
+
+- `GET /api/os/federation-registry`
+
+The server behavior is deliberately small and strict:
+
+- if no `--federation-registry` path is configured, it returns `404`
+- if the file does not exist, it returns `404`
+- if the file exists but is invalid JSON, it returns `500`
+- if the file exists and contains valid JSON, it serves that JSON as `application/json`
+
+That shape matches the current phase of the rollout. We are not building a full remote-control plane yet. We are adding the smallest runtime configuration seam that can be mounted from the host config path later.
+
+### Frontend bootstrap changes
+
+In `apps/os-launcher`, I updated:
+
+- `src/app/federationRegistry.ts`
+- `src/app/bootstrapLauncherApp.ts`
+- `src/app/federationRegistry.test.ts`
+
+The launcher now resolves the registry in this order:
+
+1. explicit `VITE_FEDERATION_REGISTRY_JSON`
+2. explicit `VITE_INVENTORY_REMOTE_MANIFEST_URL`
+3. fetch `/api/os/federation-registry`
+4. if the endpoint is absent or unreachable, fall back to the local-package inventory registry
+
+That ordering keeps all of the earlier proof paths working:
+
+- local env overrides still work
+- the manifest smoke path still works
+- the deployed host now has a runtime-served path available
+
+This matters because it lets us move from “remote URL baked into a frontend build” toward “remote URL supplied by host runtime config.”
+
+### Why this was the right next step
+
+At this point in the ticket, the system already had:
+
+- a working remote-manifest browser path
+- a working live-backend proof
+- an immutable object-storage publish workflow
+
+What it did not have was a stable runtime seam between those layers. Without that seam, each new remote URL would have to be injected directly through frontend build-time env, which is exactly the wrong direction once the host is deployed as a container on K3s.
+
+This endpoint does not finish the runtime registry story, but it creates the right contract boundary:
+
+- source repo publishes remote assets
+- host runtime config points at the chosen registry data
+- frontend asks the host what remotes exist
+
+That is a much more defensible architecture than keeping federation discovery entirely inside Vite env knobs.
+
+### Validation performed
+
+I validated the new runtime registry path with:
+
+- `go test ./cmd/wesen-os-launcher/...`
+- `npm run typecheck -w apps/os-launcher`
+- `npm run test -w apps/os-launcher -- --run federationRegistry bootstrapLauncherApp loadFederatedAppContracts`
+
+I also added the replay helper:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/36-check-runtime-federation-registry-path.sh`
+
+and captured it in:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/36-runtime-federation-registry-path-check.md`
+
+### What is still missing after this slice
+
+The endpoint exists, but it is not yet mounted into the deployed host config. That means the next deployment-oriented follow-up is:
+
+- add `federation.registry.json` to the host config path
+- mount it in the canonical K3s `wesen-os` package
+- set the first staging remote manifest URL there
+
+Once that is done, the host can stop relying on the special-case inventory manifest env override for real remote rollouts.
+
+## 2026-03-30: Eleventh Federation Infrastructure Slice, Create The Terraform Stack For Federation Assets
+
+The previous step ended with a real remote publish workflow, but it was still configured against placeholders because there was no canonical federation bucket yet. The user asked directly how I had found the bucket name, which surfaced an important reality: I had not found one. The earlier implementation was based on the storage model documented in the K3s repo, not on an already-provisioned federation bucket.
+
+So this slice creates the missing infrastructure definition instead of pretending it already existed.
+
+### What I checked before creating it
+
+I reviewed the existing Terraform storage stacks under:
+
+- `/home/manuel/code/wesen/terraform/storage/platform/k3s-backups/envs/prod`
+- `/home/manuel/code/wesen/terraform/storage/apps/hair-booking/photos/envs/prod`
+
+That comparison mattered because the backup bucket and the photo-upload bucket encode two different ideas:
+
+- platform-owned storage
+- app-oriented storage with suggested runtime policy outputs
+
+Federation assets are closer to the second category operationally, but they are still platform-level infrastructure. So I created the new stack under:
+
+- `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod`
+
+### The chosen stack contract
+
+The new stack now exists in Terraform with default values:
+
+- bucket name:
+  - `scapegoat-federation-assets`
+- region:
+  - `fsn1`
+- default public base URL placeholder:
+  - `https://assets.example.invalid`
+
+Important design choice: the bucket still defaults to private ACL. The stack does **not** assume that “public asset” means “public bucket ACL.” Instead, it outputs the policy material needed to make public object reads explicit, which is a better security posture and matches the way the rest of this platform prefers explicit control-plane boundaries.
+
+### What the stack outputs
+
+The stack now outputs:
+
+- `bucket_name`
+- `bucket_arn`
+- `bucket_domain_name`
+- `storage_endpoint_url`
+- `storage_region`
+- `public_base_url`
+- `remote_prefixes`
+- `suggested_ci_bucket_policy_json`
+- `suggested_public_read_policy_json`
+
+Those outputs are important because they turn the next operator steps into normal wiring instead of guesswork:
+
+- CI can get a read/write object policy shape
+- the public-read path is explicit
+- the host/runtime docs can reference a concrete public base URL variable
+- the remote prefix contract is written down in infrastructure, not just in frontend code
+
+### Validation performed
+
+I validated the new stack locally with:
+
+- `terraform -chdir=/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod fmt`
+- `terraform -chdir=/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod init -backend=false`
+- `terraform -chdir=/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod validate`
+
+The first `validate` failed before `init`, exactly because the provider had not been installed yet:
+
+- `Error: Missing required provider`
+
+That was expected and useful to record. After `init -backend=false`, validation passed cleanly.
+
+### Commit recorded outside the source repo
+
+Terraform repo commit:
+
+- `1ae2402` — `Add federation asset bucket stack`
+
+This matters because the federation rollout now depends on an external infrastructure repo state, not only on code inside `wesen-os` or `go-go-app-inventory`.
+
+### Ticket helper added for replay
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/37-check-federation-bucket-terraform-stack.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/37-federation-bucket-terraform-stack-check.md`
+
+### What this unlocks next
+
+Now the next steps are no longer “invent a storage stack.”
+
+They are:
+
+1. apply the Terraform stack with real Hetzner Object Storage credentials
+2. decide the real public base URL
+3. seed the resulting credentials into GitHub for the inventory publish workflow
+4. seed the same credentials into the long-term ops path
+5. mount a real `federation.registry.json` into the host config that points at the first hosted manifest URL
+
+That is a materially better place than before because the infrastructure layer is now explicit and versioned.
+
+## 2026-03-30 - Better Invalid Manifest Diagnostics For Launcher Bootstrap
+
+While exercising the new remote-manifest bootstrap path, the launcher failed with a generic browser-side error:
+
+- `Launcher bootstrap failed SyntaxError: JSON.parse: unexpected character at line 1 column 1 of the JSON data`
+
+That error is too vague operationally. It tells us JSON parsing failed, but it does **not** tell us whether the root cause is:
+
+- a bad `mf-manifest.json`
+- an HTML 404/dev-server fallback page
+- a wrong URL entirely
+- or some other non-JSON payload
+
+For federation, that distinction matters because the most common operator mistake is configuring the host to fetch a manifest URL that does not actually serve the manifest artifact.
+
+### Code change
+
+I updated:
+
+- `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/loadFederatedAppContracts.ts`
+
+The loader no longer relies on an opaque `response.json()` path for manifest fetches. It now:
+
+1. reads the raw response body with `response.text()`
+2. parses that body with `JSON.parse(...)`
+3. throws a richer error on failure that includes:
+   - the remote id
+   - the manifest URL
+   - the original JSON parse error
+   - the first bytes of the response body
+
+So instead of a browser-only `SyntaxError`, the host now emits something much more actionable, along the lines of:
+
+- `Remote manifest for "inventory" at <url> did not return valid JSON: ... Response starts with: <!doctype html> ...`
+
+That is exactly what we need when the URL accidentally resolves to an HTML fallback page.
+
+### Test fallout and fix
+
+The targeted launcher tests initially failed after this change because the mocks still simulated only `response.json()` and returned an empty string for `response.text()`.
+
+The failing command was:
+
+- `npm run test -w apps/os-launcher -- --run loadFederatedAppContracts bootstrapLauncherApp`
+
+The fix was to update the mocked manifest responses in:
+
+- `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/loadFederatedAppContracts.test.ts`
+- `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/app/bootstrapLauncherApp.test.ts`
+
+Both tests now return `JSON.stringify(manifest)` from `text()` so the mocks match the real fetch path.
+
+### Validation performed
+
+After updating the mocks, both checks passed:
+
+- `npm run test -w apps/os-launcher -- --run loadFederatedAppContracts bootstrapLauncherApp`
+- `npm run typecheck -w apps/os-launcher`
+
+### Ticket helper added
+
+To make this reproducible for operators, I added:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/38-check-remote-manifest-json.sh`
+
+This helper fetches a manifest URL and prints:
+
+- response headers
+- a body preview
+- whether the body parses as JSON
+- `remoteId`
+- `contract.entry`
+
+That should make future “why did JSON parsing fail?” debugging much faster.
+
+### Practical operator guidance from this incident
+
+If the launcher reports an invalid manifest error, the first checks should now be:
+
+1. inspect the exact manifest URL being used
+2. open it directly in the browser or run:
+   - `ttmp/.../scripts/38-check-remote-manifest-json.sh <manifest-url>`
+3. confirm the response is actual JSON, not HTML
+4. only then debug the remote entry itself
+
+This is a small change, but it materially improves operability of the federation bootstrap path.
+
+## 2026-03-30 - Mount A Real Federation Registry Into The Deployed Host
+
+With the local federation smoke path proven, the next missing piece on the host side was deployment wiring. The launcher backend already supported:
+
+- `--federation-registry=<path>`
+- `GET /api/os/federation-registry`
+
+but the deployed `wesen-os` package still did not mount any actual registry file. That meant the backend endpoint would either 404 or depend on ad-hoc local flags instead of cluster configuration.
+
+### Goal of this slice
+
+Make both deployment packages carry a real registry file now, even before the first live remote publish. That gives us a stable contract:
+
+- the file exists
+- the launcher serves it
+- the frontend can query it
+- switching to the real remote later becomes a config-only change
+
+### Files updated
+
+In the source repo deploy package:
+
+- `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/deploy/k8s/wesen-os/configmap.yaml`
+- `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/deploy/k8s/wesen-os/deployment.yaml`
+
+In the Hetzner GitOps repo:
+
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/configmap.yaml`
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/deployment.yaml`
+
+### What changed
+
+I added `federation.registry.json` to both configmaps with this initial shape:
+
+- `version: 1`
+- one `inventory` remote
+- `mode: remote-manifest`
+- `enabled: false`
+- placeholder manifest URL:
+  - `https://assets.example.invalid/remotes/inventory/versions/latest/mf-manifest.json`
+
+And I updated both deployments to:
+
+- pass `--federation-registry=/config/federation.registry.json`
+- mount `/config/federation.registry.json` from the shared configmap volume
+
+### Why the remote starts disabled
+
+This is deliberate. We do **not** have the first live hosted manifest yet. So the initial deployed registry should be:
+
+- structurally real
+- operationally safe
+
+With `enabled: false`, the host can ship the registry endpoint today without attempting to load a nonexistent remote artifact. Once the first real remote publish succeeds, the next config-only step is:
+
+1. replace the placeholder URL with the real hosted manifest URL
+2. set `enabled: true`
+3. let GitOps roll that change out
+
+### Validation performed
+
+I validated all three relevant layers:
+
+1. Source deploy package render:
+   - `kubectl kustomize deploy/k8s/wesen-os`
+2. Hetzner GitOps package render:
+   - `kubectl kustomize /home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os`
+3. Launcher backend tests:
+   - `go test ./cmd/wesen-os-launcher/...`
+
+### Replay helper added
+
+To make this slice easy to re-verify, I added:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/39-check-host-federation-registry-config.sh`
+
+and captured its output in:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/39-host-federation-registry-config-check.md`
+
+That helper confirms both packages render:
+
+- the configmap key
+- the placeholder manifest URL
+- the disabled flag
+- the launcher arg
+- the mounted config file path
+
+### What this unlocks next
+
+This finishes the host-config half of the staging path.
+
+The next concrete step is no longer “teach the host where to read the registry.”
+
+It is:
+
+1. provision the real object storage bucket
+2. run the first non-dry-run `inventory` remote publish
+3. replace the placeholder URL in the deployed `federation.registry.json`
+4. flip `enabled` to `true`
+5. verify deployed `wesen-os` loads the real hosted manifest through `/api/os/federation-registry`
+
+That is the exact boundary we wanted to reach in this slice.
+
+## 2026-03-30 - First Live Inventory Remote Publish Path
+
+After wiring the host-side registry config, the next planned slice was the first live `inventory` remote publish. I used the existing Terraform and GitHub workflow machinery to push this through all the remaining operational steps.
+
+### What I checked first
+
+I re-opened the current storage and publish wiring:
+
+- Terraform federation stack:
+  - `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod/main.tf`
+  - `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod/variables.tf`
+  - `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod/outputs.tf`
+- inventory remote publish path:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-inventory/.github/workflows/publish-federation-remote.yml`
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/workspace-links/go-go-app-inventory/scripts/publish_federation_remote.py`
+
+I also checked the current GitHub configuration state for `go-go-app-inventory`:
+
+- `gh secret list --repo go-go-golems/go-go-app-inventory`
+- `gh variable list --repo go-go-golems/go-go-app-inventory`
+
+Result:
+
+- no object-storage secrets configured yet
+- no `INVENTORY_FEDERATION_PUBLIC_BASE_URL` variable configured yet
+
+That was expected, but useful to make explicit.
+
+### Operator environment check
+
+The Terraform repo already exposes the object-storage variables through `direnv`, so I checked whether they were actually usable or still placeholders.
+
+First I verified presence only:
+
+- `TF_VAR_object_storage_server=set`
+- `TF_VAR_object_storage_region=set`
+- `TF_VAR_object_storage_access_key=set`
+- `TF_VAR_object_storage_secret_key=set`
+
+That looked promising. So I tried the normal live operator path:
+
+1. `terraform init -reconfigure`
+2. `terraform plan`
+
+Using:
+
+- `AWS_PROFILE=manuel`
+- `direnv exec .`
+- `TF_VAR_public_base_url=https://scapegoat-federation-assets.${TF_VAR_object_storage_server}`
+
+### Important correction: `your-objectstorage.com` is the real Hetzner endpoint
+
+At this point, the user pointed out the actual Hetzner bucket-creation UI. That screenshot made the service contract clear:
+
+- the regional service endpoint for Falkenstein is:
+  - `fsn1.your-objectstorage.com`
+- bucket public URLs are derived from that regional host:
+  - `https://<bucket>.fsn1.your-objectstorage.com/<key>`
+
+So my earlier assumption was wrong. `fsn1.your-objectstorage.com` is not a fake placeholder here. It is the real regional S3-compatible host Hetzner expects.
+
+That changed the next step from “wait for a real endpoint” to “proceed with apply now.”
+
+### Helper scripts added and corrected
+
+To turn that from “tribal knowledge” into repeatable operations, I added:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/40-check-federation-storage-operator-env.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/41-seed-inventory-federation-gh-config.sh`
+
+What they do:
+
+`40-check-federation-storage-operator-env.sh`
+
+- loads the Terraform repo env through `direnv`
+- verifies required `TF_VAR_object_storage_*` values exist
+- computes the bucket public base URL
+- reports the effective bucket ACL and computed public URL
+
+`41-seed-inventory-federation-gh-config.sh`
+
+- reads the same live Terraform env
+- seeds `go-go-app-inventory` with:
+  - `HETZNER_OBJECT_STORAGE_ACCESS_KEY_ID`
+  - `HETZNER_OBJECT_STORAGE_SECRET_ACCESS_KEY`
+  - `HETZNER_OBJECT_STORAGE_BUCKET`
+  - `HETZNER_OBJECT_STORAGE_ENDPOINT`
+  - `HETZNER_OBJECT_STORAGE_REGION`
+- sets:
+  - `INVENTORY_FEDERATION_PUBLIC_BASE_URL`
+
+This second script was then run successfully after the endpoint assumption was corrected.
+
+### New playbook added
+
+I also added a dedicated ticket playbook:
+
+- `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/design/03-first-live-inventory-remote-publish-playbook.md`
+
+That playbook now defines the exact next operator sequence:
+
+1. replace placeholder object-storage endpoint in Terraform env
+2. apply federation bucket
+3. seed GitHub secrets/vars for inventory
+4. run the first non-dry-run remote publish
+5. capture the immutable manifest URL
+6. update GitOps host config to that immutable URL and enable the remote
+
+### Captured replay artifact
+
+I captured the current blocker state in:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/various/40-federation-storage-operator-env-check.md`
+
+### Live bucket apply
+
+With that corrected understanding, I updated the federation bucket stack defaults to match the real browser-delivery requirements:
+
+- bucket ACL:
+  - `public-read`
+- public base URL:
+  - `https://scapegoat-federation-assets.fsn1.your-objectstorage.com`
+
+Then I applied:
+
+- `terraform -chdir=storage/platform/federation-assets/envs/prod apply -auto-approve`
+
+Result:
+
+- bucket created:
+  - `scapegoat-federation-assets`
+- versioning enabled
+- outputs now show:
+  - `storage_endpoint_url = "https://fsn1.your-objectstorage.com"`
+  - `public_base_url = "https://scapegoat-federation-assets.fsn1.your-objectstorage.com"`
+
+### GitHub config seeded for inventory
+
+I then ran:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/41-seed-inventory-federation-gh-config.sh`
+
+That successfully wrote these secrets into `go-go-golems/go-go-app-inventory`:
+
+- `HETZNER_OBJECT_STORAGE_ACCESS_KEY_ID`
+- `HETZNER_OBJECT_STORAGE_SECRET_ACCESS_KEY`
+- `HETZNER_OBJECT_STORAGE_BUCKET`
+- `HETZNER_OBJECT_STORAGE_ENDPOINT`
+- `HETZNER_OBJECT_STORAGE_REGION`
+
+and this variable:
+
+- `INVENTORY_FEDERATION_PUBLIC_BASE_URL=https://scapegoat-federation-assets.fsn1.your-objectstorage.com`
+
+### First live remote publish
+
+The GitHub workflow is not on `go-go-golems/go-go-app-inventory` `main` yet, so I did the first live publish manually with the exact same uploader logic:
+
+1. built the remote:
+   - `npm run build:federation -w workspace-links/go-go-app-inventory/apps/inventory`
+2. published it:
+   - `python3 scripts/publish_federation_remote.py --source-dir apps/inventory/dist-federation --remote-id inventory --version sha-f69ca10 --bucket scapegoat-federation-assets --endpoint https://fsn1.your-objectstorage.com --region fsn1 --public-base-url https://scapegoat-federation-assets.fsn1.your-objectstorage.com`
+
+Immutable manifest URL:
+
+- `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-f69ca10/mf-manifest.json`
+
+I validated that URL with the generic manifest checker:
+
+- `JSON parse: OK`
+- `remoteId: inventory`
+- `contract.entry: ./inventory-host-contract.js`
+
+### Inventory GitHub Actions workflow PR
+
+I also rebased the local inventory branch onto `origin/main`, pushed it to:
+
+- `origin/task/inventory-federation-remote-publish`
+
+and opened:
+
+- `go-go-golems/go-go-app-inventory#9`
+
+That PR is the GitHub-side workflow-registration step needed so the same publish path can run in Actions instead of only from local shell.
+
+### Host config updated to the real manifest
+
+With the immutable manifest URL available, I updated both host config packages to use the real URL and enable the remote:
+
+- local source deploy package:
+  - `/home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/deploy/k8s/wesen-os/configmap.yaml`
+- Hetzner GitOps package:
+  - `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/configmap.yaml`
+
+The deployed host config now points to:
+
+- `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-f69ca10/mf-manifest.json`
+
+and sets:
+
+- `"enabled": true`
+
+### Remaining gap after this slice
+
+We now have:
+
+- live public bucket
+- live immutable remote manifest
+- host config updated to that live manifest
+- inventory workflow PR opened for Actions-based publishes
+
+The remaining work is:
+
+1. get the inventory workflow PR merged so GitHub Actions can own future publishes
+2. get the GitOps config change pushed/merged so deployed `wesen-os` actually serves the updated registry
+3. verify deployed `wesen-os` loads the hosted remote end to end
+
+## 2026-03-30: Fixing The Inventory Publish Workflow Review Blocker
+
+The first review comment on `go-go-golems/go-go-app-inventory#9` was correct: the new `publish-federation-remote.yml` workflow built the remote with:
+
+- `npm run build:federation -w apps/inventory`
+
+but that script still depended on:
+
+- `vmmeta:generate`
+
+and that generation path called into a sibling checkout:
+
+- `../../../go-go-os-backend/cmd/go-go-os-backend`
+
+That sibling is present in my local workspace through `wesen-os/workspace-links`, but it is not present in a normal standalone GitHub Actions checkout of `go-go-app-inventory`. In other words, the workflow as opened in PR `#9` would have failed on the hosted runner before it ever reached the object-storage upload step.
+
+### What I changed
+
+I changed the inventory repo to stop hardcoding the backend checkout assumption into the package script path:
+
+- `apps/inventory/package.json`
+- `scripts/generate_inventory_vmmeta.sh`
+
+The new wrapper script now does this:
+
+1. if a real `go-go-os-backend` generator checkout exists, run the generator
+2. otherwise, if the committed generated artifacts already exist, reuse them and exit successfully
+3. otherwise, fail hard
+
+That is the right CI contract for this repo because the generated VM metadata files are already committed:
+
+- `apps/inventory/src/domain/generated/inventory.vmmeta.json`
+- `apps/inventory/src/domain/generated/inventoryVmmeta.generated.ts`
+
+### Subtle bug caught while fixing it
+
+My first version of the wrapper ran `go run ...` from the repo root and passed absolute paths into the generator output flags. That regenerated the TypeScript artifact with absolute filesystem paths embedded in it, which is exactly the kind of nondeterministic output we do not want.
+
+I corrected that by changing the wrapper to `cd` into `apps/inventory` first and then invoke the generator with the same relative paths the repo already expects:
+
+- `src/domain/vm/cards`
+- `src/domain/vm/docs`
+- `src/domain/generated/inventory.vmmeta.json`
+- `src/domain/generated/inventoryVmmeta.generated.ts`
+
+### Validation I ran
+
+I validated both the fallback and the real build path:
+
+1. forced fallback mode:
+   - `GO_GO_OS_BACKEND_CMD=/nonexistent ./scripts/generate_inventory_vmmeta.sh`
+   - expected result: reuse committed artifacts and exit `0`
+2. full producer build:
+   - `npm run build:federation -w apps/inventory`
+   - expected result: remote build still succeeds with the wrapper in place
+
+I also added a replay helper in this ticket:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/42-check-inventory-vmmeta-fallback.sh`
+
+### Git state and PR state
+
+The fix was committed in the inventory repo as:
+
+- `8a584c2` — `Make inventory vmmeta generation CI-safe`
+
+and pushed onto the existing PR branch:
+
+- `origin/task/inventory-federation-remote-publish`
+
+So PR `#9` now contains both:
+
+- the original federation publish workflow
+- the CI-safe `vmmeta` fix that makes that workflow runnable on standard GitHub-hosted runners
+
+## 2026-03-30: Replacing The Temporary VMMeta Fallback With A Pinned Go Tool Module
+
+The temporary fallback wrapper solved the immediate review comment, but it still encoded the wrong long-term contract: it treated committed generated artifacts as the primary portability mechanism. That is acceptable as a stopgap, but the cleaner shape is for `go-go-app-inventory` to declare the generator as an explicit tooling dependency and invoke it through the Go toolchain.
+
+The user pointed out that `go-go-os-backend` is already tagged and published at `v0.0.5`, which changes the tradeoff completely. Once that is true, there is no reason for `vmmeta:generate` to depend on a sibling source checkout. The inventory repo can pin the released generator and run it directly.
+
+### What I changed
+
+I switched the inventory repo from the temporary fallback wrapper to a real pinned tooling module:
+
+- `workspace-links/go-go-app-inventory/tools/go.mod`
+- `workspace-links/go-go-app-inventory/tools/go.sum`
+- `workspace-links/go-go-app-inventory/scripts/generate_inventory_vmmeta.sh`
+
+The new generation path is:
+
+- `GOWORK=off go tool -modfile=tools/go.mod go-go-os-backend vmmeta generate ...`
+
+That does three important things:
+
+1. it pins the generator version in a reviewable file
+2. it avoids polluting the inventory runtime module with tool-only transitive dependencies
+3. it disables the enclosing `wesen-os` workspace while running the tool, which is necessary for `-modfile` to work predictably from inside the nested checkout
+
+### Why I did not keep the first `go get -tool` attempt in the main module
+
+I first proved the concept by adding the tool directly to the inventory repo's main `go.mod`. That worked, but it also upgraded the runtime dependency on `github.com/go-go-golems/go-go-os-backend` and pulled a long tail of tool-only transitive dependencies into the main module graph.
+
+That was too noisy for a workflow fix. The `tools/` submodule keeps the repo honest:
+
+- app runtime dependencies stay where they were
+- tool dependencies are explicit but isolated
+
+### Go workspace edge I had to solve
+
+The first isolated `tools/` attempt still failed with:
+
+- `go: no such tool "go-go-os-backend"`
+
+and `-modfile` initially failed with:
+
+- `go: -modfile cannot be used in workspace mode`
+
+The reason is that this repo is being worked on inside the larger `wesen-os` checkout, which enables Go workspace mode from the parent tree. The fix was not to abandon the tool module, but to force the command into standalone module mode for the tool invocation:
+
+- `GOWORK=off`
+
+Once I did that, the pinned tool resolved correctly from `tools/go.mod`.
+
+### Validation I ran
+
+I validated the final setup with:
+
+1. tool resolution:
+   - `GOWORK=off go tool -modfile=tools/go.mod go-go-os-backend --help`
+2. direct generator path:
+   - `./scripts/generate_inventory_vmmeta.sh`
+3. full producer build:
+   - `npm run build:federation -w apps/inventory`
+
+All three succeeded.
+
+I also added a replay helper:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/43-check-inventory-go-tooling.sh`
+
+### What this changes architecturally
+
+This is a real improvement over the sibling-checkout and fallback approaches:
+
+- the generator stays owned by `go-go-os-backend`
+- the inventory repo consumes it as a pinned released tool
+- there is still no runtime dependency loop
+- GitHub Actions no longer depends on undocumented workspace layout
+
+That is the right contract for future app repos too.
+
+## 2026-03-31: First Successful Inventory Remote Publish From GitHub `main`
+
+With the Go toolchain cleanup merged, I moved from local validation back to the real target: the `publish-federation-remote` workflow on `go-go-app-inventory` `main`.
+
+### What failed before the final success
+
+This took three real CI failures to flush out the remaining assumptions:
+
+1. run `23775938383`
+   - failed in `npm ci`
+   - error: `Unsupported URL Type "workspace:": workspace:*`
+   - cause: the workflow was still trying to install `@go-go-golems/os-*` as local workspace deps in a repo that does not contain the frontend workspace
+2. run `23776036459`
+   - failed in `vmmeta:generate`
+   - error: `open src/domain/vm/docs: no such file or directory`
+   - cause: clean GitHub checkouts do not include the empty `src/domain/vm/docs/` directory that exists locally
+3. run `23776290887`
+   - failed in the Vite build
+   - cause: `apps/inventory/tsconfig.json` still pointed at sibling `../../../go-go-os-frontend/...` paths, so even after install succeeded, the build leaked back into a nonexistent local workspace checkout
+
+I addressed those failures in three inventory PRs:
+
+- PR `#10`
+  - install published platform packages from GitHub Packages instead of using `workspace:*` in CI
+- PR `#11`
+  - make `vmmeta` generation tolerate a missing `src/domain/vm/docs/` directory
+- PR `#12`
+  - split `tsconfig.json` into a published-safe base plus `tsconfig.workspace.json` for local linked-workspace typecheck
+
+In parallel, I republished the frontend package set so the consumer workflow had a fresh coherent platform version:
+
+- `go-go-os-frontend` run `23776237507`
+- published `os-inventory-stack` at `0.1.0-canary.5`
+
+I also updated the inventory repo variable:
+
+- `GO_GO_OS_PLATFORM_VERSION=0.1.0-canary.5`
+
+### The successful run
+
+After PR `#12` merged on `main`, I manually dispatched:
+
+- workflow: `publish-federation-remote.yml`
+- repo: `go-go-golems/go-go-app-inventory`
+- ref: `main`
+- inputs:
+  - `dry_run=false`
+
+The successful run is:
+
+- `https://github.com/go-go-golems/go-go-app-inventory/actions/runs/23776424456`
+
+It completed all critical steps:
+
+- checkout
+- setup Go / Node
+- configure GitHub Packages auth
+- resolve published platform version
+- rewrite `workspace:*` `@go-go-golems/os-*` dependencies
+- install dependencies
+- build `apps/inventory/dist-federation`
+- upload the built artifact to GitHub Actions artifacts
+- publish the federation files to Hetzner object storage
+- publish the summary with the immutable manifest URL
+
+### Concrete published artifact
+
+The workflow published:
+
+- remote version: `sha-1a32286`
+- manifest URL: `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-1a32286/mf-manifest.json`
+
+I validated the manifest directly with:
+
+- `curl -fsSL https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-1a32286/mf-manifest.json`
+
+The manifest contents are the expected minimal contract:
+
+- `version: 1`
+- `remoteId: inventory`
+- `compatiblePlatformRange: ^0.1.0`
+- contract entry: `./inventory-host-contract.js`
+- export name: `inventoryHostContract`
+
+I added a replay helper for this exact artifact check:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/44-check-live-inventory-manifest.sh`
+
+### Host config follow-up
+
+At the moment this run succeeded, both host-side configmaps were still pinned to the earlier manual upload:
+
+- `sha-f69ca10`
+
+I updated both to the CI-produced immutable manifest URL:
+
+- `deploy/k8s/wesen-os/configmap.yaml`
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/gitops/kustomize/wesen-os/configmap.yaml`
+
+Both now point at:
+
+- `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-1a32286/mf-manifest.json`
+
+### Why this matters
+
+This is the first end-to-end proof of the intended federation remote delivery path:
+
+- app repo `main`
+- GitHub Actions build
+- published platform packages from GitHub Packages
+- pinned Go tool dependency for `vmmeta`
+- upload to Hetzner object storage
+- immutable manifest URL
+- host config ready to consume that exact URL
+
+That is the point where the inventory remote stops being a manually staged experiment and becomes a real CI-produced deployment artifact.
+
+## 2026-03-31: Fixing The Root Repo Inventory Gitlink After The First Successful Remote Publish
+
+Once the inventory publish workflow was green, I checked the open `wesen-os` PR because the deployed host was still running an older image and the next normal step is to merge the source repo changes and let `publish-host-image` build a fresh host image from `main`.
+
+That immediately exposed a separate source-repo problem:
+
+- PR `wesen/wesen-os#10`
+- failing run: `https://github.com/wesen/wesen-os/actions/runs/23776538524`
+- failing job: `docker`
+
+### Actual failure cause
+
+This was not a Dockerfile problem and not a federation runtime bug. The workflow failed during `actions/checkout` while fetching recursive submodules:
+
+- `fatal: Fetched in submodule path 'workspace-links/go-go-app-inventory', but it did not contain 6deb885c6e4f6bf2a58b6ccf63661ac89c9c47b5`
+
+The reason is that the root repo gitlink for:
+
+- `workspace-links/go-go-app-inventory`
+
+still pointed at local commit:
+
+- `6deb885c6e4f6bf2a58b6ccf63661ac89c9c47b5`
+
+That commit existed only in my local inventory checkout during development. It was never the final remote-reachable commit that GitHub Actions can fetch from the public inventory repository.
+
+### What I changed
+
+I updated the root repo submodule checkout to the merged inventory `main` commit:
+
+- `1a3228632b308cafc180076503d5b1cc2eb41e66`
+
+That commit contains the full merged chain needed for the hosted remote workflow:
+
+- PR `#9`
+- PR `#10`
+- PR `#11`
+- PR `#12`
+
+I added a replay helper for this exact sanity check:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/45-check-root-inventory-gitlink.sh`
+
+### Why this matters
+
+This is the same class of problem we already had to normalize earlier for other submodules: a source repo that uses recursive submodules cannot rely on local detached-head submodule commits if GitHub-hosted workflows need to check the tree out from scratch.
+
+The practical rule is:
+
+- before expecting `wesen-os` CI to pass, every submodule gitlink in the branch must point at a commit that is fetchable from that submodule's remote
+
+In this case, the inventory remote publish path itself is already healthy. The remaining blocker to getting the deployed host onto the newer federation-aware image is just making the root source PR mergeable by updating the gitlink to the real merged inventory commit.
+
+### Immediate next blocker after inventory
+
+As soon as I pushed the inventory gitlink repair, the next `publish-host-image` run for `wesen/wesen-os#10` progressed one step further and then failed on the same class of problem for the frontend submodule:
+
+- failing run: `https://github.com/wesen/wesen-os/actions/runs/23776607042`
+- failing submodule commit: `workspace-links/go-go-os-frontend`
+- unreachable gitlink in the PR branch: `2561accc2205e40fe5ba5615f6c8eccdb24c1151`
+
+That commit was the local frontend commit where the federation contract work originally lived before the frontend PR merged. The actual merged remote-reachable frontend `main` commit is:
+
+- `c0a24bf00113246c4c9bf5f29dddda3527796cf6`
+
+I updated the local frontend submodule checkout to that merged commit and added another replay helper:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/46-check-root-frontend-gitlink.sh`
+
+So the new checklist for keeping this source PR mergeable is now explicit:
+
+1. inventory gitlink must point at merged `main`
+2. frontend gitlink must point at merged `main`
+3. only then can `publish-host-image` get past recursive checkout and exercise the actual Docker build path
+
+## 2026-03-31: Fixing Object Storage CORS For The Live Hosted Remote
+
+After the deployed host started loading the hosted inventory manifest URL, the next real browser failure moved out of the host entirely and into object storage:
+
+- deployed page: `https://wesen-os.yolo.scapegoat.dev/`
+- manifest URL: `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-1a32286/mf-manifest.json`
+- browser error:
+  - `Cross-Origin Request Blocked`
+  - `Access-Control-Allow-Origin missing`
+
+That is the expected next step in the rollout sequence:
+
+- host config is correct
+- manifest exists and is public
+- browser fetch still fails because the bucket does not yet emit CORS headers for the host origin
+
+### What I changed
+
+I made the desired federation bucket CORS policy explicit in the Terraform stack:
+
+- `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod/main.tf`
+- `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod/variables.tf`
+- `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod/outputs.tf`
+
+The stack now records the intended browser policy with:
+
+- allowed origins:
+  - `https://wesen-os.yolo.scapegoat.dev`
+  - `http://localhost:4175`
+  - `http://127.0.0.1:4175`
+- allowed methods:
+  - `GET`
+  - `HEAD`
+- allowed headers:
+  - `*`
+- exposed headers:
+  - `ETag`
+  - `Content-Length`
+  - `Content-Type`
+  - `x-amz-version-id`
+
+The MinIO Terraform provider in this repo does not manage bucket CORS directly, so I added reproducible operator helpers in the ticket:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/47-apply-federation-bucket-cors.sh`
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/48-check-federation-bucket-cors.sh`
+
+`47-...` applies the policy with:
+
+- `aws s3api put-bucket-cors`
+
+and immediately reads it back with:
+
+- `aws s3api get-bucket-cors`
+
+`48-...` validates the browser-facing response with:
+
+- `curl -I -H "Origin: ..."`
+
+### Why I treated this as infrastructure, not app code
+
+This is not something the launcher or the remote should paper over. The browser is enforcing cross-origin fetch rules correctly. The durable fix belongs at the asset-host boundary.
+
+That means:
+
+- the bucket must advertise explicit cross-origin read permissions for the host origin
+- local dev origins should be included too so the hosted remote can still be exercised from the Vite dev server
+
+Once this policy is applied, the next verification step is straightforward:
+
+1. confirm the manifest response now includes `Access-Control-Allow-Origin`
+2. reload `https://wesen-os.yolo.scapegoat.dev/`
+3. verify the hosted remote loads without the manifest fetch failure
+
+### Live apply and verification
+
+I applied the live bucket CORS rule with:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/47-apply-federation-bucket-cors.sh`
+
+The bucket readback confirmed the intended rule:
+
+- origins:
+  - `https://wesen-os.yolo.scapegoat.dev`
+  - `http://localhost:4175`
+  - `http://127.0.0.1:4175`
+- methods:
+  - `GET`
+  - `HEAD`
+
+I then verified the live response headers with:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/48-check-federation-bucket-cors.sh`
+- `curl -I -H 'Origin: https://wesen-os.yolo.scapegoat.dev' https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-1a32286/inventory-host-contract.js`
+
+Both the manifest and the remote JS entry now return:
+
+- `access-control-allow-origin: https://wesen-os.yolo.scapegoat.dev`
+
+I also rechecked the deployed host runtime registry:
+
+- `curl -fsSL https://wesen-os.yolo.scapegoat.dev/api/os/federation-registry`
+
+and it now returns JSON, not the earlier HTML fallback:
+
+- remote id: `inventory`
+- mode: `remote-manifest`
+- manifest URL: `https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-1a32286/mf-manifest.json`
+
+### One infrastructure footnote
+
+I attempted a fresh `terraform validate` in the federation bucket stack, but the command tried to refresh remote state and hit an unrelated access problem on the shared tfstate bucket:
+
+- `403 Forbidden` on `go-go-golems-tf-state`
+
+That does not invalidate the live CORS fix. The policy was applied successfully with the S3 API against the actual federation bucket, and the live HTTP responses prove it.

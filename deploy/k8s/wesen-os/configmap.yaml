@@ -12,4 +12,15 @@ data:
           step_settings_patch:
             ai-chat:
               ai-engine: gpt-4.1-mini
-
+  federation.registry.json: |
+    {
+      "version": 1,
+      "remotes": [
+        {
+          "remoteId": "inventory",
+          "mode": "remote-manifest",
+          "enabled": true,
+          "manifestUrl": "https://scapegoat-federation-assets.fsn1.your-objectstorage.com/remotes/inventory/versions/sha-1a32286/mf-manifest.json"
+        }
+      ]
+    }

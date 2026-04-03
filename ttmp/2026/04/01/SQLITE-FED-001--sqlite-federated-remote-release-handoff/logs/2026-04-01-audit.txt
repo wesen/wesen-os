@@ -1,0 +1,38 @@
+== root repo ==
+ M ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/diary.md
+ M ttmp/2026/03/31/FEDERATION-RELEASE-001--generalize-remote-publish-and-gitops-handoff/tasks.md
+ M workspace-links/geppetto
+ M workspace-links/go-go-app-inventory
+ m workspace-links/go-go-app-sqlite
+ M workspace-links/go-go-os-chat
+ M workspace-links/pinocchio
+?? .claude/
+?? apps/os-launcher/public/
+?? docs/window-resize-behavior.md
+?? ttmp/2026/04/01/SQLITE-FED-001--sqlite-federated-remote-release-handoff/logs/
+
+== infra-tooling ==
+task/federation-publish-helper
+c943970 Generalize federation publish helper and JSON targets
+d4731b3 Add shared federation GitOps PR helper
+5caadb8 Fix infra-tooling review findings
+
+== go-go-app-sqlite ==
+task/sqlite-federation-release-reuse
+6a373b8 Update sqlite paths for os-* package folders
+0bdadf6 Rename sqlite app dependencies to @go-go-golems
+908df7e Fix sqlite runtime surface navigation payloads
+661ca26 Fix sqlite Redux Toolkit test stub addCase handling
+30caa5d Rename sqlite launcher stack/card paths to bundle/surface
+ M apps/sqlite/package.json
+?? apps/sqlite/src/federation-shared/
+?? apps/sqlite/src/host.ts
+?? apps/sqlite/vite.federation.config.ts
+
+== go-go-app-inventory ==
+task/inventory-infra-tooling-federation-release
+f61a6b1 Target generated federation registry file
+8bee502 Use read token for GitOps dry-run checkout
+fea7b7a Consume infra-tooling main for PR helper
+d3e284a Open GitOps PRs for federation publishes
+c3fdb6e Consume infra-tooling main after merge

@@ -166,11 +166,26 @@ describe('launcher host wiring', () => {
   it('imports inventory module/reducers from public package exports only', () => {
     const moduleSource = readFileSync(new URL('../app/modules.tsx', import.meta.url), 'utf8');
     const storeSource = readFileSync(new URL('../app/store.ts', import.meta.url), 'utf8');
+    const docsSource = readFileSync(new URL('../app/registerAppsBrowserDocs.ts', import.meta.url), 'utf8');
+    const contractsSource = readFileSync(new URL('../app/localFederatedAppContracts.ts', import.meta.url), 'utf8');
+    const registrySource = readFileSync(new URL('../app/federationRegistry.ts', import.meta.url), 'utf8');
 
-    expect(moduleSource).toContain("@go-go-golems/inventory/launcher");
-    expect(storeSource).toContain("@go-go-golems/inventory/reducers");
+    expect(contractsSource).toContain("@go-go-golems/inventory/host");
+    expect(registrySource).toContain("mode: 'local-package'");
+    expect(registrySource).toContain("contractExport: '@go-go-golems/inventory/host'");
+    expect(moduleSource).not.toContain("@go-go-golems/inventory/");
+    expect(storeSource).not.toContain("@go-go-golems/inventory/");
+    expect(docsSource).not.toContain("@go-go-golems/inventory/");
     expect(moduleSource).not.toContain('@go-go-golems/inventory/src/');
     expect(storeSource).not.toContain('@go-go-golems/inventory/src/');
+    expect(docsSource).not.toContain('@go-go-golems/inventory/src/');
+  });
+
+  it('does not statically import the federated sqlite launcher module', () => {
+    const moduleSource = readFileSync(new URL('../app/modules.tsx', import.meta.url), 'utf8');
+
+    expect(moduleSource).not.toContain("@go-go-golems/sqlite/launcher");
+    expect(moduleSource).not.toContain('sqliteLauncherModule');
   });
 
   it('prevents placeholder module labels from being reintroduced', () => {

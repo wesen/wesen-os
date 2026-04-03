@@ -123,10 +123,24 @@
 
 ## Phase 4: Define The Federation Contract
 
-- [ ] Decide the remote loading format:
+- [x] Decide the remote loading format:
   - Module Federation manifest (`mf-manifest.json`) preferred
   - `remoteEntry.js` only if manifest mode is not workable in current tooling
-- [ ] Freeze the minimum remote contract:
+- [x] Freeze `inventory` as the first federation candidate and capture the current host touchpoints.
+- [x] Collapse the current `inventory` host surface behind a single public export path:
+  - recommended: `@go-go-golems/inventory/host`
+  - move launcher module, shared reducers, docs metadata, and runtime bundles behind one contract object
+- [x] Add a generic host-contract type to `@go-go-golems/os-shell` so remotes and the host share one TypeScript boundary.
+- [x] Switch `apps/os-launcher` to consume the inventory host contract instead of separate `launcher`, `reducers`, and root metadata imports.
+- [x] Update host tests so they enforce the single-entrypoint rule for `inventory`.
+- [x] Centralize launcher-side package touchpoints in one local seam:
+  - `apps/os-launcher/src/app/localFederatedAppContracts.ts`
+  - production launcher files should stop importing `@go-go-golems/inventory/*` directly
+- [x] Record the remaining host/runtime gaps after the contract collapse:
+  - static import still exists
+  - no dynamic remote loader yet
+  - no runtime manifest registry yet
+- [x] Freeze the minimum remote contract:
   - remote id
   - version
   - manifest URL
@@ -151,44 +165,140 @@
 
 ## Phase 5: Build The First Federated Remote
 
-- [ ] Pick the first remote repo.
-- [ ] Add module federation build configuration there.
+- [x] Pick the first remote repo.
+- [x] First remote repo:
+  - `workspace-links/go-go-app-inventory/apps/inventory`
+- [x] Introduce a dedicated federation-facing export in `inventory`:
+  - stable public contract object for the host
+  - keep existing package exports working until host migration is complete
+- [x] Decide the eventual exposed Module Federation module name for `inventory`:
+  - likely `./host`
+  - alternatives only if current tooling forces a different name
+- [x] Add a launcher-side adapter so the host can consume the same contract from both local package mode and future remote mode.
+- [x] Add module federation build configuration there.
+- [x] Add an initial manifest-emitting remote build for `inventory`:
+  - `dist-federation/mf-manifest.json`
+  - `dist-federation/inventory-host-contract.js`
 - [ ] Add a stable exposed entrypoint for the host:
   - for example `./launcher`
 - [ ] Ensure the remote no longer depends on sibling-source aliases.
-- [ ] Build a versioned manifest plus chunks.
-- [ ] Add a local dev mode that still works before full CDN/K3s rollout.
-- [ ] Validate the host can load the remote in a local or staging environment.
+- [x] Build a versioned manifest plus chunks.
+- [x] Add a local real-artifact smoke path before CDN rollout:
+  - build the real inventory federation artifact
+  - load the real manifest through the launcher loader
+- [x] Validate the host can load the remote in a local real-artifact environment.
+- [x] Wire the async manifest loader into launcher bootstrap and `src/main.tsx`.
+- [x] Add an environment-driven inventory remote-manifest path for launcher startup:
+  - `VITE_INVENTORY_REMOTE_MANIFEST_URL`
+  - `VITE_INVENTORY_FEDERATION_ENABLED`
+- [x] Validate the host can boot in a real browser with the remote-manifest registry and show the remote-provided Inventory launcher entry.
+- [x] Replace duplicate remote React/react-redux copies with a host-installed shared-singleton strategy for browser remotes.
+- [x] Validate the host can render remote Inventory windows in a browser runtime without React hook/context crashes.
+- [x] Validate backend-integrated remote runtime flows in a browser environment with a live inventory backend:
+  - profile list fetch
+  - timeline fetch
+  - chat websocket
 
 ## Phase 6: Host Remote Assets On Hetzner Object Storage
 
-- [ ] Define bucket/container layout, for example:
+- [x] Define bucket/container layout, for example:
   - `remotes/<remote-id>/<version>/mf-manifest.json`
   - `remotes/<remote-id>/<version>/assets/*`
-- [ ] Configure CORS for the host domain.
-- [ ] Set caching policy:
+- [x] Align the first remote asset publish path with the Hetzner K3s object-storage model already documented for backups:
+  - Terraform-owned bucket
+  - Vault-delivered runtime credentials
+  - S3-compatible upload flow from GitHub Actions
+- [x] Create a dedicated Terraform stack for federation asset storage:
+  - `/home/manuel/code/wesen/terraform/storage/platform/federation-assets/envs/prod`
+  - current default bucket name: `scapegoat-federation-assets`
+- [x] Configure CORS for the host domain.
+- [x] Set caching policy:
   - immutable cache headers on versioned assets
   - short-lived cache or no-cache on moving aliases, if any
 - [ ] Decide whether to expose a moving alias like `stable/current`.
-- [ ] Add a GitHub Actions workflow in each remote repo that uploads remote assets after build.
+- [x] Add the first remote-repo GitHub Actions workflow that uploads remote assets after build:
+  - `workspace-links/go-go-app-inventory/.github/workflows/publish-federation-remote.yml`
+- [x] Validate the first non-dry-run remote publish on GitHub `main` against:
+  - published `@go-go-golems/os-*` canary packages
+  - the pinned `go-go-os-backend` Go tool
+  - real Hetzner object storage credentials
+  - real immutable manifest URL output
+- [ ] Generalize the remote asset upload workflow pattern across each remote repo.
+- [x] Add a fail-fast operator env check for the federation-assets Terraform stack.
+- [x] Correct the operator assumption:
+  - `fsn1.your-objectstorage.com` is the real Hetzner regional service endpoint, not a fake placeholder
+- [x] Re-run the operator env check until it passes.
+- [x] Apply the federation-assets Terraform stack with live Hetzner credentials.
+- [x] Decide and provision the real public base URL for federation assets:
+  - direct bucket URL vs dedicated domain/CNAME
+  - chosen initial path: direct bucket URL
+  - `https://scapegoat-federation-assets.fsn1.your-objectstorage.com`
+- [x] Add a replayable GitHub secret/variable seeding helper for `go-go-app-inventory`.
+- [x] Seed the resulting object-storage credentials into GitHub for `go-go-app-inventory`.
+- [ ] Seed the resulting object-storage credentials into Vault or the long-term operator secret store.
+- [x] Publish the first real inventory remote artifact manually with the uploader script.
+- [ ] Run the first non-dry-run `publish-federation-remote` GitHub workflow in `go-go-app-inventory`.
+  - [x] Open the workflow-registration PR:
+    - `go-go-golems/go-go-app-inventory#9`
+  - [x] Fix the CI review blocker in that PR:
+    - `build:federation` depended on `go-go-os-backend` via `vmmeta:generate`
+    - replace the sibling-checkout assumption with a pinned Go tool module at `tools/go.mod`
+    - run the generator through `GOWORK=off go tool -modfile=tools/go.mod go-go-os-backend ...`
+- [x] Capture the first real immutable manifest URL.
+- [x] Replace the placeholder manifest URL in deployed `wesen-os` config with that immutable manifest URL.
+- [x] Flip the deployed `inventory` remote from `enabled: false` to `enabled: true`.
+- [ ] Verify deployed `wesen-os` serves the updated registry from `/api/os/federation-registry`.
+- [ ] Verify deployed `wesen-os` loads the hosted `inventory` remote successfully.
 - [ ] Add rollback rules:
   - old versions remain available
   - host registry can be flipped back to an older manifest URL
 
 ## Phase 7: Teach The Host To Load Remotes Dynamically
 
-- [ ] Add a remote registry loader to `apps/os-launcher`.
-- [ ] Decide remote registry source:
+- [x] Add a remote registry loader to `apps/os-launcher`.
+- [x] Add an explicit federation-registry shape to `apps/os-launcher` for the local bootstrap path.
+- [x] Add a default local registry entry for `inventory`:
+  - `mode: local-package`
+  - `contractExport: @go-go-golems/inventory/host`
+- [x] Keep unsupported registry modes fail-fast in the local resolver instead of silently ignoring them.
+- [x] Implement a manifest-backed contract loader path:
+  - fetch remote manifest JSON
+  - resolve entry URL relative to the manifest
+  - dynamic-import the contract module
+  - validate the exported host contract shape
+- [x] Add an environment-driven registry resolution path for local/browser proof:
+  - dedicated inventory manifest URL env
+  - optional JSON registry env override
+- [ ] Decide the long-term remote registry source:
   - static JSON shipped with the host
   - environment-generated JSON
   - backend-served config endpoint
+- [x] Add a host-served federation registry endpoint for runtime bootstrap:
+  - `GET /api/os/federation-registry`
+  - serves a mounted JSON file when configured
+  - falls back to local-package mode when absent
+- [x] Mount a real `federation.registry.json` into the deployed host config.
+  - [x] Add `/config/federation.registry.json` to the host deployment package in `wesen-os`.
+  - [x] Add `/config/federation.registry.json` to the Hetzner GitOps package for `wesen-os`.
+  - [x] Wire `--federation-registry=/config/federation.registry.json` into the launcher args.
+  - [x] Seed a safe initial registry with the `inventory` remote present but disabled.
+- [ ] Replace the placeholder manifest URL in the deployed registry with the first real hosted staging manifest URL after the non-dry-run remote publish succeeds.
 - [ ] Add client-side timeout/retry/failure UI.
+- [x] Improve invalid manifest diagnostics so launcher bootstrap errors include:
+  - the manifest URL
+  - the JSON parse error
+  - the first response bytes, which helps distinguish HTML/404 fallback from a real manifest
 - [ ] Add tracing/logging so remote load failures are diagnosable.
 - [ ] Add feature flags so staging can enable a remote before production.
 - [ ] Add a degraded mode when a remote is absent:
   - hide launcher entry
   - show unavailable state
   - fallback to built-in module only where explicitly intended
+- [ ] Add a shared-singleton runtime contract for browser remotes:
+  - [x] `react`
+  - [x] `react/jsx-runtime`
+  - [x] `react-redux`
+  - [ ] decide whether additional host-owned libraries should also move into the shared-runtime contract
 
 ## Phase 8: End-To-End CI/CD
 

@@ -2,14 +2,13 @@ import { createLauncherStore } from '@go-go-golems/os-shell';
 import { booksReducer } from '@go-go-golems/book-tracker-debug/reducers';
 import { chatProfilesReducer, chatSessionReducer, chatWindowReducer, timelineReducer } from '@go-go-golems/os-chat';
 import { activitiesReducer, companiesReducer, contactsReducer, dealsReducer } from '@go-go-golems/crm/reducers';
-import { inventoryReducer, salesReducer } from '@go-go-golems/inventory/reducers';
 import { tasksReducer } from '@go-go-golems/todo/reducers';
+import { collectRuntimeFederatedSharedReducers } from './localFederatedAppContracts';
 import { launcherModules } from './modules';
 
 export const { store, createStore: createLauncherAppStore } = createLauncherStore(launcherModules, {
   sharedReducers: {
-    inventory: inventoryReducer,
-    sales: salesReducer,
+    ...collectRuntimeFederatedSharedReducers(),
     timeline: timelineReducer,
     chatSession: chatSessionReducer,
     chatWindow: chatWindowReducer,

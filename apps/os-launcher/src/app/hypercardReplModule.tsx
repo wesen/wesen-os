@@ -22,13 +22,12 @@ import {
   selectRuntimeSessionState,
   selectRuntimeSurfaceState,
 } from '@go-go-golems/os-scripting';
-import { INVENTORY_VM_PACK_METADATA } from '@go-go-golems/inventory';
-import { inventoryStack } from '@go-go-golems/inventory/launcher';
 import { MacRepl, type ReplEffect, type TerminalLine } from '@go-go-golems/os-repl';
 import { useCallback, useEffect, useMemo } from 'react';
 import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { STACK } from '../domain/stack';
 import { OS_LAUNCHER_VM_PACK_METADATA } from '../domain/vmmeta';
+import { getRuntimeFederatedAppContract } from './localFederatedAppContracts';
 
 const APP_ID = 'hypercard-repl';
 const CONSOLE_INSTANCE_ID = 'console';
@@ -49,12 +48,21 @@ interface BundleLibraryEntry {
 }
 
 const RUNTIME_BROKER = createRuntimeBroker();
+const INVENTORY_CONTRACT = getRuntimeFederatedAppContract('inventory');
+if (!INVENTORY_CONTRACT) {
+  throw new Error('Missing runtime federated contract for "inventory".');
+}
+const INVENTORY_STACK = INVENTORY_CONTRACT.runtimeBundles?.[0];
+if (!INVENTORY_STACK) {
+  throw new Error('Runtime federated contract for "inventory" is missing its primary runtime bundle.');
+}
+const INVENTORY_VM_PACK_METADATA = INVENTORY_CONTRACT.docsMetadata;
 
 const BUNDLE_LIBRARY: Record<string, BundleLibraryEntry> = {
   inventory: {
     key: 'inventory',
     title: 'Inventory',
-    stack: inventoryStack,
+    stack: INVENTORY_STACK,
   },
   'os-launcher': {
     key: 'os-launcher',
