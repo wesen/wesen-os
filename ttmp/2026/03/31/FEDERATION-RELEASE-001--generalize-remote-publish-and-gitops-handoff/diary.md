@@ -359,6 +359,65 @@ so the documented shared workflow now shows both modes:
 
 ### Local validation
 
+## 2026-04-01: Starting The Second-App Reuse Proof With `sqlite`
+
+With the `inventory` path already proven end to end, the next meaningful question for this ticket is no longer “does the shared helper work at all?” It is:
+
+- can a second app adopt the same pattern without inheriting inventory-specific assumptions?
+
+I chose:
+
+- `workspace-links/go-go-app-sqlite`
+
+as the second proof target.
+
+That is a good candidate because it sits in the middle of the reuse difficulty curve:
+
+- it already has a launcher module and a real Vite frontend
+- it already depends on the platform packages
+- but it has none of the federation-release scaffolding yet
+
+So it is not a fake greenfield example and it is not already biased toward the inventory implementation.
+
+### What I found on first inspection
+
+The current `sqlite` repo has:
+
+- a normal frontend workspace root
+- `apps/sqlite/package.json`
+- `apps/sqlite/vite.config.ts`
+- `apps/sqlite/src/launcher/public.ts`
+- `apps/sqlite/src/launcher/module.tsx`
+
+But it does **not** yet have:
+
+- `build:federation`
+- a `host.ts` contract export
+- a federation-specific Vite config
+- shared React/react-redux runtime shim files
+- `deploy/federation-gitops-targets.json`
+- `publish-federation-remote.yml`
+
+That is exactly what we want for the second reuse proof: the missing pieces are obvious and bounded.
+
+### Important design decision before touching `sqlite`
+
+I also noticed that the object-storage upload helper is still only living in:
+
+- `go-go-app-inventory/scripts/publish_federation_remote.py`
+
+Even though the helper logic itself is generic, its placement is not.
+
+So the right next sequence is:
+
+1. update the ticket tasks for the full `sqlite` migration
+2. extract the generic publish helper into `infra-tooling`
+3. then wire `sqlite` to consume both shared helpers:
+   - publish helper
+   - GitOps PR helper
+
+That keeps the second-app proof honest. Otherwise we would still be copying inventory-local machinery instead of proving an actually reusable path.
+
 Before touching the inventory workflow, I validated the shared helper locally with:
 
 - `python3 -m py_compile ...`
