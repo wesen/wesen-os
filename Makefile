@@ -49,15 +49,15 @@ release:
 	GOPROXY=proxy.golang.org go list -m github.com/go-go-golems/wesen-os@$(shell svu current)
 
 bump-glazed:
-	go get github.com/go-go-golems/glazed@latest
-	go get github.com/go-go-golems/clay@latest
-	go get github.com/go-go-golems/go-go-os-backend@latest
-	go get github.com/go-go-golems/go-go-os-frontend@latest
-	go get github.com/go-go-golems/go-go-app-arc-agi@latest
-	go get github.com/go-go-golems/go-go-app-inventory@latest
-	go get github.com/go-go-golems/go-go-gepa@latest
-	go get github.com/go-go-golems/geppetto@latest
-	go get github.com/go-go-golems/pinocchio@latest
-	go get github.com/go-go-golems/plz-confirm@latest
-	go mod tidy
-
+	GOWORK=off go get github.com/go-go-golems/glazed@latest
+	GOWORK=off go get github.com/go-go-golems/clay@latest
+	GOWORK=off go get github.com/go-go-golems/go-go-os-backend@latest
+	GOWORK=off go get github.com/go-go-golems/go-go-app-arc-agi@latest
+	GOWORK=off go get github.com/go-go-golems/go-go-app-inventory@latest
+	GOWORK=off go get github.com/go-go-golems/go-go-app-sqlite@latest
+	GOWORK=off go get github.com/go-go-golems/go-go-os-chat@latest
+	GOWORK=off go get github.com/go-go-golems/go-go-gepa@latest
+	GOWORK=off go get github.com/go-go-golems/geppetto@latest
+	GOWORK=off go get github.com/go-go-golems/pinocchio@latest
+	GOWORK=off go get github.com/go-go-golems/plz-confirm@latest
+	GOWORK=off go mod tidy

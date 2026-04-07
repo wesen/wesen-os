@@ -4,14 +4,14 @@ go 1.26.1
 
 require (
 	github.com/go-go-golems/clay v0.4.0
-	github.com/go-go-golems/geppetto v0.11.3
-	github.com/go-go-golems/glazed v1.0.5
-	github.com/go-go-golems/go-go-app-arc-agi v0.0.0-20260301233757-c94e10e7495a
-	github.com/go-go-golems/go-go-app-inventory v0.0.0-20260301235652-bf29c1fe8b1c
+	github.com/go-go-golems/geppetto v0.11.8
+	github.com/go-go-golems/glazed v1.0.6
+	github.com/go-go-golems/go-go-app-arc-agi v0.0.1
+	github.com/go-go-golems/go-go-app-inventory v0.0.1
 	github.com/go-go-golems/go-go-app-sqlite v0.0.1
 	github.com/go-go-golems/go-go-gepa v0.0.1
-	github.com/go-go-golems/go-go-os-chat v0.0.1
-	github.com/go-go-golems/pinocchio v0.10.10
+	github.com/go-go-golems/go-go-os-chat v0.0.2
+	github.com/go-go-golems/pinocchio v0.10.13-0.20260330222144-10fd36ccc06f
 	github.com/go-go-golems/plz-confirm v0.0.4
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
@@ -19,6 +19,13 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/protobuf v1.36.11
+)
+
+require (
+	github.com/go-go-golems/sanitize v0.0.1 // indirect
+	github.com/mattn/go-pointer v0.0.1 // indirect
+	github.com/tree-sitter-grammars/tree-sitter-yaml v0.7.2 // indirect
+	github.com/tree-sitter/go-tree-sitter v0.25.0 // indirect
 )
 
 require (
@@ -56,7 +63,6 @@ require (
 	github.com/charmbracelet/x/exp/slice v0.0.0-20250327172914-2fdc97757edf // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
-	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
