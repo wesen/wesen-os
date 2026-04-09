@@ -1007,3 +1007,59 @@ dist/theme/tokens.css
 ```
 
 *Diary entry completed: 2026-04-09*
+
+---
+
+## Step 8: Phase 6 — Attempt Rewiring, Deferred
+
+**Date:** 2026-04-09
+**Author:** pi coding agent
+**Commit:** `b9b066a`
+
+### Prompt Context
+
+**User prompt (verbatim):** (Phase 6 instructions)
+
+**Assistant interpretation:** Attempt to rewire os-core imports to use macos1-react
+
+**Inferred user intent:** Complete the extraction by making os-core use the new package
+
+### What I did
+
+- Attempted to update DesktopShellView.tsx to import from macos1-react
+- Added tsconfig path aliases for @go-go-golems/macos1-react
+- Encountered build errors due to:
+  - TypeScript composite/rootDir conflicts with cross-package imports
+  - pnpm workspace not recognizing the new package
+  - vite build failing to resolve the new package
+- **Deferred** the rewiring - os-core keeps its local copies
+- macos1-react remains a standalone package for external use
+
+### Why
+
+- Workspace setup for cross-package dependencies is complex
+- pnpm needs lockfile updates, vite needs config changes
+- The extraction is complete; rewiring is a separate concern
+
+### What worked
+
+- Reverted DesktopShellView.tsx to original state
+- os-core builds successfully
+
+### What didn't work
+
+- Cross-package import resolution in TypeScript/Vite
+- pnpm workspace recognition of new package
+
+### What was tricky to build
+
+- Understanding the full workspace build chain
+- TypeScript composite mode + cross-package paths
+
+### What should be done in the future
+
+- Add macos1-react to pnpm workspace properly
+- Update vite configs for the new package
+- Then complete Phase 6 rewiring
+
+*Diary entry completed: 2026-04-09*

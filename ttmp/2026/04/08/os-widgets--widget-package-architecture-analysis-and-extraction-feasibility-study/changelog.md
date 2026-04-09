@@ -138,3 +138,8 @@ Phase 5: Extracted 7 shell primitives from os-core to shell/ - DesktopIconLayer,
 - /workspace-links/go-go-os-frontend/packages/macos1-react/src/shell/ — 7 shell components + 4 stories
 - /workspace-links/go-go-os-frontend/packages/macos1-react/src/shell/types.ts — Full shell types
 - /workspace-links/go-go-os-frontend/packages/macos1-react/src/shell/windowScope.tsx — Window scope context
+
+
+## 2026-04-09
+
+Phase 6 deferred: Attempted to rewire os-core imports to use macos1-react but encountered workspace setup complexity (pnpm lockfile, vite config, TypeScript composite mode issues). os-core keeps its local copies; macos1-react available as standalone package (b9b066a)
