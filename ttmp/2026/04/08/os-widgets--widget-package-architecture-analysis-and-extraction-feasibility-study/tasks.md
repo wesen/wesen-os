@@ -104,27 +104,27 @@
 
 ## Phase 4 — Extract the Approved `os-widgets` Primitive Subset
 
-- [ ] Copy `packages/os-widgets/src/primitives/Sparkline.tsx` → `packages/macos1-react/src/rich/Sparkline.tsx`.
-- [ ] Copy `packages/os-widgets/src/primitives/ModalOverlay.tsx` → `packages/macos1-react/src/rich/ModalOverlay.tsx`.
-- [ ] Copy `packages/os-widgets/src/primitives/SearchBar.tsx` → `packages/macos1-react/src/rich/SearchBar.tsx`.
-- [ ] Copy `packages/os-widgets/src/primitives/LabeledSlider.tsx` → `packages/macos1-react/src/rich/LabeledSlider.tsx`.
-- [ ] Copy `packages/os-widgets/src/primitives/CommandPalette.tsx` → `packages/macos1-react/src/rich/CommandPalette.tsx`.
-- [ ] Copy `packages/os-widgets/src/primitives/WidgetToolbar.tsx` → `packages/macos1-react/src/rich/WidgetToolbar.tsx`.
-- [ ] Copy `packages/os-widgets/src/primitives/WidgetStatusBar.tsx` → `packages/macos1-react/src/rich/WidgetStatusBar.tsx`.
-- [ ] Copy `packages/os-widgets/src/primitives/EmptyState.tsx` → `packages/macos1-react/src/rich/EmptyState.tsx`.
-- [ ] Copy `packages/os-widgets/src/primitives/ButtonGroup.tsx` → `packages/macos1-react/src/rich/ButtonGroup.tsx`.
-- [ ] Copy `packages/os-widgets/src/primitives/Separator.tsx` → `packages/macos1-react/src/rich/Separator.tsx`.
-- [ ] Copy `packages/os-widgets/src/parts.ts` → `packages/macos1-react/src/parts/richParts.ts`.
-- [ ] Copy `packages/os-widgets/src/theme/primitives.css` → `packages/macos1-react/src/theme/rich-primitives.css`.
-- [ ] Copy `packages/os-widgets/src/theme/sparkline.css` → `packages/macos1-react/src/theme/sparkline.css`.
-- [ ] Copy `packages/os-widgets/src/primitives/useAnimationLoop.ts` → `packages/macos1-react/src/rich/internal/useAnimationLoop.ts` only if one of the copied components needs it.
-- [ ] Do **not** copy `packages/os-widgets/src/primitives/ProgressBar.tsx`.
-- [ ] Do **not** copy `packages/os-widgets/src/index.ts`.
-- [ ] Do **not** copy `packages/os-widgets/src/launcher/modules.tsx`.
-- [ ] Do **not** copy any feature widget directories under `packages/os-widgets/src/`.
-- [ ] Write `packages/macos1-react/src/rich/index.ts` manually so it exports only the approved rich subset.
-- [ ] Rewire `packages/macos1-react/src/rich/ButtonGroup.tsx` to import `Btn` from the local extracted primitives package instead of `@go-go-golems/os-core`.
-- [ ] Verify the copied `rich/` subset has no imports from Redux, `os-core`, `os-shell`, or `os-repl`.
+- [x] Copy `packages/os-widgets/src/primitives/Sparkline.tsx` → `packages/macos1-react/src/rich/Sparkline.tsx`.
+- [x] Copy `packages/os-widgets/src/primitives/ModalOverlay.tsx` → `packages/macos1-react/src/rich/ModalOverlay.tsx`.
+- [x] Copy `packages/os-widgets/src/primitives/SearchBar.tsx` → `packages/macos1-react/src/rich/SearchBar.tsx`.
+- [x] Copy `packages/os-widgets/src/primitives/LabeledSlider.tsx` → `packages/macos1-react/src/rich/LabeledSlider.tsx`.
+- [x] Copy `packages/os-widgets/src/primitives/CommandPalette.tsx` → `packages/macos1-react/src/rich/CommandPalette.tsx`.
+- [x] Copy `packages/os-widgets/src/primitives/WidgetToolbar.tsx` → `packages/macos1-react/src/rich/WidgetToolbar.tsx`.
+- [x] Copy `packages/os-widgets/src/primitives/WidgetStatusBar.tsx` → `packages/macos1-react/src/rich/WidgetStatusBar.tsx`.
+- [x] Copy `packages/os-widgets/src/primitives/EmptyState.tsx` → `packages/macos1-react/src/rich/EmptyState.tsx`.
+- [x] Copy `packages/os-widgets/src/primitives/ButtonGroup.tsx` → `packages/macos1-react/src/rich/ButtonGroup.tsx`.
+- [x] Copy `packages/os-widgets/src/primitives/Separator.tsx` → `packages/macos1-react/src/rich/Separator.tsx`.
+- [x] Copy `packages/os-widgets/src/parts.ts` → `packages/macos1-react/src/parts/richParts.ts`.
+- [x] Copy `packages/os-widgets/src/theme/primitives.css` → `packages/macos1-react/src/theme/rich-primitives.css`.
+- [x] Copy `packages/os-widgets/src/theme/sparkline.css` → `packages/macos1-react/src/theme/sparkline.css`.
+- [x] Copy `packages/os-widgets/src/primitives/useAnimationLoop.ts` → `packages/macos1-react/src/rich/internal/useAnimationLoop.ts` only if one of the copied components needs it. (Not needed - no components use it)
+- [x] Do **not** copy `packages/os-widgets/src/primitives/ProgressBar.tsx`.
+- [x] Do **not** copy `packages/os-widgets/src/index.ts`.
+- [x] Do **not** copy `packages/os-widgets/src/launcher/modules.tsx`.
+- [x] Do **not** copy any feature widget directories under `packages/os-widgets/src/`.
+- [x] Write `packages/macos1-react/src/rich/index.ts` manually so it exports only the approved rich subset.
+- [x] Rewire `packages/macos1-react/src/rich/ButtonGroup.tsx` to import `Btn` from the local extracted primitives package instead of `@go-go-golems/os-core`.
+- [x] Verify the copied `rich/` subset has no imports from Redux, `os-core`, `os-shell`, or `os-repl`.
 
 ## Phase 5 — Extract Shell Primitives from `os-core`
 

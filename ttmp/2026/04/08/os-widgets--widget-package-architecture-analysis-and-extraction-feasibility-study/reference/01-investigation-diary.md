@@ -853,3 +853,62 @@ packages/macos1-react/
 - Add stories for shell components (Phase 5)
 
 *Diary entry completed: 2026-04-09*
+
+---
+
+## Step 5: Phase 4 — Extract os-widgets Primitive Subset to rich/
+
+**Date:** 2026-04-09
+**Author:** pi coding agent
+**Commit:** `817ff1a`
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as previous steps - continuing with Phase 4)
+
+**Assistant interpretation:** Extract approved os-widgets primitive subset to macos1-react/rich/
+
+**Inferred user intent:** Continue extraction work - move os-widgets primitives into the new package.
+
+### What I did
+
+- Copied 10 approved primitives: Sparkline, ModalOverlay, SearchBar, LabeledSlider, CommandPalette, WidgetToolbar, WidgetStatusBar, EmptyState, ButtonGroup, Separator
+- Copied Sparkline.stories.tsx (only story file)
+- Copied os-widgets/src/parts.ts to src/parts/richParts.ts (RICH_PARTS constant)
+- Copied rich-primitives.css and sparkline.css to theme/
+- Updated theme/index.ts to import rich CSS files
+- Updated all RICH_PARTS imports from '../parts' to '../parts/richParts'
+- Rewired ButtonGroup.tsx to import Btn from local ../primitives instead of @go-go-golems/os-core
+- Verified no imports from Redux, os-core, os-shell, or os-repl
+- Verified useAnimationLoop.ts is not used by any of the approved components (not copied)
+
+### Why
+
+- The approved os-widgets subset provides higher-level composable widgets built on primitives
+- ButtonGroup needed import rewiring since it used Btn from os-core
+- CSS files provide styling for the rich widgets
+
+### What worked
+
+- Simple sed replacement worked for all RICH_PARTS import fixes
+- ButtonGroup rewiring to local primitives was straightforward
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- os-widgets RICH_PARTS contains 500+ part names, but only a subset is used by the approved primitives
+- None of the approved primitives use useAnimationLoop.ts - it's only used by internal components
+
+### What was tricky to build
+
+- Finding the correct relative import path for RICH_PARTS (one level up from rich/)
+
+### What warrants a second pair of eyes
+
+- Verify ButtonGroup imports Btn from correct location
+- Verify all 10 components are exported from rich/index.ts
+
+*Diary entry completed: 2026-04-09*

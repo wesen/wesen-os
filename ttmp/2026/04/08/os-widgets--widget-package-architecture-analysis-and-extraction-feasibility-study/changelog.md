@@ -115,3 +115,15 @@ Added Storybook configuration to macos1-react - created .storybook/main.ts and p
 - /workspace-links/go-go-os-frontend/packages/macos1-react/.storybook/main.ts — Package Storybook config
 - /workspace-links/go-go-os-frontend/packages/macos1-react/.storybook/preview.ts — Theme decorator
 - /workspace-links/go-go-os-frontend/.storybook/main.ts — Updated root config
+
+
+## 2026-04-09
+
+Phase 4: Extracted 10 approved os-widgets primitives to rich/ - Sparkline, ModalOverlay, SearchBar, LabeledSlider, CommandPalette, WidgetToolbar, WidgetStatusBar, EmptyState, ButtonGroup, Separator; copied RICH_PARTS, rich CSS files; rewired ButtonGroup to import Btn from local primitives (817ff1a)
+
+### Related Files
+
+- /workspace-links/go-go-os-frontend/packages/macos1-react/src/rich/ — 10 primitive components + stories
+- /workspace-links/go-go-os-frontend/packages/macos1-react/src/parts/richParts.ts — RICH_PARTS constant
+- /workspace-links/go-go-os-frontend/packages/macos1-react/src/theme/rich-primitives.css — Rich widget CSS
+- /workspace-links/go-go-os-frontend/packages/macos1-react/src/theme/sparkline.css — Sparkline CSS
