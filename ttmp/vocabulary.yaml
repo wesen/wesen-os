@@ -33,6 +33,18 @@ topics:
       description: CozoDB extraction examples and runtime patterns
     - slug: config
       description: Configuration schema and runtime option composition
+    - slug: architecture
+      description: architecture
+    - slug: macos1
+      description: macos1
+    - slug: react
+      description: react
+    - slug: styling
+      description: styling
+    - slug: theme
+      description: theme
+    - slug: widgets
+      description: widgets
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes
