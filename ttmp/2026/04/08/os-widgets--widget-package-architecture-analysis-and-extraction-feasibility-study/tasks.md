@@ -81,17 +81,17 @@
 
 ## Phase 2 — Extract Theme and Rename to `Macos1Theme`
 
-- [ ] Copy `packages/os-core/src/theme/desktop/tokens.css` → `packages/macos1-react/src/theme/tokens.css`.
-- [ ] Copy `packages/os-core/src/theme/desktop/primitives.css` → `packages/macos1-react/src/theme/primitives.css`.
-- [ ] Copy `packages/os-core/src/theme/desktop/shell.css` → `packages/macos1-react/src/theme/shell.css`.
-- [ ] Copy `packages/os-core/src/theme/desktop/animations.css` → `packages/macos1-react/src/theme/animations.css`.
-- [ ] Copy `packages/os-core/src/theme/desktop/syntax.css` → `packages/macos1-react/src/theme/syntax.css`.
-- [ ] Copy `packages/os-core/src/theme/desktop/theme/macos1.css` → `packages/macos1-react/src/theme/themes/macos1.css`.
-- [ ] Copy `packages/os-core/src/theme/HyperCardTheme.tsx` → `packages/macos1-react/src/theme/Macos1Theme.tsx`.
-- [ ] Rename the React component and exported prop types from `HyperCardTheme` to `Macos1Theme` in `packages/macos1-react/src/theme/Macos1Theme.tsx`.
-- [ ] Make `Macos1Theme` emit `data-widget="macos1"`.
-- [ ] Keep compatibility for existing CSS selectors by supporting `data-widget="hypercard"` in the extracted CSS during migration.
-- [ ] Update `packages/macos1-react/src/theme/index.ts` to import all theme CSS files and export `Macos1Theme`.
+- [x] Copy `packages/os-core/src/theme/desktop/tokens.css` → `packages/macos1-react/src/theme/tokens.css`.
+- [x] Copy `packages/os-core/src/theme/desktop/primitives.css` → `packages/macos1-react/src/theme/primitives.css`.
+- [x] Copy `packages/os-core/src/theme/desktop/shell.css` → `packages/macos1-react/src/theme/shell.css`.
+- [x] Copy `packages/os-core/src/theme/desktop/animations.css` → `packages/macos1-react/src/theme/animations.css`.
+- [x] Copy `packages/os-core/src/theme/desktop/syntax.css` → `packages/macos1-react/src/theme/syntax.css`.
+- [x] Copy `packages/os-core/src/theme/desktop/theme/macos1.css` → `packages/macos1-react/src/theme/themes/macos1.css`.
+- [x] Copy `packages/os-core/src/theme/HyperCardTheme.tsx` → `packages/macos1-react/src/theme/Macos1Theme.tsx`.
+- [x] Rename the React component and exported prop types from `HyperCardTheme` to `Macos1Theme` in `packages/macos1-react/src/theme/Macos1Theme.tsx`.
+- [x] Make `Macos1Theme` emit `data-widget="macos1"`.
+- [x] Keep compatibility for existing CSS selectors by supporting `data-widget="hypercard"` in the extracted CSS during migration.
+- [x] Update `packages/macos1-react/src/theme/index.ts` to import all theme CSS files and export `Macos1Theme`.
 
 ## Phase 3 — Extract Base Widgets from `os-core`
 

@@ -71,3 +71,25 @@ Phase 1: Created scaffold for @go-go-golems/macos1-react package - created direc
 - /workspace-links/go-go-os-frontend/packages/macos1-react/src/parts/index.ts — Parts subpath
 - /workspace-links/go-go-os-frontend/packages/macos1-react/src/shell/public-types.ts — Public shell types
 
+
+
+## 2026-04-09
+
+Advice fix: Updated package.json exports to point to dist/ instead of src/ to match published package output (f24b23c)
+
+### Related Files
+
+- /workspace-links/go-go-os-frontend/packages/macos1-react/package.json — Exports now use ./dist/... paths
+
+
+## 2026-04-09
+
+Phase 2: Extracted theme system from os-core - copied all CSS (tokens, primitives, shell, animations, syntax), updated selectors to support both data-widget="macos1" (canonical) and data-widget="hypercard" (legacy), created Macos1Theme component with data-widget="macos1" emission (3c0dc91)
+
+### Related Files
+
+- /workspace-links/go-go-os-frontend/packages/macos1-react/src/theme/tokens.css — Design tokens
+- /workspace-links/go-go-os-frontend/packages/macos1-react/src/theme/primitives.css — Widget CSS
+- /workspace-links/go-go-os-frontend/packages/macos1-react/src/theme/shell.css — Window chrome CSS
+- /workspace-links/go-go-os-frontend/packages/macos1-react/src/theme/themes/macos1.css — Theme overlay
+- /workspace-links/go-go-os-frontend/packages/macos1-react/src/theme/Macos1Theme.tsx — Theme scoping component

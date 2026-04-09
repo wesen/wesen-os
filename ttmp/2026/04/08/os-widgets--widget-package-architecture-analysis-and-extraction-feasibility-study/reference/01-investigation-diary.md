@@ -613,3 +613,117 @@ packages/macos1-react/
 - `./parts` → `./src/parts/index.ts`
 
 *Diary entry completed: 2026-04-09*
+
+---
+
+## Step 2: Phase 2 — Extract Theme System and Advice: Fix Exports to dist/
+
+**Date:** 2026-04-09
+**Author:** pi coding agent
+**Commits:** `f24b23c`, `3c0dc91`
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue with phase 2. Also, we got the following advice: ..."
+
+**Assistant interpretation:** Continue Phase 2 (extract theme), and fix package.json exports to point to dist/ instead of src/ per advice.
+
+**Inferred user intent:** Extract the theme system from os-core, and fix the export paths to match published package output.
+
+### What I did
+
+**Advice fix (f24b23c):**
+- Updated `package.json` exports from `./src/...` to `./dist/...`
+- Updated `main` from `src/index.ts` to `dist/index.js`
+- Updated `types` from `src/index.ts` to `dist/index.d.ts`
+- Added `build:dist` script matching os-core conventions
+- Verified `tsc -b` produces correct dist/ output
+
+**Phase 2 (3c0dc91):**
+- Copied all CSS from `os-core/src/theme/desktop/`: tokens.css, primitives.css, shell.css, animations.css, syntax.css
+- Copied `macos1.css` theme overlay to `themes/` directory
+- Updated all CSS selectors via sed to support both `data-widget="macos1"` (canonical) and `data-widget="hypercard"` (legacy): `[data-widget="macos1"], [data-widget="hypercard"]`
+- Created `compat.css` for migration compatibility
+- Created proper `Macos1Theme.tsx` with `data-widget="macos1"` emission
+- Updated `theme/index.ts` to import all CSS files in correct order
+- Verified TypeScript compiles successfully
+
+### Why
+
+- Export paths need to match the eventual published package output (dist/)
+- Theme system is the foundation - all primitives will depend on CSS tokens and Macos1Theme
+- Supporting both selectors allows gradual migration without breaking existing consumers
+
+### What worked
+
+- CSS selector replacement via sed worked cleanly
+- Build succeeds producing all subpath outputs in dist/
+- Both data-widget selectors work with updated CSS
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- The build-dist.mjs script handles the full package publishing workflow
+- CSS selectors can chain multiple attribute matches: `[data-widget="macos1"], [data-widget="hypercard"]`
+- Theme import order matters (tokens before component styles)
+
+### What was tricky to build
+
+- Choosing the compatibility strategy: updating CSS selectors to support both selectors was cleaner than adding wrapper divs or data attributes
+- Understanding the build workflow: tsc -b for dist/ output, build:dist for publishing
+
+### What warrants a second pair of eyes
+
+- Verify the sed replacement didn't miss any selectors in CSS files
+- Verify the compat.css approach is sufficient for migration
+
+### What should be done in the future
+
+- Phase 3: Copy base widgets from os-core to primitives/
+- Phase 4: Copy approved os-widgets primitive subset to rich/
+- Phase 5: Copy shell primitives from os-core
+- Phase 6: Rewire os-core imports to use the new package
+
+### Code review instructions
+
+1. Review CSS selector compatibility:
+   ```bash
+   grep -r 'data-widget=' packages/macos1-react/src/theme/
+   ```
+   Verify all selectors support both `macos1` and `hypercard`
+
+2. Verify Macos1Theme:
+   ```bash
+   cat packages/macos1-react/src/theme/Macos1Theme.tsx
+   ```
+   Confirm it emits `data-widget="macos1"`
+
+3. Run full build:
+   ```bash
+   cd packages/macos1-react && npm run build
+   ```
+
+### Technical details
+
+**CSS files extracted:**
+- `tokens.css` (~250 lines of CSS custom properties)
+- `primitives.css` (~868 lines of widget CSS)
+- `shell.css` (~200 lines of window chrome)
+- `animations.css` (~20 lines of keyframes)
+- `syntax.css` (~50 lines of syntax highlighting)
+- `themes/macos1.css` (theme overlay)
+- `compat.css` (migration compatibility layer)
+
+**Updated CSS selector pattern:**
+```css
+/* Before */
+[data-widget="hypercard"] { ... }
+
+/* After */
+[data-widget="macos1"], [data-widget="hypercard"] { ... }
+```
+
+*Diary entry completed: 2026-04-09*
