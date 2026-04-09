@@ -128,21 +128,21 @@
 
 ## Phase 5 — Extract Shell Primitives from `os-core`
 
-- [ ] Copy `packages/os-core/src/components/shell/windowing/DesktopIconLayer.tsx` → `packages/macos1-react/src/shell/DesktopIconLayer.tsx`.
-- [ ] Copy `packages/os-core/src/components/shell/windowing/DesktopMenuBar.tsx` → `packages/macos1-react/src/shell/DesktopMenuBar.tsx`.
-- [ ] Copy `packages/os-core/src/components/shell/windowing/WindowSurface.tsx` → `packages/macos1-react/src/shell/WindowSurface.tsx`.
-- [ ] Copy `packages/os-core/src/components/shell/windowing/WindowTitleBar.tsx` → `packages/macos1-react/src/shell/WindowTitleBar.tsx`.
-- [ ] Copy `packages/os-core/src/components/shell/windowing/WindowResizeHandle.tsx` → `packages/macos1-react/src/shell/WindowResizeHandle.tsx`.
-- [ ] Copy `packages/os-core/src/components/shell/windowing/WindowLayer.tsx` → `packages/macos1-react/src/shell/WindowLayer.tsx`.
-- [ ] Copy `packages/os-core/src/components/shell/windowing/useContentMinSize.ts` → `packages/macos1-react/src/shell/useContentMinSize.ts`.
-- [ ] Extract the `DesktopWindowScopeProvider` portion of `packages/os-core/src/components/shell/windowing/desktopMenuRuntime.tsx` into `packages/macos1-react/src/shell/windowScope.tsx`.
-- [ ] Create `packages/macos1-react/src/shell/public-types.ts` with only the public type surface needed by consumers.
-- [ ] Export only the reduced public shell types from `packages/macos1-react/src/shell/index.ts`.
-- [ ] Do **not** move `packages/os-core/src/components/shell/windowing/useDesktopShellController.tsx`.
-- [ ] Do **not** move `packages/os-core/src/components/shell/windowing/desktopCommandRouter.ts`.
-- [ ] Do **not** move `packages/os-core/src/components/shell/windowing/contextActionRegistry.ts`.
-- [ ] Do **not** move `packages/os-core/src/components/shell/windowing/desktopContributions.ts`.
-- [ ] Do **not** move `packages/os-core/src/components/shell/windowing/windowContentAdapter.ts`.
+- [x] Copy `packages/os-core/src/components/shell/windowing/DesktopIconLayer.tsx` → `packages/macos1-react/src/shell/DesktopIconLayer.tsx`.
+- [x] Copy `packages/os-core/src/components/shell/windowing/DesktopMenuBar.tsx` → `packages/macos1-react/src/shell/DesktopMenuBar.tsx`.
+- [x] Copy `packages/os-core/src/components/shell/windowing/WindowSurface.tsx` → `packages/macos1-react/src/shell/WindowSurface.tsx`.
+- [x] Copy `packages/os-core/src/components/shell/windowing/WindowTitleBar.tsx` → `packages/macos1-react/src/shell/WindowTitleBar.tsx`.
+- [x] Copy `packages/os-core/src/components/shell/windowing/WindowResizeHandle.tsx` → `packages/macos1-react/src/shell/WindowResizeHandle.tsx`.
+- [x] Copy `packages/os-core/src/components/shell/windowing/WindowLayer.tsx` → `packages/macos1-react/src/shell/WindowLayer.tsx`.
+- [x] Copy `packages/os-core/src/components/shell/windowing/useContentMinSize.ts` → `packages/macos1-react/src/shell/useContentMinSize.ts`.
+- [x] Extract the `DesktopWindowScopeProvider` portion of `packages/os-core/src/components/shell/windowing/desktopMenuRuntime.tsx` into `packages/macos1-react/src/shell/windowScope.tsx`.
+- [x] Create `packages/macos1-react/src/shell/types.ts` with the full shell type surface needed by consumers.
+- [x] Export only the reduced public shell types from `packages/macos1-react/src/shell/index.ts`.
+- [x] Do **not** move `packages/os-core/src/components/shell/windowing/useDesktopShellController.tsx`.
+- [x] Do **not** move `packages/os-core/src/components/shell/windowing/desktopCommandRouter.ts`.
+- [x] Do **not** move `packages/os-core/src/components/shell/windowing/contextActionRegistry.ts`.
+- [x] Do **not** move `packages/os-core/src/components/shell/windowing/desktopContributions.ts`.
+- [x] Do **not** move `packages/os-core/src/components/shell/windowing/windowContentAdapter.ts`.
 
 ## Phase 6 — Rewire Existing Consumers and Validate
 

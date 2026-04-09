@@ -912,3 +912,56 @@ packages/macos1-react/
 - Verify all 10 components are exported from rich/index.ts
 
 *Diary entry completed: 2026-04-09*
+
+---
+
+## Step 6: Phase 5 — Extract Shell Primitives from os-core
+
+**Date:** 2026-04-09
+**Author:** pi coding agent
+**Commit:** `d82dc5e`
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as previous steps - continuing with Phase 5)
+
+**Assistant interpretation:** Extract shell primitives from os-core to macos1-react/shell/
+
+**Inferred user intent:** Continue extraction work - move os-core shell primitives into the new package.
+
+### What I did
+
+- Copied 7 shell components: DesktopIconLayer, DesktopMenuBar, WindowSurface, WindowTitleBar, WindowResizeHandle, WindowLayer, useContentMinSize
+- Copied types.ts with all shell types (DesktopWindowDef, DesktopIconDef, DesktopMenuSection, etc.)
+- Copied storyFixtures.ts for story support
+- Copied 4 shell story files (removed 8 that referenced excluded files)
+- Created windowScope.tsx with DesktopWindowScopeProvider (extracted from desktopMenuRuntime - only the scope portion, not the runtime)
+- Updated all imports: PARTS from ../parts/parts, types from ./types
+- Updated shell/index.ts with full exports
+
+### Why
+
+- Shell primitives are the desktop chrome layer (menus, windows, icons)
+- WindowScope needed to be extracted as a simplified standalone version
+- Full types.ts was needed for all the shell-specific types
+
+### What worked
+
+- Extracting DesktopWindowScopeProvider from desktopMenuRuntime worked cleanly
+- Removed stories that referenced excluded files (DesktopContributions, useDesktopShellController, etc.)
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- Shell components have more complex type dependencies than widgets
+- windowScope.tsx needed to be a simplified standalone version without runtime context
+
+### What warrants a second pair of eyes
+
+- Verify windowScope.tsx is sufficient for the shell components
+- Verify shell/index.ts exports match what shell components need
+
+*Diary entry completed: 2026-04-09*

@@ -127,3 +127,14 @@ Phase 4: Extracted 10 approved os-widgets primitives to rich/ - Sparkline, Modal
 - /workspace-links/go-go-os-frontend/packages/macos1-react/src/parts/richParts.ts — RICH_PARTS constant
 - /workspace-links/go-go-os-frontend/packages/macos1-react/src/theme/rich-primitives.css — Rich widget CSS
 - /workspace-links/go-go-os-frontend/packages/macos1-react/src/theme/sparkline.css — Sparkline CSS
+
+
+## 2026-04-09
+
+Phase 5: Extracted 7 shell primitives from os-core to shell/ - DesktopIconLayer, DesktopMenuBar, WindowSurface, WindowTitleBar, WindowResizeHandle, WindowLayer, useContentMinSize; copied types.ts and storyFixtures; created windowScope.tsx with DesktopWindowScopeProvider; removed stories referencing excluded files; build succeeds (d82dc5e)
+
+### Related Files
+
+- /workspace-links/go-go-os-frontend/packages/macos1-react/src/shell/ — 7 shell components + 4 stories
+- /workspace-links/go-go-os-frontend/packages/macos1-react/src/shell/types.ts — Full shell types
+- /workspace-links/go-go-os-frontend/packages/macos1-react/src/shell/windowScope.tsx — Window scope context
