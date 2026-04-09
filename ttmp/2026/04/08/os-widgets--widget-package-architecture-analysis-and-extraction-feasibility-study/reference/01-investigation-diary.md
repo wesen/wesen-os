@@ -965,3 +965,45 @@ packages/macos1-react/
 - Verify shell/index.ts exports match what shell components need
 
 *Diary entry completed: 2026-04-09*
+
+---
+
+## Step 7: Fix CSS Build - Run build:dist
+
+**Date:** 2026-04-09
+**Author:** pi coding agent
+**Commit:** `4b87b03`
+
+### Prompt Context
+
+**User prompt (verbatim):** (advice about CSS not being copied to dist/)
+
+**Assistant interpretation:** Run build:dist to copy CSS files to dist/
+
+**Inferred user intent:** Ensure CSS assets are properly built into dist/
+
+### What I did
+
+- Ran `npm run build:dist` which invokes the build-dist.mjs script
+- Verified 9 CSS files are now in dist/theme/
+- Updated README with build instructions
+
+### What worked
+
+- build:dist correctly copies CSS files matching assetSuffixes ['.css', '.vm.js']
+
+### CSS Files Now in dist/
+
+```
+dist/theme/animations.css
+dist/theme/compat.css
+dist/theme/primitives.css
+dist/theme/rich-primitives.css
+dist/theme/shell.css
+dist/theme/sparkline.css
+dist/theme/syntax.css
+dist/theme/themes/macos1.css
+dist/theme/tokens.css
+```
+
+*Diary entry completed: 2026-04-09*
