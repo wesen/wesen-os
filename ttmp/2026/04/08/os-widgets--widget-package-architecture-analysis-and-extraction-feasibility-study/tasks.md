@@ -95,12 +95,12 @@
 
 ## Phase 3 — Extract Base Widgets from `os-core`
 
-- [ ] Copy `packages/os-core/src/parts.ts` → `packages/macos1-react/src/parts/parts.ts`.
-- [ ] Copy the widget components from `packages/os-core/src/components/widgets/` into `packages/macos1-react/src/primitives/`.
-- [ ] Copy `packages/os-core/src/components/widgets/index.ts` → `packages/macos1-react/src/primitives/index.ts`.
-- [ ] Update imports in copied primitives so they resolve against local files under `packages/macos1-react/src/`.
-- [ ] Preserve all `data-part={PARTS.*}` usage exactly; do not rename part names.
-- [ ] Export `PARTS` from `packages/macos1-react/src/parts/index.ts`.
+- [x] Copy `packages/os-core/src/parts.ts` → `packages/macos1-react/src/parts/parts.ts`.
+- [x] Copy the widget components from `packages/os-core/src/components/widgets/` into `packages/macos1-react/src/primitives/`.
+- [x] Copy `packages/os-core/src/components/widgets/index.ts` → `packages/macos1-react/src/primitives/index.ts`.
+- [x] Update imports in copied primitives so they resolve against local files under `packages/macos1-react/src/`.
+- [x] Preserve all `data-part={PARTS.*}` usage exactly; do not rename part names.
+- [x] Export `PARTS` from `packages/macos1-react/src/parts/index.ts`.
 
 ## Phase 4 — Extract the Approved `os-widgets` Primitive Subset
 

@@ -727,3 +727,129 @@ packages/macos1-react/
 ```
 
 *Diary entry completed: 2026-04-09*
+---
+
+## Step 3: Phase 3 — Extract Base Widgets from os-core
+
+**Date:** 2026-04-09
+**Author:** pi coding agent
+**Commit:** `19b029f`
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as previous steps - continuing with Phase 3)
+
+**Assistant interpretation:** Extract base widget primitives from os-core to macos1-react/primitives/
+
+**Inferred user intent:** Continue extraction work - move os-core widgets into the new package.
+
+### What I did
+
+- Copied `os-core/src/parts.ts` → `macos1-react/src/parts/parts.ts`
+- Copied all 30 widget components from `os-core/src/components/widgets/` to `macos1-react/src/primitives/`
+- Copied all 31 Storybook story files (including `MacOS1Showcase.stories.tsx`)
+- Copied `os-core/src/types.ts` → `macos1-react/src/primitives/types.ts` (needed by 10 components)
+- Updated all PARTS imports: `from '../../parts'` → `from '../parts/parts'`
+- Updated all types imports: `from '../../types'` → `from './types'`
+- Updated `primitives/index.ts` with full component and PARTS exports
+- Verified build succeeds: `tsc -b`
+
+### Why
+
+- Base widgets are core to the package - they provide the foundational UI components
+- Story files are needed for development and visual testing
+- types.ts is needed because several components depend on shared type definitions
+
+### What worked
+
+- Simple sed replacement worked for all import fixes
+- All 30 components compiled successfully
+- All 31 story files are present for development
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- os-core has 30 widget components, not 50+ as originally estimated in the design doc
+- types.ts contains shared interfaces used by multiple components
+- Story files had similar import patterns to component files
+
+### What was tricky to build
+
+- Finding all the imports that needed updating across 30 components + 31 stories
+- Ensuring all relative paths were correct after moving files
+
+### What warrants a second pair of eyes
+
+- Verify all 30 components are exported from primitives/index.ts
+- Verify story imports are correct
+
+### What should be done in the future
+
+- Phase 4: Copy approved os-widgets primitive subset to rich/
+- Phase 5: Copy shell primitives from os-core
+- Phase 6: Rewire os-core imports to use macos1-react
+
+### Code review instructions
+
+1. Review primitives/index.ts exports
+2. Check story files compile: `npx tsc --noEmit --skipLibCheck`
+3. List all widget components: `ls packages/macos1-react/src/primitives/*.tsx`
+
+*Diary entry completed: 2026-04-09*
+
+---
+
+## Step 4: Add Storybook Support to macos1-react
+
+**Date:** 2026-04-09
+**Author:** pi coding agent
+**Commits:** `ce56a95`, `9b1162b`
+
+### Prompt Context
+
+**User prompt (verbatim):** "add storybook support to the package."
+
+**Assistant interpretation:** Create Storybook configuration for the macos1-react package.
+
+**Inferred user intent:** Enable Storybook development for the extracted widget primitives.
+
+### What I did
+
+- Created `.storybook/main.ts` with stories from `primitives/`, `rich/`, `shell/`
+- Created `.storybook/preview.ts` with `Macos1Theme` decorator wrapping all stories
+- Added `storybook` and `build-storybook` scripts to `package.json`
+- Updated root `.storybook/main.ts` to include `macos1-react` stories and alias
+
+### Why
+
+- Storybook is essential for developing and testing UI components
+- The Macos1Theme decorator ensures all stories render with proper theme scoping
+- Adding to root config enables stories to be available from monorepo Storybook
+
+### What worked
+
+- Created standalone .storybook config that can work with `npm run storybook` from package dir
+- Root config update ensures stories available in monorepo-wide Storybook
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- Storybook can be configured at both package and monorepo level
+- The preview decorator pattern wraps all stories in a theme provider
+
+### What warrants a second pair of eyes
+
+- Verify Storybook builds correctly: `cd packages/macos1-react && npm run build-storybook`
+
+### What should be done in the future
+
+- Test Storybook by running `npm run storybook`
+- Add stories for shell components (Phase 5)
+
+*Diary entry completed: 2026-04-09*

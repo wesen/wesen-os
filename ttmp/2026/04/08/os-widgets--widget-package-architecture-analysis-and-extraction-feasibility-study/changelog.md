@@ -93,3 +93,25 @@ Phase 2: Extracted theme system from os-core - copied all CSS (tokens, primitive
 - /workspace-links/go-go-os-frontend/packages/macos1-react/src/theme/shell.css — Window chrome CSS
 - /workspace-links/go-go-os-frontend/packages/macos1-react/src/theme/themes/macos1.css — Theme overlay
 - /workspace-links/go-go-os-frontend/packages/macos1-react/src/theme/Macos1Theme.tsx — Theme scoping component
+
+
+## 2026-04-09
+
+Phase 3: Extracted 30 base widgets from os-core to primitives/ - copied all widget components and 31 Storybook story files, copied types.ts, updated imports (PARTS from ../parts/parts, types from ./types), build succeeds (19b029f)
+
+### Related Files
+
+- /workspace-links/go-go-os-frontend/packages/macos1-react/src/primitives/ — 30 widgets + 31 stories
+- /workspace-links/go-go-os-frontend/packages/macos1-react/src/parts/parts.ts — PARTS constant
+- /workspace-links/go-go-os-frontend/packages/macos1-react/src/primitives/types.ts — Shared types
+
+
+## 2026-04-09
+
+Added Storybook configuration to macos1-react - created .storybook/main.ts and preview.ts, added storybook scripts to package.json, updated root Storybook config with macos1-react stories and alias (ce56a95, 9b1162b)
+
+### Related Files
+
+- /workspace-links/go-go-os-frontend/packages/macos1-react/.storybook/main.ts — Package Storybook config
+- /workspace-links/go-go-os-frontend/packages/macos1-react/.storybook/preview.ts — Theme decorator
+- /workspace-links/go-go-os-frontend/.storybook/main.ts — Updated root config
