@@ -97,7 +97,9 @@ go-go-os-frontend has a complete, guarded trusted-publishing pipeline. Do not bu
 
 ### Steps
 
-All in `~/code/wesen/go-go-golems/go-go-os-frontend`.
+All in the **canonical repo** `~/code/wesen/go-go-golems/go-go-os-frontend` (clean `main` == `origin/main` at `77729a67`, os-core `0.1.3`).
+
+> Do NOT publish from the workspace submodule `wesen-os/workspace-links/go-go-os-frontend`. Its local `main` (`c74347e`, April) has **genuinely diverged** from `origin/main`: it carries ~11 abandoned `macos1-react` extraction/showcase commits and is 48 commits behind origin. That is the incomplete os-core-compat facade that breaks the desktop CSS (why the launcher pins the submodule to `a554dc3`). It is already archived on the pushed branch `task/2026-04-widget-showcase-wip` (`9a1e267`). Do not merge it into `origin/main` and do not use it as the publish source — publishing from it would ship os-core `0.1.0` with the broken facade. The canonical repo is the only correct source; the divergence needs no reconciliation because Part B removes the submodule's `packages/*` from the build entirely.
 
 1. **Edit the three font-family declarations** to a Chicago-free stack `"Geneva", "Helvetica Neue", Helvetica, Arial, sans-serif`:
    - `packages/os-core/src/theme/classic.css:4` — currently `'Chicago', 'Geneva', 'Helvetica', monospace`
