@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	profilechat "github.com/go-go-golems/go-go-os-chat/pkg/profilechat"
 	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
 	"github.com/go-go-golems/go-go-os-backend/pkg/docmw"
 )
@@ -148,12 +147,5 @@ func TestHandleBootstrapAppChatStoresConversationContext(t *testing.T) {
 	}
 	if got := convContext.Metadata["subject_app_id"]; got != "sqlite" {
 		t.Fatalf("unexpected metadata subject_app_id: %#v", convContext.Metadata)
-	}
-}
-
-func TestAppChatContextStoreImplementsConversationContextProvider(t *testing.T) {
-	var provider profilechat.ConversationContextProvider = NewAppChatContextStore()
-	if provider == nil {
-		t.Fatalf("expected non-nil conversation context provider")
 	}
 }

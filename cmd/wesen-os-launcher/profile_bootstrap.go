@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/go-go-golems/geppetto/pkg/cli/bootstrap"
 	gepprofiles "github.com/go-go-golems/geppetto/pkg/engineprofiles"
 	aisettings "github.com/go-go-golems/geppetto/pkg/steps/ai/settings"
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
@@ -15,8 +16,9 @@ import (
 
 type launcherProfileBootstrap struct {
 	BaseInferenceSettings *aisettings.InferenceSettings
-	ProfileSelection      *profilebootstrap.ResolvedCLIProfileSelection
+	SelectedProfile       string
 	SelectedProfileSlug   gepprofiles.EngineProfileSlug
+	ProfileRegistries     []string
 	ProfileRegistry       gepprofiles.Registry
 	DefaultRegistrySlug   gepprofiles.RegistrySlug
 	ConfigFiles           []string
@@ -28,54 +30,67 @@ func resolveLauncherProfileBootstrap(ctx context.Context, parsed *values.Values)
 	if err != nil {
 		return nil, err
 	}
-	profileSelection, err := profilebootstrap.ResolveCLIProfileSelection(parsed)
+	profileRuntime, err := profilebootstrap.ResolveCLIProfileRuntime(ctx, parsed)
 	if err != nil {
 		return nil, err
 	}
-	if len(profileSelection.ProfileRegistries) == 0 {
-		if defaultPath := defaultPinocchioProfilesPathIfPresent(); defaultPath != "" {
-			profileSelection.ProfileRegistries = []string{defaultPath}
-		}
+	closeFns := []func(){}
+	if profileRuntime.Close != nil {
+		closeFns = append(closeFns, profileRuntime.Close)
 	}
-	if len(profileSelection.ProfileRegistries) == 0 {
-		return nil, &gepprofiles.ValidationError{
-			Field:  "profile-settings.profile-registries",
-			Reason: "must be configured",
+	closeAll := func() {
+		for _, fn := range closeFns {
+			fn()
 		}
 	}
 
-	specs, err := gepprofiles.ParseRegistrySourceSpecs(profileSelection.ProfileRegistries)
-	if err != nil {
-		return nil, errors.Wrap(err, "parse profile registry source specs")
-	}
-	registryChain, err := gepprofiles.NewChainedRegistryFromSourceSpecs(ctx, specs)
-	if err != nil {
-		return nil, errors.Wrap(err, "initialize profile registry")
+	selection := profileRuntime.ProfileSettings
+	effectiveRegistries := append([]string(nil), selection.ProfileRegistries...)
+	registryChain := profileRuntime.ProfileRegistryChain
+	if registryChain == nil || registryChain.Registry == nil {
+		if len(effectiveRegistries) == 0 {
+			if defaultPath := defaultPinocchioProfilesPathIfPresent(); defaultPath != "" {
+				effectiveRegistries = []string{defaultPath}
+			}
+		}
+		if len(effectiveRegistries) == 0 {
+			closeAll()
+			return nil, &gepprofiles.ValidationError{
+				Field:  "profile-settings.profile-registries",
+				Reason: "must be configured",
+			}
+		}
+		registryChain, err = bootstrap.ResolveProfileRegistryChain(ctx, bootstrap.ProfileSettings{
+			Profile:           selection.Profile,
+			ProfileRegistries: effectiveRegistries,
+		})
+		if err != nil {
+			closeAll()
+			return nil, errors.Wrap(err, "initialize profile registry")
+		}
+		if registryChain.Close != nil {
+			closeFns = append(closeFns, registryChain.Close)
+		}
 	}
 
 	selectedProfileSlug := gepprofiles.EngineProfileSlug("")
-	if strings.TrimSpace(profileSelection.Profile) != "" {
-		selectedProfileSlug, err = gepprofiles.ParseEngineProfileSlug(profileSelection.Profile)
+	if strings.TrimSpace(selection.Profile) != "" {
+		selectedProfileSlug, err = gepprofiles.ParseEngineProfileSlug(selection.Profile)
 		if err != nil {
-			_ = registryChain.Close()
+			closeAll()
 			return nil, err
 		}
 	}
 
-	selectionCopy := *profileSelection
-	selectionCopy.ProfileRegistries = append([]string(nil), profileSelection.ProfileRegistries...)
-	configFilesCopy := append([]string(nil), configFiles...)
-
 	return &launcherProfileBootstrap{
 		BaseInferenceSettings: cloneInferenceSettings(baseInferenceSettings),
-		ProfileSelection:      &selectionCopy,
+		SelectedProfile:       selection.Profile,
 		SelectedProfileSlug:   selectedProfileSlug,
-		ProfileRegistry:       registryChain,
-		DefaultRegistrySlug:   registryChain.DefaultRegistrySlug(),
-		ConfigFiles:           configFilesCopy,
-		Close: func() {
-			_ = registryChain.Close()
-		},
+		ProfileRegistries:     effectiveRegistries,
+		ProfileRegistry:       registryChain.Registry,
+		DefaultRegistrySlug:   registryChain.DefaultRegistrySlug,
+		ConfigFiles:           append([]string(nil), configFiles...),
+		Close:                 closeAll,
 	}, nil
 }
 

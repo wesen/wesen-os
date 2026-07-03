@@ -7,25 +7,19 @@ import (
 	"net/http"
 	"strings"
 
-	gepprofiles "github.com/go-go-golems/geppetto/pkg/engineprofiles"
 	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
-	chatservice "github.com/go-go-golems/go-go-os-chat/pkg/chatservice"
-	webchat "github.com/go-go-golems/pinocchio/pkg/webchat"
-	webhttp "github.com/go-go-golems/pinocchio/pkg/webchat/http"
+	"github.com/go-go-golems/wesen-os/pkg/chathost"
 )
 
 const AppID = "assistant"
 
 type Options struct {
-	Server              *webchat.Server
-	RequestResolver     webhttp.ConversationRequestResolver
-	ProfileRegistry     gepprofiles.Registry
-	DefaultRegistrySlug gepprofiles.RegistrySlug
-	ContextStore        *AppChatContextStore
+	Host         *chathost.Host
+	ContextStore *AppChatContextStore
 }
 
 type Module struct {
-	service      *chatservice.Component
+	host         *chathost.Host
 	contextStore *AppChatContextStore
 	registry     *backendhost.ModuleRegistry
 }
@@ -38,16 +32,8 @@ func NewModule(opts Options) *Module {
 		contextStore = NewAppChatContextStore()
 	}
 	return &Module{
+		host:         opts.Host,
 		contextStore: contextStore,
-		service: chatservice.New(chatservice.Options{
-			Server:          opts.Server,
-			RequestResolver: opts.RequestResolver,
-			ProfileAPI: &chatservice.ProfileAPIOptions{
-				Registry:                        opts.ProfileRegistry,
-				DefaultRegistrySlug:             opts.DefaultRegistrySlug,
-				EnableCurrentProfileCookieRoute: false,
-			},
-		}),
 	}
 }
 
@@ -73,18 +59,19 @@ func (m *Module) Manifest() backendhost.AppBackendManifest {
 		Required:    false,
 		Capabilities: []string{
 			"chat",
+			"chat-sessions",
 			"ws",
-			"timeline",
+			"frontend-tools",
 			"profiles",
 		},
 	}
 }
 
 func (m *Module) MountRoutes(mux *http.ServeMux) error {
-	if m == nil || m.service == nil {
+	if m == nil || m.host == nil {
 		return fmt.Errorf("assistant backend module is not initialized")
 	}
-	if err := m.service.MountRoutes(mux); err != nil {
+	if err := m.host.MountRoutes(mux); err != nil {
 		return err
 	}
 	mux.HandleFunc("/api/bootstrap/app-chat", m.handleBootstrapAppChat)
@@ -92,31 +79,31 @@ func (m *Module) MountRoutes(mux *http.ServeMux) error {
 }
 
 func (m *Module) Init(ctx context.Context) error {
-	if m == nil || m.service == nil {
+	if m == nil || m.host == nil {
 		return fmt.Errorf("assistant backend module is not initialized")
 	}
-	return m.service.Init(ctx)
+	return nil
 }
 
 func (m *Module) Start(ctx context.Context) error {
-	if m == nil || m.service == nil {
+	if m == nil || m.host == nil {
 		return fmt.Errorf("assistant backend module is not initialized")
 	}
-	return m.service.Start(ctx)
+	return nil
 }
 
 func (m *Module) Stop(ctx context.Context) error {
-	if m == nil || m.service == nil {
+	if m == nil || m.host == nil {
 		return nil
 	}
-	return m.service.Stop(ctx)
+	return m.host.Close()
 }
 
 func (m *Module) Health(ctx context.Context) error {
-	if m == nil || m.service == nil {
+	if m == nil || m.host == nil || m.host.Service() == nil {
 		return fmt.Errorf("assistant backend module is not initialized")
 	}
-	return m.service.Health(ctx)
+	return nil
 }
 
 type bootstrapAppChatRequest struct {

@@ -4,22 +4,32 @@ import (
 	"context"
 	"sync"
 
-	profilechat "github.com/go-go-golems/go-go-os-chat/pkg/profilechat"
 	"github.com/google/uuid"
 )
 
+// ConversationContext carries per-conversation system-prompt additions created
+// by the app-chat bootstrap endpoint ("chat about this app" flows).
+//
+// It was previously go-go-os-chat/pkg/profilechat.ConversationContext; the
+// type moved here when the assistant switched from pinocchio webchat to
+// chatapp/sessionstream (WESEN-OS-STOCKTAKE-2026-07 Decision D3).
+type ConversationContext struct {
+	SystemPromptAddendum string
+	Metadata             map[string]any
+}
+
 type AppChatContextStore struct {
-	mu        sync.RWMutex
-	byConvID  map[string]*profilechat.ConversationContext
+	mu       sync.RWMutex
+	byConvID map[string]*ConversationContext
 }
 
 func NewAppChatContextStore() *AppChatContextStore {
 	return &AppChatContextStore{
-		byConvID: map[string]*profilechat.ConversationContext{},
+		byConvID: map[string]*ConversationContext{},
 	}
 }
 
-func (s *AppChatContextStore) Create(convContext profilechat.ConversationContext) string {
+func (s *AppChatContextStore) Create(convContext ConversationContext) string {
 	if s == nil {
 		return ""
 	}
@@ -31,7 +41,7 @@ func (s *AppChatContextStore) Create(convContext profilechat.ConversationContext
 	return convID
 }
 
-func (s *AppChatContextStore) Lookup(_ context.Context, convID string) (*profilechat.ConversationContext, error) {
+func (s *AppChatContextStore) Lookup(_ context.Context, convID string) (*ConversationContext, error) {
 	if s == nil {
 		return nil, nil
 	}

@@ -8,12 +8,12 @@ improvement backlog.
 
 ## Phase 0 — Consolidate wesen-os (D1)
 
-- [ ] Commit/stash the dirty workspace state (`go.work.sum`, `ttmp/vocabulary.yaml`, submodule pointers); commit this ticket's ttmp tree
-- [ ] Push `task/sqlite-federation-runtime-fix`; open + merge PR into `wesen/wesen-os` main
-- [ ] Sweep local `task/*` branches for unmerged work (`git branch --no-merged main`); merge or discard explicitly
-- [ ] Verify the deployed image `sha-13ce252` really descends from the merged history (basis of D1)
-- [ ] Sync `~/code/wesen/wesen-os` to new main; cut `task/2026-07-upgrade-stack`
-- [ ] Baseline: `docker build .` reproduces a working image (rollback reference)
+- [x] Commit/stash the dirty workspace state (`go.work.sum`, `ttmp/vocabulary.yaml`, submodule pointers); commit this ticket's ttmp tree
+- [x] Push `task/sqlite-federation-runtime-fix`; open + merge PR into `wesen/wesen-os` main
+- [x] Sweep local `task/*` branches for unmerged work (`git branch --no-merged main`); merge or discard explicitly
+- [x] Verify the deployed image `sha-13ce252` really descends from the merged history (basis of D1)
+- [x] Cut `task/2026-07-upgrade-stack` (workspace checkout; `~/code/wesen/wesen-os` clone unsyncable this session — /home mounted ro; pull it later)
+- [x] Baseline: publish-host-image CI green on consolidated main (after pnpm-lock fix PR #13); deployed image sha-13ce252 untouched
 
 ## Phase 1 — Go stack bump + assistant backend (D2, D3)
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/help"
+	helpmodel "github.com/go-go-golems/glazed/pkg/help/model"
 	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
 	"github.com/go-go-golems/go-go-os-backend/pkg/docmw"
 	wesendoc "github.com/go-go-golems/wesen-os/pkg/doc"
@@ -81,13 +82,13 @@ func loadLauncherHelpDocStore() *docmw.DocStore {
 	return store
 }
 
-func mapHelpSectionType(sectionType help.SectionType) string {
+func mapHelpSectionType(sectionType helpmodel.SectionType) string {
 	switch sectionType {
-	case help.SectionTutorial:
+	case helpmodel.SectionTutorial:
 		return "tutorial"
-	case help.SectionExample:
+	case helpmodel.SectionExample:
 		return "example"
-	case help.SectionApplication:
+	case helpmodel.SectionApplication:
 		return "application"
 	default:
 		return "guide"

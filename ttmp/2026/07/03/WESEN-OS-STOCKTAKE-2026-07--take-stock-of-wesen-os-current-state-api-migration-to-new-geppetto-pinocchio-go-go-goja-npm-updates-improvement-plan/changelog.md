@@ -50,3 +50,8 @@ Plan restructured to six phases: new Phase 4 = complete os-chat replacement (D7)
 
 - /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/07/03/WESEN-OS-STOCKTAKE-2026-07--take-stock-of-wesen-os-current-state-api-migration-to-new-geppetto-pinocchio-go-go-goja-npm-updates-improvement-plan/tasks.md — Per-phase execution tracker
 
+
+## 2026-07-03
+
+Phase 0 executed: submodule WIP preserved (go-go-os-frontend 9a1e267 on task/2026-04-widget-showcase-wip), dirty state committed (08bb6a8, 114f688, a93ac8e), stray DEPLOY-001 branches merged (74403a9, 11171f4), PR #12 merged to main (52a26d0), lockfile regression fixed via PR #13 (41ac183). Found origin/main was already at deployed 13ce252 — only the ~/code clone was stale. task/2026-07-upgrade-stack cut for Phase 1.
+

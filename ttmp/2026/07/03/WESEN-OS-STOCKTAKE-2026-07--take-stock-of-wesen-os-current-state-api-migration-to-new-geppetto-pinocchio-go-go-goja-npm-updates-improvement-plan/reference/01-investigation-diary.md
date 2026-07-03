@@ -339,3 +339,58 @@ The user asked to lock in the complete os-chat replacement in the design guide (
 
 ### Technical details
 - v2 bundle: design doc + diary + various/01–06, uploaded as "WESEN-OS Stocktake 2026-07 — Analysis, Migration Guide & Improvement Plan (v2)".
+
+## Step 9: Phase 0 executed — wesen-os consolidated onto main
+
+Execution began. Phase 0 (consolidation) is done: the dirty April workspace state is committed, previously-uncommitted submodule work is preserved on a pushed branch, the two stray DEPLOY-001 doc branches are merged, everything landed on `wesen/wesen-os` main via PR #12, and a lockfile regression that PR introduced was fixed via PR #13.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, go ahead and work, commit at appropriate intervals, keep a diary as you work (see skill for the diary format)"
+
+**Assistant interpretation:** Execute the six-phase plan starting at Phase 0, committing in logical chunks and keeping this diary current.
+
+**Inferred user intent:** Turn the plan into landed code without further hand-holding.
+
+**Commit (code):** 52a26d0 (merge of PR #12) and 41ac183 → PR #13 (lockfile fix); submodule commit 9a1e267 on go-go-os-frontend `task/2026-04-widget-showcase-wip`.
+
+### What I did
+- Inspected the dirty tree: `go.work.sum`, `ttmp/vocabulary.yaml`, dirty `workspace-links/go-go-os-frontend` (17 modified source files: SelectableDataTable, desktop shell windowing, macos1 theme, build tooling + 12 untracked build artifacts), untracked agent dirs, `apps/os-launcher/public/__federation-smoke/` fixtures, `docs/window-resize-behavior.md`, three ttmp trees.
+- Preserved the submodule WIP: branch `task/2026-04-widget-showcase-wip` in go-go-os-frontend, commit `9a1e267` (source files only, artifacts excluded), pushed to `go-go-golems/go-go-os-frontend`.
+- Three wesen-os commits: `08bb6a8` gitignore (agent dirs + smoke fixtures), `114f688` workspace state + submodule pin → 9a1e267, `a93ac8e` ttmp trees incl. this ticket.
+- Branch sweep: `git branch --no-merged HEAD` → `task/deploy-001-draft-review-flow` (4 commits) and `task/deploy-001-require-gitops-pr-token` (1 commit). Verified their code (workflow/scripts) already lives in HEAD in newer form; unique content was ttmp docs. Merged both (`74403a9`, `11171f4`), resolving diary conflicts by chronological union (python strip of diff3 markers keeping both sides) and tasks.md/workflow with `--ours` (HEAD strict superset).
+- **D1 verification**: `git merge-base --is-ancestor 13ce252 HEAD` ✓ and `git ls-remote` showed origin/main == `13ce252` == the deployed image tag. The "stale main" from the earlier analysis was only the `~/code/wesen/wesen-os` clone, not the remote.
+- Pushed, opened PR #12, merged → main `52a26d0`. CI `publish-host-image` failed: `ERR_PNPM_OUTDATED_LOCKFILE` — the preserved macos1-react WIP added react dev-deps without a lockfile refresh. Ran `pnpm install` (lockfile regenerated with exactly the expected macos1-react block), verified `--frozen-lockfile` passes, committed `41ac183`, PR #13, merged. Baseline image build re-running on main.
+- Cut and pushed `task/2026-07-upgrade-stack` for Phase 1.
+
+### Why
+- Preserving the submodule WIP on a pushed branch keeps wesen-os's pinned pointer resolvable for anyone cloning with submodules.
+
+### What worked
+- The union merge strategy for append-only diaries; `--ours` for tasks.md where HEAD was a strict superset.
+
+### What didn't work
+1. `git pull` in `~/code/wesen/wesen-os` failed: `error: unable to create file .dockerignore: Read-only file system` — the whole `/home` mount is `ro` in this session except workspace mounts (`findmnt`: `/home … ro,nosuid,nodev`). Canonical clones under `~/code` cannot be synced from here; they need a `git pull` from a normal session. A stray `task/2026-07-upgrade-stack` at the stale commit was created there and deleted again; the clone remains on old main `068a8b8`.
+2. First `pnpm install` failed with `ERR_PNPM_EROFS`: the pnpm store dir pointed into another (read-only) workspace (`workspaces/2026-05-03/add-upload-sync/...pnpm-store`). Worked around with `--store-dir <scratchpad>/pnpm-store`.
+3. CI lockfile failure as above — self-inflicted by the WIP preservation, fixed within minutes.
+
+### What I learned
+- origin/main was never stale — the analysis doc's Phase 0 assumption ("main at 2026-03-01") was an artifact of the unsyncable local clone. Consolidation was therefore only ~15 commits of delta, all doc/bookkeeping except the submodule pin.
+
+### What was tricky to build
+- The frontend submodule pointer: index said `a554dc3`, checkout was `c74347e`+dirty. Committing the WIP moved HEAD to `9a1e267`; pinning wesen-os to that keeps the built-against state reproducible. The `.js/.d.ts/.map` files sitting next to `src/` were deliberately left uncommitted (build outputs).
+
+### What warrants a second pair of eyes
+- The two diary union-merges in `ttmp/2026/03/29/DEPLOY-001--…/diary.md` — verify no narrative was lost (`git show 74403a9`, `git show 11171f4`).
+- Whether the preserved WIP branch should eventually be rebased onto go-go-os-frontend main or treated as archaeology.
+
+### What should be done in the future
+- `git pull` the `~/code/wesen/wesen-os` clone from a session with a writable `/home`.
+- Delete the now-merged local branches (`task/deploy-001-*`, `task/sqlite-federation-runtime-fix`) once Phase 1 lands.
+
+### Code review instructions
+- `git log --graph --oneline 13ce252..main` in wesen-os; the interesting commits are `114f688` (submodule pin) and the two merges.
+- CI: `gh run list --repo wesen/wesen-os --branch main` — the run after PR #13 is the Phase 0 baseline build.
+
+### Technical details
+- pnpm workaround: `pnpm install --store-dir /tmp/claude-1000/…/scratchpad/pnpm-store`; the frozen-lockfile check passes in 0.9s once the store is warm.
