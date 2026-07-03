@@ -35,7 +35,11 @@ func (h *Host) promptRequest(ctx context.Context, sid sessionstream.SessionId, p
 	if err != nil {
 		return chatapp.PromptRequest{}, errors.Wrapf(err, "merge inference settings for profile %q", slug)
 	}
-	engine, err := factory.NewEngineFromSettings(settings)
+	buildEngine := h.opts.EngineFactory
+	if buildEngine == nil {
+		buildEngine = factory.NewEngineFromSettings
+	}
+	engine, err := buildEngine(settings)
 	if err != nil {
 		return chatapp.PromptRequest{}, errors.Wrapf(err, "build engine for profile %q", slug)
 	}

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	gepprofiles "github.com/go-go-golems/geppetto/pkg/engineprofiles"
+	gepengine "github.com/go-go-golems/geppetto/pkg/inference/engine"
 	aisettings "github.com/go-go-golems/geppetto/pkg/steps/ai/settings"
 	chatapp "github.com/go-go-golems/pinocchio/pkg/chatapp"
 	"github.com/go-go-golems/pinocchio/pkg/chatapp/frontendtools"
@@ -48,6 +49,10 @@ type BackendToolsFunc func(sid sessionstream.SessionId, registry *geptools.InMem
 // addenda (assistant app-chat bootstrap).
 type SystemPromptFunc func(sid sessionstream.SessionId) string
 
+// EngineFactory builds a geppetto engine from merged inference settings. The
+// default is factory.NewEngineFromSettings; tests inject fakes here.
+type EngineFactory func(settings *aisettings.InferenceSettings) (gepengine.Engine, error)
+
 // Options configures one chat host.
 type Options struct {
 	AppID string
@@ -57,6 +62,7 @@ type Options struct {
 	SystemPromptFunc SystemPromptFunc
 	Profiles         ProfileSurface
 	BackendTools     BackendToolsFunc
+	EngineFactory    EngineFactory
 	ChunkDelay       time.Duration
 	// TimelineDB is an optional sqlite path for durable timeline hydration.
 	TimelineDB string
