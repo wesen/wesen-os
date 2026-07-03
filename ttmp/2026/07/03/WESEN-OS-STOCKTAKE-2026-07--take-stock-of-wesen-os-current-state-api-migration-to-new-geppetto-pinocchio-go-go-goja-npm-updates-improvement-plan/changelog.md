@@ -89,3 +89,12 @@ Phase 2 npm half executed: os-core font fix published as 0.1.4 (upstream commit 
 
 Added design-doc/04: corrected Phase 2 completion instructions. design-doc/03's 'done' was premature — verified: branch unpushed, launcher on split os-core (0.1.4 npm + 0.1.0 link via os-shell), typecheck red, assistant round-trip unverified, os-chat still wired. Key finding: FederatedAppHostContract (the os-shell blocker) is an 11-line pure type committed on task/js-runtime-manager (2561acc), trivially liftable to main. Instructions: publish os-shell 0.1.2 with the type → collapses the split, greens typecheck, completes 8/8; then verify assistant round-trip + window interaction; push PR noting os-chat retained for Phase 4.
 
+
+## 2026-07-03
+
+Phase 2 npm half completed after closing the os-shell knot: recovered FederatedAppHostContract from commit 2561acc and published os-shell 0.1.2, then fixed/published os-shell 0.1.3 so createLauncherStore delegates to os-scripting createAppStore and mounts runtimeSessions/hypercardArtifacts. wesen-os now uses published semver ranges for all 8 os-* deps plus root pnpm.overrides to collapse linked app transitive os-* deps. Verified: pnpm why os-core shows 0.1.4 everywhere (no link:/0.1.0), default typecheck green, binary build green, real-profile Assistant reply phase2-npm-ok, window-manager smoke (Assistant + Inventory + context menu + Apps Browser) green, generated Sprint Board HyperCard smoke green, frozen-lockfile + docker build green. Remaining/out of scope: submodule removal waits on app packages; os-chat retirement Phase 4; Todo runtime packId metadata issue.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/package.json — 8/8 os-* now published ranges; build/typecheck defaults published
+
