@@ -55,3 +55,8 @@ Plan restructured to six phases: new Phase 4 = complete os-chat replacement (D7)
 
 Phase 0 executed: submodule WIP preserved (go-go-os-frontend 9a1e267 on task/2026-04-widget-showcase-wip), dirty state committed (08bb6a8, 114f688, a93ac8e), stray DEPLOY-001 branches merged (74403a9, 11171f4), PR #12 merged to main (52a26d0), lockfile regression fixed via PR #13 (41ac183). Found origin/main was already at deployed 13ce252 — only the ~/code clone was stale. task/2026-07-upgrade-stack cut for Phase 1.
 
+
+## 2026-07-03
+
+Phase 1 landed: pkg/chathost (chatapp/sessionstream host per app) + assistant/inventory rewrite; geppetto v0.13.3 / pinocchio v0.11.5 / sessionstream v0.1.0; library submodules dropped (D2); pinoweb quarantined to _pinoweb_legacy; launcher smoke verified end-to-end. Commits: wesen-os ca9098e+232a960, inventory 4397deb, gepa c01a8e1. Drift-report corrections recorded in diary Step 10 (profilebootstrap API, glazed help/model, profile-first config hard break).
+

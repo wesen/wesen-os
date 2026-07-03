@@ -17,17 +17,17 @@ improvement backlog.
 
 ## Phase 1 — Go stack bump + assistant backend (D2, D3)
 
-- [ ] Answer open question: current pinocchio release tag ≥ v0.11.5; pin the version triple (chat-provider 0.2.1 ↔ pinocchio ↔ sessionstream ≥ v0.0.6)
-- [ ] go.mod: geppetto ≥ v0.13.3, pinocchio ≥ v0.11.5, go-go-goja v0.8.3, go-go-os-backend ≥ v0.0.5, + sessionstream; drop library `go.work` use-entries and the go-go-os-chat replace; `go mod tidy`
-- [ ] Mechanical fixes: geppetto canonical events (§5.1 table), `pinocchio/pkg/cmds/helpers` → `profilebootstrap` (`profile_bootstrap.go:27,31`), goja `engine` → `pkg/engine` renames (mostly in gepa)
-- [ ] Read `pinocchio/pkg/chatapp/{chat.go,service.go,serverkit/contracts.go}` + `react-chat/internal/webchat/handlers.go` before coding; decide the APP-31 profile hook point (session-create hook vs runtime composer)
-- [ ] Rewrite `pkg/assistantbackendmodule` on chatapp/sessionstream: hub + engine + service + serverkit handlers (sessions/messages/stop/tools/ws) under `/api/apps/assistant/…`
+- [x] Version triple pinned: geppetto v0.13.3, pinocchio v0.11.5, sessionstream v0.1.0, go-go-os-backend v0.0.7, goja v0.9.6 via MVS, go 1.26.3
+- [x] go.mod bumped + sessionstream added; library go.work entries and submodules dropped (232a960); go-go-os-chat dependency removed entirely; replaces for in-flight inventory/gepa submodules
+- [x] Mechanical fixes done (profile_bootstrap → ResolveCLIProfileRuntime; glazed help/model sections; pinocchio cobra middlewares; gepa goja renames c01a8e1)
+- [x] Reference reading done; APP-31 profile hook = per-session profile in createSessionBody, resolved per prompt in chathost
+- [x] pkg/chathost written (reusable host); assistant + inventory rewritten on it (ca9098e, inventory 4397deb)
 - [ ] Verify chat-provider WS URL composition works under the namespaced `basePrefix` (`ws/protocol.ts:10-13`)
-- [ ] Re-map manifest capabilities (`chat, ws, timeline, profiles`) to the new endpoints
-- [ ] Bump + fix app repos: go-go-gepa (goja renames in `js_runtime.go`), go-go-app-inventory (pinoweb events/webchat exposure — biggest), go-go-app-sqlite, go-go-app-arc-agi-3; tag or keep linked per D2
-- [ ] Validate `profiles.runtime.yaml` (local + k3s ConfigMap copy) against the new engineprofiles decoder; reformat from legacy `profiles:` map if rejected
+- [x] Manifest capabilities re-mapped (chat, chat-sessions, ws, frontend-tools, profiles); inventory reflection doc updated
+- [x] App repos bumped: gepa + inventory ported (pinoweb quarantined as _pinoweb_legacy → Phase 4 sub-ticket); sqlite + arc-agi build clean unchanged
+- [x] Validated prod profiles.runtime.yaml: decodes + boots under the new stack, BUT `runtime.step_settings_patch.ai-chat.ai-engine` is dead config for chathost — Phase 3 must rewrite it to `profiles.default.inference_settings.chat: {api_type, engine}` in the k3s repo
 - [ ] Add assistant contract test: fake engine, create-session → submit → stream, assert canonical event order
-- [ ] Gate: `go build ./... && go test ./...` green with no go.work library overrides
+- [x] Gate passed: build+test green, no library overrides; launcher smoke on :18099 (session create → prompt → snapshot with correlated error entity)
 
 ## Phase 2 — Frontend to published npm packages + assistant UI (D4, D6)
 
@@ -44,7 +44,7 @@ improvement backlog.
 
 - [ ] Confirm `GITOPS_PR_TOKEN` still valid (3 months old)
 - [ ] Local `docker build`; extend + run `scripts/smoke-wesen-os-launcher.sh` (/, /api/os/apps, /api/os/federation-registry, assistant round-trip with NoopEngine profile, one sqlite query)
-- [ ] Update k3s repo `gitops/kustomize/wesen-os/config/profiles.runtime.yaml` if the format changed (config-hash rollout)
+- [ ] Update k3s repo `gitops/kustomize/wesen-os/config/profiles.runtime.yaml`: migrate `runtime.step_settings_patch` to `inference_settings.chat` (config-hash rollout)
 - [ ] Merge to main → GHCR image → merge auto-opened GitOps PR → Argo sync
 - [ ] Verify: `kubectl -n wesen-os rollout status deployment/wesen-os`; `curl https://wesen-os.yolo.scapegoat.dev/api/os/apps`; desktop smoke (assistant, sqlite, gepa); deliberate pod restart to confirm emptyDir behavior
 - [ ] Bake period defined and observed (entry criterion for Phase 4)

@@ -394,3 +394,64 @@ Execution began. Phase 0 (consolidation) is done: the dirty April workspace stat
 
 ### Technical details
 - pnpm workaround: `pnpm install --store-dir /tmp/claude-1000/…/scratchpad/pnpm-store`; the frozen-lockfile check passes in 0.9s once the store is warm.
+
+## Step 10: Phase 1 — the Go stack port to chatapp/sessionstream
+
+The core migration landed: wesen-os, inventory, and gepa now build and test green against geppetto v0.13.3 / pinocchio v0.11.5 / sessionstream v0.1.0, with both chat surfaces (assistant + inventory) rewritten from the deleted pinocchio webchat onto a new reusable `pkg/chathost` package that speaks the chat-provider wire contract. Verified live: the launcher boots, creates sessions, accepts prompts, and projects timeline entities (including a controlled "no API key" error) end-to-end.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 9)
+
+**Assistant interpretation:** Continue executing: Phase 1 dependency bump + assistant/inventory rewrite.
+
+**Inferred user intent:** Same as Step 9.
+
+**Commit (code):** wesen-os `ca9098e` (port) + `232a960` (submodule removal) on task/2026-07-upgrade-stack; inventory `4397deb`; gepa `c01a8e1` (same branch names, pushed).
+
+### What I did
+- Read the reference implementations before coding: `react-chat/internal/webchat/{server,handlers,real_runtime}.go`, `pinocchio/pkg/chatapp/{service.go,runtime_inference.go}`, serverkit helpers. Key learnings: conversation history lives in the turn store as a "final" accumulator turn reloaded per prompt (`runtime_inference.go:107-137`); serverkit ships the HTTP contracts/helpers; the frontend-tool bridge is `frontendtools.Manager` + `NewBridgeExecutor` + `WithBridgeContext`.
+- Wrote `pkg/chathost` (host.go/handlers.go/runtime.go): per-app chatapp host with engine-profile surface (`Registry.GetEngineProfile` → `MergeInferenceSettings` → `factory.NewEngineFromSettings`), per-session profile selection via `createSessionBody.profile`, backend-tools hook, frontend-tools bridge, and system-prompt seeding via `InitialTurn` only on a session's first message.
+- Rewrote `pkg/assistantbackendmodule` on chathost; moved `ConversationContext` in-repo (2-field struct), severing the go-go-os-chat Go dependency entirely.
+- Inventory submodule: `backendcomponent`/`backendmodule` now take host-injected `ChatRoutes` instead of a webchat server; `pkg/pinoweb` (2.7k LOC of SEM/hypercard extensions) quarantined as `pkg/_pinoweb_legacy` (underscore dir = invisible to the go tool) pending its Phase 4 chatapp port; reflection doc + tests updated to the session API.
+- gepa submodule: goja renames (`NewRunner`→`NewRuntimeOwner`, `Options.Runner`→`RuntimeOwner`), middleware func swap.
+- main.go: two chathosts (assistant with app-context `SystemPromptFunc`, inventory with `InventoryToolFactories` as backend tools — `infruntime.ToolRegistrar` survived unchanged), self-owned `http.Server` (webchat's Run is gone), `perAppStorePath` suffixing for shared sqlite flags.
+- profile_bootstrap.go ported to `ResolveCLIProfileRuntime` + `bootstrap.ResolveProfileRegistryChain`; docs_endpoint.go to `glazed/pkg/help/model` section types; cobra middlewares to `pinocchiocmds.GetPinocchioCommandMiddlewares`.
+- Dropped the four library submodules (D2) after green builds.
+
+### Why
+- One reusable chathost instead of per-app rewrites keeps assistant/inventory symmetric and gives Phase 2's chat-provider frontend a single contract.
+
+### What worked
+- The full smoke: `POST /api/apps/assistant/api/chat/sessions` → uuid; `POST …/messages` → accepted; `GET …/sessions/{id}` → snapshot with user message + correlated error entity ("no API key for openai") — the canonical pipeline works without a real engine.
+- `inventorytools` needed zero changes — `pinocchio/pkg/inference/runtime.ToolRegistrar` survived the refactor exactly as the drift report predicted.
+
+### What didn't work
+1. geppetto v0.13.3 requires go ≥ 1.26.3 (had 1.26.1) — bumped go directives; toolchain auto-fetched.
+2. `go mod tidy` ignores go.work — the workspace submodule rewrites were invisible to it; fixed with `replace` directives for inventory/gepa (works in Docker too since submodules are committed).
+3. Drift-report misses: `profilebootstrap.ResolveCLIProfileSelection` was replaced by `ResolveCLIProfileRuntime` (report said stable); glazed help `SectionType` moved to `help/model`; `geppettosections.GetCobraCommandGeppettoMiddlewares` is gone (use pinocchio's).
+4. The **profile-first config break bit immediately**: legacy `profile-settings:`/`ai-chat:` top-level keys are hard errors in pinocchio v0.11.5 (`configdoc.validateTopLevelKeys`). Test fixtures rewritten to `profile: {active, registries}`. **The prod `profiles.runtime.yaml` in the k3s repo must be checked before Phase 3** (tasks.md item).
+5. Env-override test failed by design: `PINOCCHIO_*` env now applies through the cobra middleware chain, which `NewCLISelectionValues` bypasses — test removed with explanation.
+6. A python heredoc `.replace()` silently no-opped on reflection.go (whitespace mismatch) — caught by the still-failing test; redone with the Edit tool. Lesson: never trust silent replaces; let the test re-run adjudicate.
+7. Inventory's lefthook pre-commit blocked the first commit on its own outdated tests (old manifest capabilities and "requires server" lifecycle errors) — tests updated to the new contract rather than bypassing hooks.
+
+### What was tricky to build
+- System-prompt semantics under chatapp: the accumulator-turn history means the system block must be seeded exactly once (first message) via `InitialTurn`; later prompts must NOT pass InitialTurn or history would be dropped. `initialTurnIfFirstMessage` checks `LoadLatestTurn(sid, "final") == nil` to decide.
+- Keeping the frozen webchat features honest: middleware definitions (`webchat_runtime@v1` extensions), the confirm surface, and hypercard SEM entities are *not* ported — they ride on the Phase 4 pinoweb/os-scripting sub-ticket. The inventory profile fixtures still carry the extension blocks; they decode fine but the middleware policies are not applied by chathost.
+
+### What warrants a second pair of eyes
+- `chathost.promptRequest` merges base settings with the profile overlay but does **not** apply profile `extensions` (middlewares/tools policy from `webchat_runtime@v1`) — check whether any prod profile depends on middleware policies before shipping.
+- Per-session profile map is in-memory only (lost on restart; sessions survive in sqlite hydration when configured) — acceptable at demo tier, flag for Phase 5 persistence work.
+- The DSN (vs file-path) variants of the store flags are passed through unsuffixed to both hosts — collision risk if anyone sets `--turns-dsn` with a file DSN.
+
+### What should be done in the future
+- Remaining Phase 1 items: Go contract test (httptest, fake engine), chat-provider WS-URL-under-basePrefix verification (moves with Phase 2), prod profiles.runtime.yaml migration check.
+- Phase 4 sub-ticket now has a concrete anchor: `go-go-app-inventory/pkg/_pinoweb_legacy`.
+
+### Code review instructions
+- Start with `pkg/chathost/runtime.go` (promptRequest — the correctness core), then `initialTurnIfFirstMessage`, then main.go's two chathost constructions.
+- Validate: `go build ./... && go test ./...` in wesen-os; smoke: build the launcher, run with a scratch single-registry profiles.yaml, curl the session flow (Step 10 commands in the shell history; also scripts/smoke to be extended in Phase 3).
+
+### Technical details
+- Version triple shipped: geppetto v0.13.3, pinocchio v0.11.5, sessionstream v0.1.0, go-go-os-backend v0.0.7, go-go-goja v0.9.6 (MVS via geppetto), go 1.26.3.
+- Route shape: `/api/apps/<app>/api/chat/{sessions,sessions/{id}/messages,sessions/{id}/stop,sessions/{id}/tools/{manifest,results},ws,health}` — chat-provider `basePrefix: /api/apps/<app>`.
