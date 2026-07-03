@@ -72,29 +72,29 @@ importers:
         specifier: workspace:*
         version: link:../../workspace-links/go-go-app-inventory/apps/inventory
       '@go-go-golems/os-chat':
-        specifier: workspace:*
-        version: link:../../workspace-links/go-go-os-frontend/packages/os-chat
+        specifier: ^0.1.1
+        version: 0.1.1(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
       '@go-go-golems/os-core':
-        specifier: workspace:*
-        version: link:../../workspace-links/go-go-os-frontend/packages/os-core
+        specifier: ^0.1.4
+        version: 0.1.4(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
       '@go-go-golems/os-kanban':
-        specifier: workspace:*
-        version: link:../../workspace-links/go-go-os-frontend/packages/os-kanban
+        specifier: ^0.1.4
+        version: 0.1.4(@go-go-golems/os-shell@workspace-links+go-go-os-frontend+packages+os-shell)(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
       '@go-go-golems/os-repl':
-        specifier: workspace:*
-        version: link:../../workspace-links/go-go-os-frontend/packages/os-repl
+        specifier: ^0.1.6
+        version: 0.1.6(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
       '@go-go-golems/os-scripting':
-        specifier: workspace:*
-        version: link:../../workspace-links/go-go-os-frontend/packages/os-scripting
+        specifier: ^0.1.3
+        version: 0.1.3(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
       '@go-go-golems/os-shell':
         specifier: workspace:*
         version: link:../../workspace-links/go-go-os-frontend/packages/os-shell
       '@go-go-golems/os-ui-cards':
-        specifier: workspace:*
-        version: link:../../workspace-links/go-go-os-frontend/packages/os-ui-cards
+        specifier: ^0.1.3
+        version: 0.1.3(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
       '@go-go-golems/os-widgets':
-        specifier: workspace:*
-        version: link:../../workspace-links/go-go-os-frontend/packages/os-widgets
+        specifier: ^0.1.3
+        version: 0.1.3(@go-go-golems/os-core@0.1.4(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(@go-go-golems/os-shell@workspace-links+go-go-os-frontend+packages+os-shell)(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
       '@go-go-golems/todo':
         specifier: workspace:*
         version: link:../../workspace-links/go-go-os-frontend/apps/todo
@@ -1667,6 +1667,91 @@ packages:
     peerDependencies:
       react: ^18 || ^19
       react-dom: ^18 || ^19
+
+  '@go-go-golems/os-chat@0.1.1':
+    resolution: {integrity: sha512-HFmUvkcYYJuPdctCCb9nJDDnNXpza1qco+GwA62n+2qt9RM46DTALKd2PYj3BRq3S669GpSzquOVRMcyGqbNbw==}
+    peerDependencies:
+      '@reduxjs/toolkit': ^2.0.0
+      react: ^18 || ^19
+      react-dom: ^18 || ^19
+      react-redux: ^9.0.0
+
+  '@go-go-golems/os-core@0.1.1':
+    resolution: {integrity: sha512-UhleWaJAKZS0v3t8bGfnABUrsn/yQH7Im1nTueQc6oCCgs6XTcXxKWQDMc0MFVecl4SNais5Pg3x/6Zfisg3zw==}
+    peerDependencies:
+      '@reduxjs/toolkit': ^2.0.0
+      react: ^18 || ^19
+      react-dom: ^18 || ^19
+      react-redux: ^9.0.0
+
+  '@go-go-golems/os-core@0.1.2':
+    resolution: {integrity: sha512-ZuzTEb1hKmJEdfazyYv/ht3Nhmc1kE289TAotoNtctcyVAVBySYXIITSaOZpI5UqLh0enSBwU5qFGMamvftg/w==}
+    peerDependencies:
+      '@reduxjs/toolkit': ^2.0.0
+      react: ^18 || ^19
+      react-dom: ^18 || ^19
+      react-redux: ^9.0.0
+
+  '@go-go-golems/os-core@0.1.4':
+    resolution: {integrity: sha512-lfAf9ZbHCJdU6XNvOacmd5GoVq2k9qJB0Pz/46OWarY7wOWg3C6HSnz9Rj8qh6PmW+JfOrb4KylTvINqEx+wzQ==}
+    peerDependencies:
+      '@reduxjs/toolkit': ^2.0.0
+      react: ^18 || ^19
+      react-dom: ^18 || ^19
+      react-redux: ^9.0.0
+
+  '@go-go-golems/os-kanban@0.1.4':
+    resolution: {integrity: sha512-9d9gl99ozw3vFDqVt6aXA0mdpdnXhOorvQFMxP1KiOrNtB8JhmyiC+WtzcIa6XmQhn7umAUJV5vyiUZf4kjTsw==}
+    peerDependencies:
+      '@reduxjs/toolkit': ^2.0.0
+      react: ^18 || ^19
+      react-dom: ^18 || ^19
+      react-redux: ^9.0.0
+
+  '@go-go-golems/os-repl@0.1.5':
+    resolution: {integrity: sha512-esVTuFv3OLeCvZUm2qrC7MiJ76Tn4hui8i9FLVl/cBzG+45nt9m8EU4J8sAgiIYrQblw0C4J76t4NgGj079yfg==}
+    peerDependencies:
+      '@reduxjs/toolkit': ^2.0.0
+      react: ^18 || ^19
+      react-dom: ^18 || ^19
+      react-redux: ^9.0.0
+
+  '@go-go-golems/os-repl@0.1.6':
+    resolution: {integrity: sha512-GqsuWTg5R29QsG/wa4hvw1oRyekwiYhAfmOagRE82f9W4cNbEQEJErtaYaz2lVrlxHRHheL8mAYrhSVuarvfkg==}
+    peerDependencies:
+      '@reduxjs/toolkit': ^2.0.0
+      react: ^18 || ^19
+      react-dom: ^18 || ^19
+      react-redux: ^9.0.0
+
+  '@go-go-golems/os-scripting@0.1.3':
+    resolution: {integrity: sha512-iil9IIE4oSKGRAgUprRfP7ma9ni1zH6jZyQ8fcAnZS7dx+OQ24aWzCVRYzatBDIn3kdzoxaH7ZyJ/vnrNpvWTA==}
+    peerDependencies:
+      '@reduxjs/toolkit': ^2.0.0
+      react: ^18 || ^19
+      react-dom: ^18 || ^19
+      react-redux: ^9.0.0
+
+  '@go-go-golems/os-ui-cards@0.1.3':
+    resolution: {integrity: sha512-ssAcBNHfJ6NjWEwafH3HHSj1ERGw3rjFVPl0abTiBMw7rILT2aKDhlrOg8T/Wk/M5fQjwvl4U7sXIsNS6E43rQ==}
+    peerDependencies:
+      '@reduxjs/toolkit': ^2.0.0
+      react: ^18 || ^19
+      react-dom: ^18 || ^19
+      react-redux: ^9.0.0
+
+  '@go-go-golems/os-widgets@0.1.3':
+    resolution: {integrity: sha512-oMfLoC7FTTvvAKm71fprxDiDbVmfAyuzYM+N1kyxKX/1jCwsXzzowD6x9NLeo8FEtX7WNNd6FbUWVDZieDthdA==}
+    peerDependencies:
+      '@go-go-golems/os-core': 0.1.2
+      '@go-go-golems/os-shell': 0.1.1
+      '@reduxjs/toolkit': ^2.0.0
+      react: ^18 || ^19
+      react-dom: ^18 || ^19
+      react-redux: ^9.0.0
+    peerDependenciesMeta:
+      '@go-go-golems/os-shell':
+        optional: true
 
   '@inquirer/ansi@1.0.2':
     resolution: {integrity: sha512-S8qNSZiYzFd0wAcyG5AXCvUHC5Sr7xpZ9wZ2py9XR88jUz8wooStVx5M6dRzczbBWjic9NP7+rY0Xi7qqK/aMQ==}
@@ -3834,6 +3919,146 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - redux
+
+  '@go-go-golems/os-chat@0.1.1(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)':
+    dependencies:
+      '@bufbuild/protobuf': 2.11.0
+      '@codemirror/autocomplete': 6.20.1
+      '@codemirror/lang-javascript': 6.2.5
+      '@codemirror/lang-yaml': 6.1.2
+      '@codemirror/lint': 6.9.5
+      '@go-go-golems/os-core': 0.1.1(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@lezer/common': 1.5.1
+      '@lezer/highlight': 1.2.3
+      '@lezer/javascript': 1.5.4
+      '@lezer/lr': 1.4.8
+      '@lezer/yaml': 1.0.4
+      '@reduxjs/toolkit': 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      debug: 4.4.3
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      react-redux: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@go-go-golems/os-core@0.1.1(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)':
+    dependencies:
+      '@reduxjs/toolkit': 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      debug: 4.4.3
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      react-redux: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@go-go-golems/os-core@0.1.2(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)':
+    dependencies:
+      '@reduxjs/toolkit': 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      debug: 4.4.3
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      react-redux: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@go-go-golems/os-core@0.1.4(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)':
+    dependencies:
+      '@reduxjs/toolkit': 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      debug: 4.4.3
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      react-redux: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@go-go-golems/os-kanban@0.1.4(@go-go-golems/os-shell@workspace-links+go-go-os-frontend+packages+os-shell)(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)':
+    dependencies:
+      '@go-go-golems/os-core': 0.1.2(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@go-go-golems/os-scripting': 0.1.3(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@go-go-golems/os-ui-cards': 0.1.3(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@go-go-golems/os-widgets': 0.1.3(@go-go-golems/os-core@0.1.2(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(@go-go-golems/os-shell@workspace-links+go-go-os-frontend+packages+os-shell)(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@reduxjs/toolkit': 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      react-redux: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
+    transitivePeerDependencies:
+      - '@go-go-golems/os-shell'
+      - supports-color
+
+  '@go-go-golems/os-repl@0.1.5(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)':
+    dependencies:
+      '@reduxjs/toolkit': 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      react-redux: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
+
+  '@go-go-golems/os-repl@0.1.6(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)':
+    dependencies:
+      '@reduxjs/toolkit': 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      react-redux: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
+
+  '@go-go-golems/os-scripting@0.1.3(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)':
+    dependencies:
+      '@codemirror/autocomplete': 6.20.1
+      '@codemirror/commands': 6.10.2
+      '@codemirror/lang-javascript': 6.2.5
+      '@codemirror/language': 6.12.2
+      '@codemirror/lint': 6.9.5
+      '@codemirror/state': 6.5.4
+      '@codemirror/theme-one-dark': 6.1.3
+      '@codemirror/view': 6.39.16
+      '@go-go-golems/os-chat': 0.1.1(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@go-go-golems/os-core': 0.1.2(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@go-go-golems/os-repl': 0.1.5(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@jitl/quickjs-ffi-types': 0.31.0
+      '@jitl/quickjs-singlefile-mjs-release-sync': 0.31.0
+      '@lezer/common': 1.5.1
+      '@lezer/highlight': 1.2.3
+      '@lezer/javascript': 1.5.4
+      '@lezer/lr': 1.4.8
+      '@reduxjs/toolkit': 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      quickjs-emscripten: 0.31.0
+      quickjs-emscripten-core: 0.31.0
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      react-redux: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@go-go-golems/os-ui-cards@0.1.3(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)':
+    dependencies:
+      '@go-go-golems/os-core': 0.1.2(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@go-go-golems/os-scripting': 0.1.3(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@reduxjs/toolkit': 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      react-redux: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@go-go-golems/os-widgets@0.1.3(@go-go-golems/os-core@0.1.2(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(@go-go-golems/os-shell@workspace-links+go-go-os-frontend+packages+os-shell)(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)':
+    dependencies:
+      '@go-go-golems/os-core': 0.1.2(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@go-go-golems/os-repl': 0.1.5(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@reduxjs/toolkit': 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      react-redux: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
+    optionalDependencies:
+      '@go-go-golems/os-shell': link:workspace-links/go-go-os-frontend/packages/os-shell
+
+  '@go-go-golems/os-widgets@0.1.3(@go-go-golems/os-core@0.1.4(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(@go-go-golems/os-shell@workspace-links+go-go-os-frontend+packages+os-shell)(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)':
+    dependencies:
+      '@go-go-golems/os-core': 0.1.4(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@go-go-golems/os-repl': 0.1.5(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      '@reduxjs/toolkit': 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      react-redux: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
+    optionalDependencies:
+      '@go-go-golems/os-shell': link:workspace-links/go-go-os-frontend/packages/os-shell
 
   '@inquirer/ansi@1.0.2': {}
 
