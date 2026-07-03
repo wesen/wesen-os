@@ -4207,3 +4207,91 @@ I attempted a fresh `terraform validate` in the federation bucket stack, but the
 - `403 Forbidden` on `go-go-golems-tf-state`
 
 That does not invalidate the live CORS fix. The policy was applied successfully with the S3 API against the actual federation bucket, and the live HTTP responses prove it.
+
+## 2026-03-29: Requiring `GITOPS_PR_TOKEN` For The Real Release Path
+
+After the consolidated `publish-host-image` workflow landed, one more release-contract bug became obvious from the GitHub Actions behavior.
+
+### What happened
+
+The `gitops-pr` job used this shell guard:
+
+```bash
+if [ -z "${GH_TOKEN}" ]; then
+  echo "GITOPS_PR_TOKEN is not configured; skipping GitOps PR creation."
+  exit 0
+fi
+```
+
+That is safe for an optional prototype path.
+
+It is wrong for `wesen-os` now that the GitOps PR is part of the intended deployment contract. A workflow that publishes an image successfully but silently skips the GitOps PR has not actually completed the release handoff.
+
+### Decision
+
+For the required release path, a missing `GITOPS_PR_TOKEN` must fail the workflow.
+
+The new behavior in `.github/workflows/publish-host-image.yml` is:
+
+```bash
+if [ -z "${GH_TOKEN}" ]; then
+  echo "GITOPS_PR_TOKEN is not configured; failing because GitOps PR creation is part of the release contract."
+  exit 1
+fi
+```
+
+That makes the failure visible immediately and forces the repository to be configured correctly instead of producing a misleading green run.
+
+### Documentation change paired with the code change
+
+I updated the K3s docs so they no longer imply that skipping is the right general pattern.
+
+The docs now distinguish:
+
+- optional prototype path:
+  - skip can be acceptable if that is explicitly intentional
+- required production-ish release path:
+  - missing token is a configuration error and should fail
+
+I also added the missing initial setup instruction for the secret itself:
+
+```bash
+gh secret set GITOPS_PR_TOKEN --repo <source-repo>
+```
+
+Current `wesen-os` example:
+
+```bash
+gh secret set GITOPS_PR_TOKEN --repo wesen/wesen-os
+```
+
+### Files changed for this slice
+
+Source repo:
+
+- `.github/workflows/publish-host-image.yml`
+
+K3s docs:
+
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/source-app-deployment-infrastructure-playbook.md`
+- `/home/manuel/code/wesen/2026-03-27--hetzner-k3s/docs/app-packaging-and-gitops-pr-standard.md`
+
+Ticket helper:
+
+- `ttmp/2026/03/29/DEPLOY-001--k3s-host-deployment-federated-modules-and-github-ci-cd/scripts/24-capture-missing-gitops-token-run.sh`
+
+### Why this matters
+
+This is a subtle but important difference in operator ergonomics:
+
+- “skip when missing” hides a broken release setup behind a green workflow
+- “fail when missing” makes the missing repository secret visible immediately
+
+For this platform, the second behavior is the correct default once the GitOps PR handoff is part of the official deployment flow.
+
+### What should happen next
+
+- commit and push the workflow hardening in `wesen-os`
+- commit and push the matching K3s doc correction
+- set `GITOPS_PR_TOKEN` in `wesen/wesen-os`
+- rerun or wait for the next `main` publish to prove the GitOps PR job no longer silently skips
