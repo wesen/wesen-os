@@ -60,3 +60,8 @@ Phase 0 executed: submodule WIP preserved (go-go-os-frontend 9a1e267 on task/202
 
 Phase 1 landed: pkg/chathost (chatapp/sessionstream host per app) + assistant/inventory rewrite; geppetto v0.13.3 / pinocchio v0.11.5 / sessionstream v0.1.0; library submodules dropped (D2); pinoweb quarantined to _pinoweb_legacy; launcher smoke verified end-to-end. Commits: wesen-os ca9098e+232a960, inventory 4397deb, gepa c01a8e1. Drift-report corrections recorded in diary Step 10 (profilebootstrap API, glazed help/model, profile-first config hard break).
 
+
+## 2026-07-03
+
+Obsidian vault report written and pushed: go-go-parc Projects/2026/07/03/PROJ - wesen-os - 2026-07 Stocktake, Consolidation, and Chatapp Migration.md (commit bf9cfa4). Diary Step 11.
+

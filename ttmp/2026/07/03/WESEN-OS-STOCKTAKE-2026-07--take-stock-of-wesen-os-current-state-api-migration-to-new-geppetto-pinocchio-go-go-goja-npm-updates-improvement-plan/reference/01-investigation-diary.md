@@ -455,3 +455,23 @@ The core migration landed: wesen-os, inventory, and gepa now build and test gree
 ### Technical details
 - Version triple shipped: geppetto v0.13.3, pinocchio v0.11.5, sessionstream v0.1.0, go-go-os-backend v0.0.7, go-go-goja v0.9.6 (MVS via geppetto), go 1.26.3.
 - Route shape: `/api/apps/<app>/api/chat/{sessions,sessions/{id}/messages,sessions/{id}/stop,sessions/{id}/tools/{manifest,results},ws,health}` — chat-provider `basePrefix: /api/apps/<app>`.
+
+
+## Step 11: Obsidian vault project report
+
+Wrote the durable synthesis of the whole effort as a vault note and pushed it.
+
+### Prompt Context
+
+**User prompt (verbatim):** "write a detailed project report for the obsidian vault as a deep dive technical analysis blog post using a textbook writing style (no analogies, see skill). Commit and push the bsidian vault when done (go-go-parc vault). Write a detailed report on all this cleanup and consolidation work, be very exhaustive and precise."
+
+**Assistant interpretation:** Produce a PROJ-style note in the go-go-parc vault covering the stocktake findings, decisions D1-D7, Phase 0/1 execution mechanics (with implementation detail on chathost), verification, environment constraints, status, and extracted working rules; textbook prose, no analogies; commit and push.
+
+**Inferred user intent:** A durable, teachable record that outlives the ticket.
+
+### What I did
+- Wrote `Projects/2026/07/03/PROJ - wesen-os - 2026-07 Stocktake, Consolidation, and Chatapp Migration.md` (248 lines: findings tables, chathost mermaid diagram + promptRequest pseudocode, history/system-prompt semantics, drift-correction table, verification trace, working rules, open questions).
+- Committed only the note; pushed go-go-parc main (`bf9cfa4`). The vault sits on a writable mount despite the session's ro /home.
+
+### Code review instructions
+- Read the note top-to-bottom against diary Steps 1-10; every factual claim traces to a step or a ticket document.
