@@ -75,3 +75,12 @@ Session 2 execution: chathost contract tests (2873def); profile-stack resolution
 
 Added design-doc/02: npm package publishing + consumer switchover implementation guide (for colleague hand-off). Key finding: all 9 os-* packages now published; only os-core is behind (npm 0.1.2 vs repo 0.1.3) and needs the Chicago font edit. Documents the go-go-os-frontend trusted-publishing workflow, the os-core release steps, the launcher workspace:* → published-range switch, and the submodule-removal scoping boundary (app packages out of scope).
 
+
+## 2026-07-03
+
+Phase 2 npm half executed: os-core font fix published as 0.1.4 (upstream commit ec19a1c7, npm latest); wesen-os launcher switched to published @go-go-golems/os-* npm ranges (7 of 8) on branch task/2026-07-os-launcher-published-npm-deps (commit 7caa3c9). os-shell held on workspace:* because the launcher+inventory app reference the unreleased FederatedAppHostContract type. Launcher default build set to published resolution mode so Docker/CI ships the Chicago-free os-core 0.1.4; temporary Chicago override removed. Verified: published build, frozen-lockfile, go build, docker build all green; runtime desktop renders with Chicago-free font. Boss-facing handoff report written as design-doc/03. Findings: design-doc/02 §2.2/§5 glob-narrowing recommendation is incorrect (8 workspace apps consume os-* via workspace:*; narrowing strands them; also unnecessary since submodule os-* are all 0.1.0); tsc typecheck is pre-existing-broken on FederatedAppHostContract (fails at clean HEAD, not caused by this work).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/package.json — os-* deps switched to npm ranges; build -> published mode
+

@@ -32,14 +32,14 @@ improvement backlog.
 
 ## Phase 2 — Frontend to published npm packages + assistant UI (D4, D6)
 
-- [ ] Publish missing packages from go-go-os-frontend main: os-scripting, os-ui-cards, os-confirm; release os-core 0.1.3 (repo ahead of npm)
-- [ ] os-core font cleanup (no-Chicago decision, §5.6(4)): edit `theme/classic.css:4`, `theme/desktop/theme/macos1.css:3`, `theme/desktop/tokens.css:9` to `"Geneva", "Helvetica Neue", Helvetica, Arial, sans-serif`; release
-- [ ] `apps/os-launcher/package.json`: replace `workspace:*` with published semver ranges; make `build:published` the default; keep `build:linked` for dev
+- [x] Publish missing packages from go-go-os-frontend main — os-scripting/os-ui-cards/os-confirm were already published & version-current; os-core released as **0.1.4** (font fix, upstream `ec19a1c7`, npm latest)
+- [x] os-core font cleanup (no-Chicago decision, §5.6(4)): edited `theme/classic.css:4`, `theme/desktop/theme/macos1.css:3`, `theme/desktop/tokens.css:9` to `"Geneva", "Helvetica Neue", Helvetica, Arial, sans-serif`; released in os-core 0.1.4
+- [x] `apps/os-launcher/package.json`: replaced `workspace:*` with published semver ranges for **7 of 8** os-* (os-shell kept `workspace:*` — launcher+inventory reference the unreleased `FederatedAppHostContract` type); made `build:published` the default; added `build:linked` for dev. Branch `task/2026-07-os-launcher-published-npm-deps` (`7caa3c9`). See design-doc/03.
 - [x] Assistant window mounts ChatProvider(basePrefix=/api/apps/assistant) + chat-overlay ChatMessages/ChatComposer (302054e); real gpt-5-nano round-trip verified in browser
 - [x] assistant-chat-macos1.css: token bridge + component layout + Tailwind-utility fallbacks + no-Chicago font (302054e). Upstream Tailwind→stable-classes PR still open (future)
-- [ ] Verify theme side effects survive the vite build (CSS present for every os-* `./theme` import; diff built CSS size vs pre-migration)
-- [ ] Drop `workspace-links/go-go-os-frontend` submodule + pnpm glob once green (app-repo frontends stay linked until published)
-- [ ] Gate: `pnpm -r build && pnpm -r test` green in published mode; launcher runs locally with assistant round-trip
+- [x] Verify theme side effects survive the vite build — published-mode build bundles the os-core macos1 theme CSS; built `--hc-font-family` is Chicago-free (4 residual "Chicago" tokens are os-widgets `--mac-font` widget-art themes, out of scope)
+- [ ] Drop `workspace-links/go-go-os-frontend` submodule + pnpm glob once green — **deferred**: blocked on (a) releasing os-shell's federation API + the 6 unpublished app packages, and (b) NOT narrowing the glob (8 workspace apps consume os-* via `workspace:*`; narrowing strands them — see design-doc/03 §6)
+- [~] Gate: published-mode launcher **build green**, `go build` + **`docker build`** green, desktop renders Chicago-free at runtime. **Not yet green:** `tsc` typecheck fails on the pre-existing unreleased `FederatedAppHostContract` (fails at clean HEAD, unrelated to this work); assistant prompt round-trip not re-exercised (needs LLM backend). See design-doc/03 §5.
 
 ## Phase 3 — Ship (D5)
 
