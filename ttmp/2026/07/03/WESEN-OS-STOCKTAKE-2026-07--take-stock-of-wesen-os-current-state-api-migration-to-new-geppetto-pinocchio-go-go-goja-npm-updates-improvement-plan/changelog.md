@@ -65,3 +65,8 @@ Phase 1 landed: pkg/chathost (chatapp/sessionstream host per app) + assistant/in
 
 Obsidian vault report written and pushed: go-go-parc Projects/2026/07/03/PROJ - wesen-os - 2026-07 Stocktake, Consolidation, and Chatapp Migration.md (commit bf9cfa4). Diary Step 11.
 
+
+## 2026-07-03
+
+Session 2 execution: chathost contract tests (2873def); profile-stack resolution + credential-inheritance fix so app surfaces inherit the launcher-selected engine/key, plus --print-inference-settings diagnostic (9ad8ff4); assistant UI ported to @go-go-golems/chat-provider + chat-overlay with macos1 theme bridge (302054e). Real gpt-5-nano inference verified end-to-end in browser. Diary Step 12.
+

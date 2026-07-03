@@ -22,20 +22,21 @@ improvement backlog.
 - [x] Mechanical fixes done (profile_bootstrap → ResolveCLIProfileRuntime; glazed help/model sections; pinocchio cobra middlewares; gepa goja renames c01a8e1)
 - [x] Reference reading done; APP-31 profile hook = per-session profile in createSessionBody, resolved per prompt in chathost
 - [x] pkg/chathost written (reusable host); assistant + inventory rewritten on it (ca9098e, inventory 4397deb)
-- [ ] Verify chat-provider WS URL composition works under the namespaced `basePrefix` (`ws/protocol.ts:10-13`)
+- [x] Verified: chat-provider `buildWebSocketURL` composes `${proto}://${host}${basePrefix}/api/chat/ws`; assistant window connects under `/api/apps/assistant` (browser-confirmed, ws subscribed)
 - [x] Manifest capabilities re-mapped (chat, chat-sessions, ws, frontend-tools, profiles); inventory reflection doc updated
 - [x] App repos bumped: gepa + inventory ported (pinoweb quarantined as _pinoweb_legacy → Phase 4 sub-ticket); sqlite + arc-agi build clean unchanged
 - [x] Validated prod profiles.runtime.yaml: decodes + boots under the new stack, BUT `runtime.step_settings_patch.ai-chat.ai-engine` is dead config for chathost — Phase 3 must rewrite it to `profiles.default.inference_settings.chat: {api_type, engine}` in the k3s repo
-- [ ] Add assistant contract test: fake engine, create-session → submit → stream, assert canonical event order
+- [x] chathost contract tests (2873def): fake engine + httptest — prompt round-trip, system-prompt-once + history accumulation, per-session profile, client session id
 - [x] Gate passed: build+test green, no library overrides; launcher smoke on :18099 (session create → prompt → snapshot with correlated error entity)
+- [x] Fixed profile-stack resolution + app-surface credential inheritance (ResolveEngineProfile + ResolvedBaseSettings, 9ad8ff4); added --print-inference-settings diagnostic; real gpt-5-nano inference verified
 
 ## Phase 2 — Frontend to published npm packages + assistant UI (D4, D6)
 
 - [ ] Publish missing packages from go-go-os-frontend main: os-scripting, os-ui-cards, os-confirm; release os-core 0.1.3 (repo ahead of npm)
 - [ ] os-core font cleanup (no-Chicago decision, §5.6(4)): edit `theme/classic.css:4`, `theme/desktop/theme/macos1.css:3`, `theme/desktop/tokens.css:9` to `"Geneva", "Helvetica Neue", Helvetica, Arial, sans-serif`; release
 - [ ] `apps/os-launcher/package.json`: replace `workspace:*` with published semver ranges; make `build:published` the default; keep `build:linked` for dev
-- [ ] Add `@go-go-golems/chat-provider` + `@go-go-golems/chat-overlay`; mount `<ChatProvider config={{basePrefix:'/api/apps/assistant'}}>` + overlay as first milestone (same branch as Phase 1 assistant rewrite)
-- [ ] Theming (§5.6): wesen-os stylesheet for `chat-overlay-*` classes (token bridge `--color-mac-* → --hc-*` or replacement for retro-mac.css); plain-CSS fallbacks for the Tailwind utilities in `ChatMessages.tsx`; optional upstream PR to react-chat finishing the Tailwind→stable-classes conversion (incl. `--font-sans` without Chicago)
+- [x] Assistant window mounts ChatProvider(basePrefix=/api/apps/assistant) + chat-overlay ChatMessages/ChatComposer (302054e); real gpt-5-nano round-trip verified in browser
+- [x] assistant-chat-macos1.css: token bridge + component layout + Tailwind-utility fallbacks + no-Chicago font (302054e). Upstream Tailwind→stable-classes PR still open (future)
 - [ ] Verify theme side effects survive the vite build (CSS present for every os-* `./theme` import; diff built CSS size vs pre-migration)
 - [ ] Drop `workspace-links/go-go-os-frontend` submodule + pnpm glob once green (app-repo frontends stay linked until published)
 - [ ] Gate: `pnpm -r build && pnpm -r test` green in published mode; launcher runs locally with assistant round-trip

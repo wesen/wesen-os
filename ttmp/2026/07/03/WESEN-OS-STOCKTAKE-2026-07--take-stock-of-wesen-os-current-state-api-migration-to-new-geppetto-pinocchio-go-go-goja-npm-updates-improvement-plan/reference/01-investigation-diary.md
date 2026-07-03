@@ -475,3 +475,69 @@ Wrote the durable synthesis of the whole effort as a vault note and pushed it.
 
 ### Code review instructions
 - Read the note top-to-bottom against diary Steps 1-10; every factual claim traces to a step or a ticket document.
+
+## Step 12: Phase 1 contract tests + Phase 2 assistant frontend + real-inference fix
+
+This session closed the remaining Phase 1 item (chathost contract tests) and executed Phase 2's assistant-UI migration onto chat-provider/chat-overlay, ending with the assistant running real gpt-5-nano inference end to end inside the styled macos1 desktop. Along the way it fixed the "no API key" defect (profile stacks were not being resolved; app surfaces did not inherit the launcher-selected profile's credentials) and added a `--print-inference-settings` diagnostic modeled on pinocchio's existing flag.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue.  commit at appropriate intervals, keep a diary as you work (see skill forthe diary format)"
+
+Follow-up messages during the session (verbatim):
+- "playwright works now."
+- "no css, btw. no federated stuf floaded (not sure if that's a good idea locally)."
+- "btw make the desktop take the entirety of the window, no need for margins left / right bottom. (data-width=hypercard, if needed at all)"
+- "I got this over websocket: {…ChatRunFailed… "error":"no API key for openai"…}"
+- "use ~/.config/pinocchio/profiles.yaml i think"
+- "i think you should have --print-inference-settings flags or so"
+- "well, did you find similar flags in pinocchio / other packages? there should be logic there already."
+
+**Assistant interpretation:** Continue Phase 1→2 execution with commits and diary; drive the launcher in a real browser; diagnose and fix the missing-API-key inference failure using the operator's own profiles file; add a settings-print diagnostic reusing existing pinocchio/geppetto logic rather than inventing one.
+
+**Inferred user intent:** Get to a launcher where the assistant actually talks to a model, styled correctly, with a diagnostic to explain credential resolution.
+
+**Commits (code):** wesen-os `2873def` (contract tests), `9ad8ff4` (profile-stack + base-settings fix, `--print-inference-settings`), `302054e` (chat-provider assistant frontend + theme).
+
+### What I did
+- **Contract tests** (`pkg/chathost/host_test.go`): added an `EngineFactory` seam to `chathost.Options` and a `fakeEngine` that emits canonical text-segment events + appends an assistant block. Four httptest tests through the mounted routes: prompt round-trip (user+assistant entities, ordinal order), system-prompt-seeded-once + history accumulation (block-kind census over two prompts), per-session profile selection, client-supplied session id.
+- **Assistant frontend** (`apps/os-launcher/src/app/assistantModule.tsx`): replaced the os-chat `ChatConversationWindow`/`EventViewerWindow`/`TimelineDebugWindow` imports with a `<ChatProvider basePrefix="/api/apps/assistant">` wrapping chat-overlay's `ChatMessages` + `ChatComposer`; `createSessionBody: () => ({ sessionId: convId })` binds the desktop window's conversation id to the chat session. Added `assistant-chat-macos1.css` (token bridge + component layout + Tailwind-utility fallbacks + no-Chicago font). Added chat-provider/chat-overlay 0.2.1 to package.json.
+- **vmmeta generator**: repointed from the deleted `workspace-links/go-go-os-backend` submodule to the published module via `go run -C ../.. github.com/go-go-golems/go-go-os-backend/cmd/go-go-os-backend`.
+- **Browser verification** (playwright): loaded the desktop, opened Assistant, typed a prompt, screenshotted.
+- **CSS regression fix**: the WIP submodule pin (9a1e267) ships an incomplete os-core-compat facade (`os-core/src/index.ts` re-exports from `@go-go-golems/macos1-react`, `theme/index.ts` loads macos1-react/theme) that broke theme activation — the desktop rendered unstyled. Reverted the launcher's frontend submodule pin to a554dc3 (the deployed, working-CSS commit); the WIP stays on its pushed branch.
+- **"no API key" fix**: diagnosed via the ChatRunFailed WS event the user pasted. Root cause: `chathost.promptRequest` used `GetEngineProfile` (raw, single-profile) instead of `ResolveEngineProfile` (stack-aware); and the app profile surfaces (assistant/inventory) resolve their *own* builtin profile (system-prompt only, no key) while `BaseSettings` carried only config-level base, not the operator-selected profile. Fixed both: chathost resolves stacks; `profile_bootstrap` computes `ResolvedBaseSettings` = base merged with the fully-resolved selected/default profile, and main.go feeds that as each app surface's base. Confirmed with the user's `~/.config/pinocchio/profiles.yaml`: `gpt-5-nano` replies "pong".
+- **`--print-inference-settings`**: the user asked whether similar logic exists upstream — it does (`geppetto/pkg/cli/bootstrap/inference_debug.go` `InferenceDebugSettings`/`HandleInferenceDebugOutput`/`WriteInferenceSettingsDebugYAML`; pinocchio wires it in `pkg/cmds/cmd.go`), but that section is not part of `CreateGeppettoSections`, so it is not on this launcher. Added a launcher-level flag that resolves each host's effective settings (`chathost.EffectiveSettings`) and prints redacted YAML, then exits.
+
+### Why
+- The base-settings fix is the correct layering: operator picks one profile (engine + credentials); each app declares only its behavioral overlay (system prompt, tools). Without inheritance, every app would have to re-declare the key.
+
+### What worked
+- Real inference end to end on the first try after the base-settings fix.
+- The contract tests are engine-independent (fake engine), so CI needs no API key.
+- The browser drive caught the CSS regression that headless HTTP tests could not.
+
+### What didn't work
+1. First browser load: desktop rendered unstyled (WIP submodule facade). Fixed by repinning the submodule.
+2. First inference attempt with the prod k3s ConfigMap AND with the user's profiles: both returned "no API key" until the stack-resolution + base-settings fixes landed. The user's ChatRunFailed paste and the pointer to `~/.config/pinocchio/profiles.yaml` were the decisive clues.
+3. A one-off `cmd/profile-probe` throwaway confirmed `bootstrap.ResolveProfileRegistryChain` + `ResolveEngineProfile` flatten the stack correctly (lineage `[openai-responses-base, default]`, key present) — proving the registry was fine and the bug was in how chathost queried it. Removed after.
+
+### What was tricky to build
+- The two-layer credential model: `ResolveEngineProfile` flattens a profile's *own* stack, but the app surfaces put a system-prompt-only profile at the top of a *different* registry. The base-settings inheritance is what bridges the operator profile into the app profile — resolving the app profile alone is not enough.
+
+### What warrants a second pair of eyes
+- `ResolvedBaseSettings` merges base + resolved default profile at startup; a per-session profile override still resolves its own app profile on top of that base, so an operator who selects a *non-default* engine per session gets base-from-default + engine-from-session. Confirm that composition is intended (design doc open question on extensions).
+- The CSS token bridge covers the component classes chat-overlay uses today; new chat-overlay classes in a future 0.2.x would need adding. The Tailwind-utility fallback list is enumerated by hand.
+
+### What should be done in the future
+- Upstream PR to react-chat converting ChatMessages/ToolCallOutlet Tailwind utilities to stable classes (removes the fallback list).
+- Federation registry is 404 locally (no `--federation-registry`); decide whether to ship a local default (user flagged it).
+- Phase 2 remainder: publish os-scripting/os-ui-cards/os-confirm, os-core font edits + release, switch os-* to published ranges, then drop the frontend submodule entirely.
+
+### Code review instructions
+- Backend: `pkg/chathost/runtime.go` (`ResolveEngineProfile` + `EffectiveSettings`), `cmd/wesen-os-launcher/profile_bootstrap.go` (`ResolvedBaseSettings`), `cmd/wesen-os-launcher/print_inference_settings.go`. Run `./wesen-os-launcher wesen-os-launcher --print-inference-settings --profile default` against a real profiles.yaml.
+- Frontend: `apps/os-launcher/src/app/assistantModule.tsx` + `src/theme/assistant-chat-macos1.css`. Build with `npm run build`, sync, run the binary, open Assistant.
+- Tests: `go test ./pkg/chathost/`.
+
+### Technical details
+- Real-inference proof: `POST /api/apps/assistant/api/chat/sessions/{id}/messages {"prompt":"Reply with the single word: pong"}` → snapshot entity `ChatMessage assistant 'pong'` (engine gpt-5-nano via openai-responses).
+- `--print-inference-settings` output masks keys as `sk-p…y4gA` and reports engine/api_type/base_urls per app.
