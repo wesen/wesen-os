@@ -1,0 +1,22 @@
+/*
+ * Launcher-level overrides for the os-core HyperCard shell.
+ *
+ * These live in the launcher (not go-go-os-frontend) so they apply regardless
+ * of which frontend-package pin is in use. Two overrides:
+ *
+ *   1. Full-bleed desktop: the default macos1 shell centers itself at
+ *      --hc-max-width: 96vw with an 8px auto margin, leaving grey margins on
+ *      the left/right/bottom. wesen-os wants the desktop to fill the browser
+ *      window, so we force 100% width/height and zero margin.
+ *   2. No Chicago: the a554dc3 os-core tokens still list "Chicago" in the font
+ *      stack. Until the os-core font edit ships (WESEN-OS-STOCKTAKE-2026-07
+ *      §5.6(4)), override --hc-font-family here to a Chicago-free stack.
+ */
+
+[data-widget="hypercard"] {
+  --hc-width: 100%;
+  --hc-max-width: 100%;
+  --hc-height: 100vh;
+  --hc-font-family: "Geneva", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  margin: 0 !important;
+}
