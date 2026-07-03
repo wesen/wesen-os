@@ -70,3 +70,8 @@ Obsidian vault report written and pushed: go-go-parc Projects/2026/07/03/PROJ - 
 
 Session 2 execution: chathost contract tests (2873def); profile-stack resolution + credential-inheritance fix so app surfaces inherit the launcher-selected engine/key, plus --print-inference-settings diagnostic (9ad8ff4); assistant UI ported to @go-go-golems/chat-provider + chat-overlay with macos1 theme bridge (302054e). Real gpt-5-nano inference verified end-to-end in browser. Diary Step 12.
 
+
+## 2026-07-03
+
+Added design-doc/02: npm package publishing + consumer switchover implementation guide (for colleague hand-off). Key finding: all 9 os-* packages now published; only os-core is behind (npm 0.1.2 vs repo 0.1.3) and needs the Chicago font edit. Documents the go-go-os-frontend trusted-publishing workflow, the os-core release steps, the launcher workspace:* → published-range switch, and the submodule-removal scoping boundary (app packages out of scope).
+
