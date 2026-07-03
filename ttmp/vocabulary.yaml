@@ -45,6 +45,22 @@ topics:
       description: theme
     - slug: widgets
       description: widgets
+    - slug: npm
+      description: Node package manager and npm registry topics
+    - slug: packaging
+      description: Package build, artifact, and publication workflow topics
+    - slug: release-engineering
+      description: Release automation, publishing, and registry workflow topics
+    - slug: federation
+      description: Frontend remote-manifest and module-federation style delivery topics
+    - slug: k3s
+      description: Kubernetes and k3s deployment workflow topics
+    - slug: wesen-os
+      description: The wesen-os browser desktop composition runtime (launcher binary + apps)
+    - slug: go-go-goja
+      description: go-go-goja server-side JavaScript engine (goja runtime, modules, xgoja)
+    - slug: deployment
+      description: Deployment/GitOps/infrastructure concerns (k3s, Argo CD, GHCR, terraform)
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes
