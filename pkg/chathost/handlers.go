@@ -2,6 +2,7 @@ package chathost
 
 import (
 	"net/http"
+	"regexp"
 	"strings"
 
 	gepprofiles "github.com/go-go-golems/geppetto/pkg/engineprofiles"
@@ -15,10 +16,16 @@ import (
 )
 
 // createSessionRequest extends the serverkit contract with an optional engine
-// profile selection carried in chat-provider's createSessionBody.
+// profile selection and an optional client-supplied session id, both carried
+// in chat-provider's createSessionBody. Client-supplied ids let flows that
+// pre-create a conversation server-side (the assistant app-chat bootstrap)
+// bind the chat session to that conversation.
 type createSessionRequest struct {
-	Profile string `json:"profile,omitempty"`
+	Profile   string `json:"profile,omitempty"`
+	SessionID string `json:"sessionId,omitempty"`
 }
+
+var sessionIDPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,64}$`)
 
 type toolDescriptorRequest struct {
 	Name        string         `json:"name"`
@@ -57,7 +64,14 @@ func (h *Host) handleCreateSession(w http.ResponseWriter, r *http.Request) {
 		serverkit.WriteJSON(w, http.StatusBadRequest, serverkit.ErrorResponse{Error: "bad request"})
 		return
 	}
-	sessionID := uuid.NewString()
+	sessionID := strings.TrimSpace(in.SessionID)
+	if sessionID != "" && !sessionIDPattern.MatchString(sessionID) {
+		serverkit.WriteJSON(w, http.StatusBadRequest, serverkit.ErrorResponse{Error: "invalid sessionId"})
+		return
+	}
+	if sessionID == "" {
+		sessionID = uuid.NewString()
+	}
 	if profile := strings.TrimSpace(in.Profile); profile != "" {
 		slug, err := gepprofiles.ParseEngineProfileSlug(profile)
 		if err != nil {

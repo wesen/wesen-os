@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -80,7 +81,8 @@ type serverSettings struct {
 	ARCRawListenAddr     string `glazed:"arc-raw-listen-addr"`
 	ARCAPIKey            string `glazed:"arc-api-key"`
 	ARCMaxSessionEvents  int    `glazed:"arc-max-session-events"`
-	FederationRegistry   string `glazed:"federation-registry"`
+	FederationRegistry     string `glazed:"federation-registry"`
+	PrintInferenceSettings bool   `glazed:"print-inference-settings"`
 }
 
 func NewCommand() (*Command, error) {
@@ -137,6 +139,7 @@ func NewCommand() (*Command, error) {
 			fields.New("arc-api-key", fields.TypeString, fields.WithDefault("1234"), fields.WithHelp("X-API-Key header used for ARC requests")),
 			fields.New("arc-max-session-events", fields.TypeInteger, fields.WithDefault(200), fields.WithHelp("Maximum ARC session events retained per session")),
 			fields.New("federation-registry", fields.TypeString, fields.WithDefault(""), fields.WithHelp("Optional JSON file served at /api/os/federation-registry for frontend remote discovery")),
+			fields.New("print-inference-settings", fields.TypeBool, fields.WithDefault(false), fields.WithHelp("Resolve and print each app's effective inference settings (API keys redacted) and exit")),
 		),
 		cmds.WithSections(geLayers...),
 	)
@@ -231,7 +234,7 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 			Registry:           inventoryProfileRegistry,
 			RegistrySlug:       inventoryDefaultRegistrySlug,
 			DefaultProfileSlug: inventoryDefaultProfileSlug,
-			BaseSettings:       launcherBootstrap.BaseInferenceSettings,
+			BaseSettings:       launcherBootstrap.ResolvedBaseSettings,
 		},
 		BackendTools: func(_ sessionstream.SessionId, registry *geptools.InMemoryToolRegistry) error {
 			for name, registrar := range inventorytools.InventoryToolFactories(inventoryStore) {
@@ -266,7 +269,7 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 			Registry:           assistantProfileRegistry,
 			RegistrySlug:       assistantDefaultRegistrySlug,
 			DefaultProfileSlug: assistantbackendmodule.DefaultProfileSlug(),
-			BaseSettings:       launcherBootstrap.BaseInferenceSettings,
+			BaseSettings:       launcherBootstrap.ResolvedBaseSettings,
 		},
 		TimelineDB: perAppStorePath(cfg.TimelineDB, assistantbackendmodule.AppID),
 		TurnsDSN:   cfg.TurnsDSN,
@@ -275,6 +278,14 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 	if err != nil {
 		_ = inventoryHost.Close()
 		return errors.Wrap(err, "new assistant chat host")
+	}
+
+	// Diagnostic: print each chat host's resolved effective inference settings
+	// (with credentials redacted) and exit without starting the server.
+	if cfg.PrintInferenceSettings {
+		defer func() { _ = inventoryHost.Close() }()
+		defer func() { _ = assistantHost.Close() }()
+		return printInferenceSettings(ctx, os.Stdout, assistantHost, inventoryHost)
 	}
 
 	gepaModule, err := gepabackend.NewModule(gepabackend.ModuleConfig{

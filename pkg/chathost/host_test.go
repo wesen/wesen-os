@@ -244,3 +244,25 @@ func TestChatContract_SessionProfileSelection(t *testing.T) {
 	defer func() { _ = resp.Body.Close() }()
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
+
+// TestChatContract_ClientSuppliedSessionID asserts a pre-created conversation
+// id (assistant app-chat bootstrap flow) is honored at session creation, and
+// that malformed ids are rejected.
+func TestChatContract_ClientSuppliedSessionID(t *testing.T) {
+	engine := &fakeEngine{reply: "ok"}
+	host := newTestHost(t, engine, "")
+
+	mux := http.NewServeMux()
+	require.NoError(t, host.MountRoutes(mux))
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	sid := createSession(t, srv, `{"sessionId":"conv-abc-123"}`)
+	require.Equal(t, "conv-abc-123", sid)
+
+	resp, err := http.Post(srv.URL+"/api/chat/sessions", "application/json",
+		bytes.NewReader([]byte(`{"sessionId":"no spaces allowed"}`)))
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}

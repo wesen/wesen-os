@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-go-golems/geppetto/pkg/inference/engine/factory"
 	geptools "github.com/go-go-golems/geppetto/pkg/inference/tools"
+	aisettings "github.com/go-go-golems/geppetto/pkg/steps/ai/settings"
 	"github.com/go-go-golems/geppetto/pkg/turns"
 	"github.com/go-go-golems/geppetto/pkg/turns/serde"
 	chatapp "github.com/go-go-golems/pinocchio/pkg/chatapp"
@@ -21,17 +22,39 @@ import (
 	gepprofiles "github.com/go-go-golems/geppetto/pkg/engineprofiles"
 )
 
+// EffectiveSettings resolves this host's default-profile inference settings the
+// same way promptRequest does, for diagnostics (--print-inference-settings).
+func (h *Host) EffectiveSettings(ctx context.Context) (*aisettings.InferenceSettings, error) {
+	resolved, err := h.opts.Profiles.Registry.ResolveEngineProfile(ctx, gepprofiles.ResolveInput{
+		RegistrySlug:      h.opts.Profiles.RegistrySlug,
+		EngineProfileSlug: h.opts.Profiles.DefaultProfileSlug,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "resolve engine profile %q", h.opts.Profiles.DefaultProfileSlug)
+	}
+	return gepprofiles.MergeInferenceSettings(h.opts.Profiles.BaseSettings, resolved.InferenceSettings)
+}
+
+// AppID returns the app id this host serves.
+func (h *Host) AppID() string { return h.opts.AppID }
+
 // promptRequest builds the per-prompt chatapp request: resolve the session's
 // engine profile to inference settings, build a geppetto engine, register
 // backend + frontend tools, and seed the system prompt on the session's first
 // turn.
 func (h *Host) promptRequest(ctx context.Context, sid sessionstream.SessionId, prompt string) (chatapp.PromptRequest, error) {
 	slug := h.sessionProfile(sid)
-	profile, err := h.opts.Profiles.Registry.GetEngineProfile(ctx, h.opts.Profiles.RegistrySlug, slug)
+	// ResolveEngineProfile flattens profile stacks (base profiles carrying API
+	// keys/api-type under leaf profiles carrying engine choices); reading the
+	// raw profile would drop the stacked base settings.
+	resolved, err := h.opts.Profiles.Registry.ResolveEngineProfile(ctx, gepprofiles.ResolveInput{
+		RegistrySlug:      h.opts.Profiles.RegistrySlug,
+		EngineProfileSlug: slug,
+	})
 	if err != nil {
 		return chatapp.PromptRequest{}, errors.Wrapf(err, "resolve engine profile %q", slug)
 	}
-	settings, err := gepprofiles.MergeInferenceSettings(h.opts.Profiles.BaseSettings, profile.InferenceSettings)
+	settings, err := gepprofiles.MergeInferenceSettings(h.opts.Profiles.BaseSettings, resolved.InferenceSettings)
 	if err != nil {
 		return chatapp.PromptRequest{}, errors.Wrapf(err, "merge inference settings for profile %q", slug)
 	}

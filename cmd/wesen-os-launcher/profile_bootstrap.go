@@ -16,13 +16,19 @@ import (
 
 type launcherProfileBootstrap struct {
 	BaseInferenceSettings *aisettings.InferenceSettings
-	SelectedProfile       string
-	SelectedProfileSlug   gepprofiles.EngineProfileSlug
-	ProfileRegistries     []string
-	ProfileRegistry       gepprofiles.Registry
-	DefaultRegistrySlug   gepprofiles.RegistrySlug
-	ConfigFiles           []string
-	Close                 func()
+	// ResolvedBaseSettings is the fully-resolved effective inference settings of
+	// the launcher-selected profile (its stack flattened: engine, api_type, API
+	// keys). App profile surfaces overlay their own profiles (system prompts,
+	// tool policy) on top of this, so every app inherits the operator-selected
+	// engine and credentials without re-declaring them per app.
+	ResolvedBaseSettings *aisettings.InferenceSettings
+	SelectedProfile      string
+	SelectedProfileSlug  gepprofiles.EngineProfileSlug
+	ProfileRegistries    []string
+	ProfileRegistry      gepprofiles.Registry
+	DefaultRegistrySlug  gepprofiles.RegistrySlug
+	ConfigFiles          []string
+	Close                func()
 }
 
 func resolveLauncherProfileBootstrap(ctx context.Context, parsed *values.Values) (*launcherProfileBootstrap, error) {
@@ -82,8 +88,30 @@ func resolveLauncherProfileBootstrap(ctx context.Context, parsed *values.Values)
 		}
 	}
 
+	// Resolve the selected profile's full effective settings so app surfaces can
+	// inherit its engine + credentials as their base. Fall back to the registry
+	// default profile when no explicit profile was selected.
+	resolveSlug := selectedProfileSlug
+	if resolveSlug.IsZero() {
+		resolveSlug = registryChain.DefaultProfileResolve.EngineProfileSlug
+	}
+	resolvedBase := cloneInferenceSettings(baseInferenceSettings)
+	if !resolveSlug.IsZero() {
+		resolved, resolveErr := registryChain.Registry.ResolveEngineProfile(ctx, gepprofiles.ResolveInput{
+			RegistrySlug:      registryChain.DefaultRegistrySlug,
+			EngineProfileSlug: resolveSlug,
+		})
+		if resolveErr == nil && resolved != nil {
+			merged, mergeErr := gepprofiles.MergeInferenceSettings(baseInferenceSettings, resolved.InferenceSettings)
+			if mergeErr == nil {
+				resolvedBase = merged
+			}
+		}
+	}
+
 	return &launcherProfileBootstrap{
 		BaseInferenceSettings: cloneInferenceSettings(baseInferenceSettings),
+		ResolvedBaseSettings:  resolvedBase,
 		SelectedProfile:       selection.Profile,
 		SelectedProfileSlug:   selectedProfileSlug,
 		ProfileRegistries:     effectiveRegistries,
