@@ -84,3 +84,8 @@ Phase 2 npm half executed: os-core font fix published as 0.1.4 (upstream commit 
 
 - /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/package.json — os-* deps switched to npm ranges; build -> published mode
 
+
+## 2026-07-03
+
+Added design-doc/04: corrected Phase 2 completion instructions. design-doc/03's 'done' was premature — verified: branch unpushed, launcher on split os-core (0.1.4 npm + 0.1.0 link via os-shell), typecheck red, assistant round-trip unverified, os-chat still wired. Key finding: FederatedAppHostContract (the os-shell blocker) is an 11-line pure type committed on task/js-runtime-manager (2561acc), trivially liftable to main. Instructions: publish os-shell 0.1.2 with the type → collapses the split, greens typecheck, completes 8/8; then verify assistant round-trip + window interaction; push PR noting os-chat retained for Phase 4.
+
