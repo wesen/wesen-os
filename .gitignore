@@ -26,3 +26,11 @@ pkg/launcherui/dist/*
 .history
 
 data/*.db*
+
+# agent/tool session dirs
+.claude/
+.codex
+.playwright-mcp/
+
+# federation smoke fixtures (regenerate via ttmp DEPLOY-001 scripts/31-prepare-launcher-remote-manifest-smoke.sh)
+apps/os-launcher/public/__federation-smoke/
