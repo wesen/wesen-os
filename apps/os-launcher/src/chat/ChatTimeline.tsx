@@ -19,17 +19,60 @@ import {
   type TimelineRenderer,
   type TimelineRenderers,
 } from './timelineRendererRegistry';
+import { Markdown } from './markdown';
+import { stripHypercardBlocks } from './hypercardBlocks';
 
-// --- built-in renderers (parity with chat-overlay ChatMessages output) ------
+// --- built-in renderers ------------------------------------------------------
+
+// ThinkingBlock renders reasoning traces (message entities with role
+// "thinking") as a collapsible block: collapsed while done, auto-open while
+// still streaming, content rendered as markdown.
+function ThinkingBlock({ entity }: { entity: TimelineEntity }) {
+  const streaming = Boolean(entity.props.streaming);
+  const [open, setOpen] = useState(streaming);
+  const content = String(entity.props.content ?? '');
+  return (
+    <div className="oschat-thinking" data-state={open ? 'open' : 'closed'}>
+      <button type="button" className="oschat-thinking-summary" onClick={() => setOpen((v) => !v)}>
+        {open ? '▼' : '▶'} 💭 Thinking{streaming ? '…' : ''}
+      </button>
+      {open ? (
+        <div className="oschat-thinking-body">
+          <Markdown text={content} />
+          {streaming ? <span className="cursor-blink">▌</span> : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// MessageBody strips <hypercard:*> artifact blocks (widgets render them
+// separately), shows a "building card" placeholder while a block streams in,
+// and renders the remaining text as markdown.
+function MessageBody({ entity }: { entity: TimelineEntity }) {
+  const content = String(entity.props.content ?? '');
+  const streaming = Boolean(entity.props.streaming);
+  const { text, building, buildingTag } = useMemo(() => stripHypercardBlocks(content), [content]);
+  return (
+    <div className="mt-0.5">
+      <Markdown text={text} />
+      {building ? (
+        <div className="oschat-card-buildup" data-part="card-buildup">
+          <span className="oschat-card-buildup-spinner" aria-hidden>🃏</span>
+          Building {buildingTag === 'card' ? 'card' : buildingTag ?? 'artifact'}…
+        </div>
+      ) : streaming ? (
+        <span className="cursor-blink">▌</span>
+      ) : null}
+    </div>
+  );
+}
 
 const MessageRenderer: TimelineRenderer = ({ entity }) => {
   const role = entity.props.role;
-  const content = entity.props.content;
   const isUser = role === 'user';
   if (role === 'thinking') {
-    return (
-      <div className="text-mac-gray-3 text-xs italic">{String(content)}</div>
-    );
+    return <ThinkingBlock entity={entity} />;
   }
   return (
     <div
@@ -39,10 +82,7 @@ const MessageRenderer: TimelineRenderer = ({ entity }) => {
       ].join(' ')}
     >
       <span className="text-mac-gray-3 text-[10px] uppercase mr-1">{isUser ? 'you' : 'assistant'}</span>
-      <div className="whitespace-pre-wrap break-words mt-0.5">
-        {String(content ?? '')}
-        {entity.props.streaming ? <span className="cursor-blink">▌</span> : null}
-      </div>
+      <MessageBody entity={entity} />
     </div>
   );
 };

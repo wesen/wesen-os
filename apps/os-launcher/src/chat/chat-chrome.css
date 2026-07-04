@@ -329,6 +329,101 @@
   margin: 0;
 }
 
+/* --- Markdown message body ---------------------------------------------- */
+
+.oschat-md {
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.oschat-md > :first-child { margin-top: 0; }
+.oschat-md > :last-child { margin-bottom: 0; }
+.oschat-md p { margin: 4px 0; }
+.oschat-md ul, .oschat-md ol { margin: 4px 0; padding-left: 20px; }
+.oschat-md li { margin: 1px 0; }
+.oschat-md h1, .oschat-md h2, .oschat-md h3, .oschat-md h4 {
+  margin: 8px 0 4px;
+  font-size: 13px;
+}
+.oschat-md h1 { font-size: 15px; }
+.oschat-md h2 { font-size: 14px; }
+.oschat-md blockquote {
+  margin: 4px 0;
+  padding: 2px 8px;
+  border-left: 3px solid var(--color-mac-gray-4);
+  color: var(--color-mac-gray-2);
+}
+.oschat-md code {
+  font-family: var(--oschat-font-mono);
+  font-size: 11px;
+  background: var(--color-mac-gray-5);
+  padding: 0 3px;
+}
+.oschat-md pre {
+  margin: 4px 0;
+  padding: 6px 8px;
+  background: var(--color-mac-gray-5);
+  overflow-x: auto;
+}
+.oschat-md pre code { background: none; padding: 0; }
+.oschat-md table { border-collapse: collapse; margin: 4px 0; }
+.oschat-md th, .oschat-md td {
+  border: 1px solid var(--color-mac-gray-4);
+  padding: 2px 6px;
+  font-size: 11px;
+}
+.oschat-md a { color: inherit; text-decoration: underline; }
+.oschat-md hr { border: none; border-top: 1px solid var(--color-mac-gray-4); margin: 6px 0; }
+
+/* --- Thinking trace ------------------------------------------------------ */
+
+.oschat-thinking {
+  margin: 2px 0;
+  border-left: 2px dotted var(--color-mac-gray-4);
+  padding-left: 6px;
+}
+
+.oschat-thinking-summary {
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: var(--oschat-font-mono);
+  font-size: 10px;
+  color: var(--color-mac-gray-3);
+  cursor: pointer;
+}
+
+.oschat-thinking-body {
+  margin-top: 2px;
+  color: var(--color-mac-gray-2);
+  font-style: italic;
+}
+
+.oschat-thinking-body .oschat-md { font-size: 11px; }
+
+/* --- Streaming card buildup placeholder ---------------------------------- */
+
+.oschat-card-buildup {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 4px 10px;
+  border: 1px dashed var(--color-mac-gray-3);
+  font-family: var(--oschat-font-mono);
+  font-size: 11px;
+  color: var(--color-mac-gray-2);
+}
+
+.oschat-card-buildup-spinner {
+  animation: oschat-buildup-pulse 1s ease-in-out infinite;
+}
+
+@keyframes oschat-buildup-pulse {
+  50% { opacity: 0.3; }
+}
+
 /* --- Syntax highlight token palette (lezer classHighlighter, light) ------ */
 
 [data-part="syntax-highlight"] .tok-keyword { color: #cf222e; }
