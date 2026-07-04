@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -265,6 +266,64 @@ func TestChatContract_ClientSuppliedSessionID(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestChatContract_ArtifactExtractorPublishesWidget(t *testing.T) {
+	engine := &fakeEngine{reply: "here is your card <hypercard:card:v2>ignored</hypercard:card:v2>"}
+
+	registrySlug := gepprofiles.MustRegistrySlug("test")
+	profileSlug := gepprofiles.MustEngineProfileSlug("default")
+	store := gepprofiles.NewInMemoryEngineProfileStore()
+	require.NoError(t, store.UpsertRegistry(context.Background(), &gepprofiles.EngineProfileRegistry{
+		Slug:                     registrySlug,
+		DefaultEngineProfileSlug: profileSlug,
+		Profiles: map[gepprofiles.EngineProfileSlug]*gepprofiles.EngineProfile{
+			profileSlug: {Slug: profileSlug, InferenceSettings: &aisettings.InferenceSettings{}},
+		},
+	}, gepprofiles.SaveOptions{}))
+	registry, err := gepprofiles.NewStoreRegistry(store, registrySlug)
+	require.NoError(t, err)
+
+	host, err := New(Options{
+		AppID:        "testapp",
+		SystemPrompt: "",
+		Profiles: ProfileSurface{
+			Registry:           registry,
+			RegistrySlug:       registrySlug,
+			DefaultProfileSlug: profileSlug,
+		},
+		EngineFactory: func(*aisettings.InferenceSettings) (gepengine.Engine, error) { return engine, nil },
+		ChunkDelay:    time.Millisecond,
+		ArtifactExtractor: func(assistantText string) []WidgetArtifact {
+			if !strings.Contains(assistantText, "<hypercard:card:v2>") {
+				return nil
+			}
+			return []WidgetArtifact{{
+				InstanceID: "card-1",
+				WidgetName: "inventory.card",
+				Props:      map[string]any{"title": "Low stock"},
+			}}
+		},
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = host.Close() })
+
+	mux := http.NewServeMux()
+	require.NoError(t, host.MountRoutes(mux))
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	sid := createSession(t, srv, `{"sessionId":"card-conv"}`)
+	submitAndWait(t, srv, host, sid, "make me a card")
+
+	snap := fetchSnapshot(t, srv, sid)
+	var found bool
+	for _, e := range snap.Entities {
+		if e.Kind == "ChatWidgetInstance" {
+			found = true
+		}
+	}
+	require.True(t, found, "expected a ChatWidgetInstance entity in snapshot, got %+v", snap.Entities)
 }
 
 func TestChatContract_ProfilesEndpoint(t *testing.T) {

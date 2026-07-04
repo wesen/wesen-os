@@ -63,6 +63,25 @@ type SystemPromptFunc func(sid sessionstream.SessionId) string
 // default is factory.NewEngineFromSettings; tests inject fakes here.
 type EngineFactory func(settings *aisettings.InferenceSettings) (gepengine.Engine, error)
 
+// WidgetArtifact is a widget instance an app renders in the chat timeline after
+// an assistant turn completes (for example a generated inventory card). It is
+// published on the chatapp widget rail as a ChatWidgetInstance so the
+// chat-provider frontend renders it via its widget registry.
+type WidgetArtifact struct {
+	// InstanceID uniquely identifies the widget in the session timeline. When
+	// empty the host generates one.
+	InstanceID string
+	// WidgetName selects the frontend widget component (defineWidget name).
+	WidgetName string
+	// Props is the widget's JSON-serializable data payload.
+	Props map[string]any
+}
+
+// ArtifactExtractor inspects a completed assistant turn's text and returns any
+// widget artifacts to publish into the session timeline. Returning nil emits
+// nothing. It runs after inference on the background run goroutine.
+type ArtifactExtractor func(assistantText string) []WidgetArtifact
+
 // Options configures one chat host.
 type Options struct {
 	AppID string
@@ -73,7 +92,11 @@ type Options struct {
 	Profiles         ProfileSurface
 	BackendTools     BackendToolsFunc
 	EngineFactory    EngineFactory
-	ChunkDelay       time.Duration
+	// ArtifactExtractor, when set, is run on each completed assistant turn; any
+	// widget artifacts it returns are published into the session timeline
+	// (generated-card path). See design-doc/06 §8.
+	ArtifactExtractor ArtifactExtractor
+	ChunkDelay        time.Duration
 	// TimelineDB is an optional sqlite path for durable timeline hydration.
 	TimelineDB string
 	// TurnsDSN/TurnsDB configure the durable conversation accumulator store.

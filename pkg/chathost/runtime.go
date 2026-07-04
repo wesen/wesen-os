@@ -13,11 +13,14 @@ import (
 	"github.com/go-go-golems/geppetto/pkg/turns/serde"
 	chatapp "github.com/go-go-golems/pinocchio/pkg/chatapp"
 	"github.com/go-go-golems/pinocchio/pkg/chatapp/frontendtools"
+	widgetv1 "github.com/go-go-golems/pinocchio/pkg/chatapp/pb/proto/pinocchio/chatapp/widgets/v1"
+	"github.com/go-go-golems/pinocchio/pkg/chatapp/widgets"
 	infruntime "github.com/go-go-golems/pinocchio/pkg/inference/runtime"
 	"github.com/go-go-golems/pinocchio/pkg/persistence/chatstore"
 	sessionstream "github.com/go-go-golems/sessionstream/pkg/sessionstream"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	gepprofiles "github.com/go-go-golems/geppetto/pkg/engineprofiles"
 )
@@ -86,10 +89,15 @@ func (h *Host) promptRequest(ctx context.Context, sid sessionstream.SessionId, p
 	}
 
 	runtimeKey := string(slug)
+	persist := h.persistFinalTurn(sid, runtimeKey)
+	onFinalTurn := func(t *turns.Turn) {
+		persist(t)
+		h.publishArtifactsFromTurn(sid, t)
+	}
 	return chatapp.PromptRequest{
 		Prompt:      prompt,
 		InitialTurn: initialTurn,
-		OnFinalTurn: h.persistFinalTurn(sid, runtimeKey),
+		OnFinalTurn: onFinalTurn,
 		Runtime: &infruntime.ComposedRuntime{
 			Engine:       engine,
 			Registry:     registry,
@@ -130,6 +138,71 @@ func (h *Host) initialTurnIfFirstMessage(ctx context.Context, sid sessionstream.
 		turns.NewUserTextBlock(prompt),
 	)
 	return turn, nil
+}
+
+// publishArtifactsFromTurn runs the app's ArtifactExtractor over the completed
+// assistant text and publishes each returned widget as a ChatWidgetInstance on
+// the session's timeline. It runs on the background inference goroutine, so it
+// uses a background context (the request context is already gone).
+func (h *Host) publishArtifactsFromTurn(sid sessionstream.SessionId, t *turns.Turn) {
+	if h == nil || h.opts.ArtifactExtractor == nil || h.hub == nil || t == nil {
+		return
+	}
+	text := assistantTextFromTurn(t)
+	if strings.TrimSpace(text) == "" {
+		return
+	}
+	artifacts := h.opts.ArtifactExtractor(text)
+	for i, artifact := range artifacts {
+		name := strings.TrimSpace(artifact.WidgetName)
+		if name == "" {
+			continue
+		}
+		props, err := structpb.NewStruct(artifact.Props)
+		if err != nil {
+			log.Error().Err(err).Str("app", h.opts.AppID).Str("session_id", string(sid)).Str("widget", name).Msg("encode widget artifact props")
+			continue
+		}
+		instanceID := strings.TrimSpace(artifact.InstanceID)
+		if instanceID == "" {
+			instanceID = fmt.Sprintf("%s-artifact-%d-%d", sid, time.Now().UnixNano(), i)
+		}
+		payload := &widgetv1.WidgetInstanceStarted{
+			InstanceId: instanceID,
+			WidgetName: name,
+			Status:     widgetv1.WidgetStatus_WIDGET_STATUS_READY,
+			Props:      props,
+		}
+		if err := h.hub.Publish(context.Background(), sessionstream.Event{
+			Name:      widgets.EventWidgetInstanceStarted,
+			Payload:   payload,
+			SessionId: sid,
+		}); err != nil {
+			log.Error().Err(err).Str("app", h.opts.AppID).Str("session_id", string(sid)).Str("widget", name).Msg("publish widget artifact")
+		}
+	}
+}
+
+// assistantTextFromTurn concatenates the LLM text blocks of a turn.
+func assistantTextFromTurn(t *turns.Turn) string {
+	if t == nil {
+		return ""
+	}
+	var b strings.Builder
+	for _, block := range t.Blocks {
+		if block.Kind != turns.BlockKindLLMText {
+			continue
+		}
+		text, _ := block.Payload[turns.PayloadKeyText].(string)
+		if strings.TrimSpace(text) == "" {
+			continue
+		}
+		if b.Len() > 0 {
+			b.WriteString("\n")
+		}
+		b.WriteString(text)
+	}
+	return b.String()
 }
 
 func (h *Host) persistFinalTurn(sid sessionstream.SessionId, runtimeKey string) func(*turns.Turn) {
