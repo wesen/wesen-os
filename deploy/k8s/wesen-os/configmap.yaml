@@ -5,13 +5,15 @@ metadata:
 data:
   profiles.runtime.yaml: |
     slug: cluster-default
+    display_name: Cluster Default
     profiles:
       default:
         slug: default
-        runtime:
-          step_settings_patch:
-            ai-chat:
-              ai-engine: gpt-4.1-mini
+        display_name: Default
+        description: Cluster default chat profile.
+        inference_settings:
+          chat:
+            engine: gpt-4.1-mini
   federation.registry.json: |
     {
       "version": 1,
