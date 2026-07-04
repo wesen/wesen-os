@@ -10,14 +10,15 @@ are ordered to deliver visible value early and defer the largest piece (JS apps)
 - [ ] Assistant window: inline Debug panel + Events/Timeline buttons
 - [ ] Verify assistant round-trip unchanged
 
-## Phase 2 — Stats footer
-- [ ] Identify the sessionstream run/usage frame carrying token usage
-- [ ] Add overlay/selector exposing modelName + turn tokens (in/out/cache) + totals
+## Phase 2 — Stats footer (frontend-only — usage verified already on the WS)
+- [ ] Capture `ChatProviderCallMetadataUpdated`/`ChatProviderCallFinished` UI events (via `onDebugEvent` parsed-frame) into a per-conv stats store
+- [ ] Verify whether the metadata event carries model name; else label with the profile's engine
 - [ ] Build `StatsFooter` equivalent incl. live streaming tok/s; no fabricated `0 tok`
+- [ ] (Phase 6 follow-up) upstream a `statsSlice`/`selectRunStats` into chat-provider
 
 ## Phase 3 — Timeline renderer registry
-- [ ] Renderer registry keyed by entity `kind` + `default` fallback (mirror old `rendererRegistry`)
-- [ ] Route `ChatMessages`/widget rendering through it; fold `renderMode` into ctx
+- [ ] Renderer registry keyed by entity `kind` + `default` fallback (mirror old `rendererRegistry.ts`)
+- [ ] Build a local `ChatTimeline` replacing chat-overlay `ChatMessages` (no extension point; unknown kinds dropped) — reuse `WidgetOutlet`/`ToolCallOutlet`; fold `renderMode` into ctx
 - [ ] Migrate the static `inventory.card` widget onto the registry
 
 ## Phase 4 — Debug windows with performance
@@ -28,10 +29,10 @@ are ordered to deliver visible value early and defer the largest piece (JS apps)
 - [ ] FIX: sanitize lazily per selected entity; `React.memo` rows
 
 ## Phase 5 — Generated JS HyperCard apps (see guide §6.5)
-- [ ] Backend: re-inject `runtime-card-policy.md` system block + register the `<hypercard:card:v2>` card extractor (128 KB cap) in chathost
-- [ ] Backend: publish `inventory.codeCard` widget with `{title,name,artifact,runtime.pack,card:{id,code},status}`
+- [ ] Backend: re-inject `runtime-card-policy.md` system block + port the `<hypercard:card:v2>` extractor (128 KB cap, required-fields validation) into the final-turn `ArtifactExtractor`
+- [ ] Backend: publish final `inventory.codeCard` widget with `{title,name,artifact,runtime.pack,card:{id,code}}` (final-only v1; streaming = optional `WrapSink` v2)
 - [ ] Frontend: `defineWidget('inventory.codeCard', CodeCard)` with Open/Edit (proposal) — inline live host optional
-- [ ] Frontend: re-add projection bridge — `registerRuntimeSurface(card.id, card.code, runtime.pack)` on final
+- [ ] Frontend: re-add projection bridge — `registerRuntimeSurface(card.id, card.code, runtime.pack)` (from `plugin-runtime/runtimeSurfaceRegistry.ts`) on final
 - [ ] Validate: prompt → live interactive card (ui.card.v1 and kanban.v1) renders and responds to input
 
 ## Phase 6 — Upstream + cleanup

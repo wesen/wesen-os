@@ -35,6 +35,14 @@ WhenToUse: ""
 > *is*, what the previous chat implementation could do that the current one
 > cannot, and how to rebuild each missing piece on the new transport. Every claim
 > is anchored to a file so you can go read the real thing.
+>
+> **Review pass 2026-07-04:** all file/symbol/constant claims re-verified against
+> the code. Three findings changed the plan: (1) token usage **already reaches the
+> WS** (`ChatProviderCallMetadataUpdated`/`Finished`) — Phase 2 is frontend-only
+> (§5); (2) chathost's `ArtifactExtractor` is **final-turn-only** — JS cards ship
+> final-only in v1, streaming is an optional `WrapSink` v2 (§6.5); (3) chat-overlay
+> `ChatMessages` has **no renderer extension point** and drops unknown kinds — the
+> Phase 3 registry replaces it locally (§7).
 
 ## 0. TL;DR — what you are building
 
@@ -100,6 +108,7 @@ reference) and the new one is what ships.
 ### 1.3 Wire contract you will speak (new)
 
 ```
+GET  <basePrefix>/api/chat/health
 POST <basePrefix>/api/chat/sessions              {sessionId?, profile?} -> {sessionId}
 POST <basePrefix>/api/chat/sessions/{id}/messages {prompt} -> {accepted, status:"running"}
 GET  <basePrefix>/api/chat/sessions/{id}          -> snapshot (entities[])
@@ -277,8 +286,20 @@ Old files: `.../debug/TimelineDebugWindow.tsx`, `.../debug/timelineDebugModel.ts
 
 The old model consumed **SEM `timeline.upsert`** frames. The new provider already
 exposes an equivalent: `chat-provider`'s `timelineSlice` (`selectTimelineEntities`)
-is *itself* a normalized `{byId, order}` model, and `onDebugEvent` emits typed
-`ChatDebugEvent`s (`ws-lifecycle | raw-ws | parsed-frame | snapshot | ui-event`).
+is *itself* a normalized `{byId, order}` model with incremental patch-aware merges
+(`mergeTimelineEntity` honors `contentPatch`/`patchMode` streaming appends and widget
+`propsPatch`), and `onDebugEvent` emits typed `ChatDebugEvent`s
+(`ws-lifecycle | raw-ws | parsed-frame | snapshot | ui-event`).
+
+Two differences from the old slice you must account for (verified against
+`chat-provider` `store/timelineSlice.js`):
+- **No version guard.** The provider merge is unconditional last-writer-wins; the
+  `version?` field on `TimelineEntity` exists but is never compared. (The old slice
+  dropped stale updates.) Fine for debug views; don't claim ordering guarantees.
+- **`selectTimelineEntities` is `createSelector`-memoized on `(byId, order)`** — the
+  returned array is referentially stable while nothing changed and a *new* array on
+  any upsert. So `useMemo(buildSnapshot, [entities])` gives you exactly the old
+  "recompute once per real change" behavior.
 
 - **Event Viewer:** feed `onDebugEvent` into a bounded ring buffer
   (`inventoryChatDebugStore` already does this, minus the caps/summarize/pause) and
@@ -313,11 +334,45 @@ if (isStreaming && streamStartTime) {
 }
 ```
 
-New-transport source of the numbers: token usage rides the sessionstream run/usage
-events. Confirm which `ChatDebugEvent`/overlay field carries usage; if `overlaySlice`
-does not expose token usage yet, add a small selector over the run-completion frame
-(or extend the provider). Do **not** fabricate a `0 tok` counter (the current
-window's blemish) — show real usage or omit.
+**Where the old numbers came from** (so you know what to match): `os-chat`'s
+`sem/semRegistry.ts` `applyLlmMetadata` decoded proto `LlmInferenceMetadataV1` from
+the **`metadata` field of the `llm.start/delta/final` SEM envelopes** — `meta.model`
+→ `setModelName`, streaming `meta.usage.outputTokens` (or a text-length estimate) →
+`updateStreamTokens`, and `llm.final` → `setTurnStats` incl.
+`cacheCreationInputTokens`/`cacheReadInputTokens`. There was no separate "usage
+event"; usage rode the llm envelopes.
+
+**New-transport source — VERIFIED: usage is ALREADY on the wire; this phase is
+frontend-only.** chatapp's runtime sink (`pinocchio pkg/chatapp/runtime_sink.go`)
+translates geppetto `EventProviderCallMetadataUpdated` / `EventProviderCallFinished`
+into two **transient UI events** that pass through `baseUIProjection` to the WS
+(no timeline entity):
+
+- `ChatProviderCallMetadataUpdated{usage}` — fires during streaming (live counter).
+- `ChatProviderCallFinished{usage}` — fires at call end (final turn stats).
+- `UsageInfo` fields: `inputTokens, outputTokens, cachedTokens,
+  cacheCreationInputTokens, cacheReadInputTokens` (chatappv1 `chat.pb.go`).
+
+This path is active in chathost (every prompt goes through
+`chatapp.runRuntimeInference`, which installs the sink). **No backend change is
+required for token counts.** The gap is purely that `chat-provider` ignores these
+frames: its overlay is only `{sessionId, runStatus, wsStatus, isOpen, error}` and
+the package contains no usage/model state at all (verified by grep).
+
+Frontend options, in order of preference:
+1. **Quick (ship first):** capture the two frames from `onDebugEvent`
+   (`parsed-frame.frame` carries the full decoded frame) into a small
+   per-conversation stats store (same pattern as `inventoryChatDebugStore`), and
+   render the footer from that. Works today with zero library changes.
+2. **Proper (Phase 6):** add a `statsSlice` (or extend `overlaySlice`) +
+   `selectRunStats` to `react-chat` fed by these UI events, then delete the local
+   store.
+
+Caveat to verify while implementing: whether `ChatProviderCallMetadataUpdated`
+carries the **model name** (usage is confirmed; model was not). If it doesn't, show
+the *profile's* engine name from `GET /api/chat/profiles` as the model label, or add
+the model string to the chatapp metadata event upstream. Do **not** fabricate a
+`0 tok` counter (the current window's blemish) — show real usage or omit.
 
 ---
 
@@ -471,14 +526,27 @@ Everything below `registerRuntimeSurface` (VM eval, validate, render, events) al
 works. The restore is five steps:
 
 1. **Backend policy + extractor.** Re-inject `runtime-card-policy.md` as a system block
-   (port `NewInventoryArtifactPolicyMiddleware`) and register the card extractor
-   (`inventoryRuntimeCardExtractor`) on the chathost structured sink (128 KB cap).
-2. **Backend emit.** In the chathost `ArtifactExtractor`, publish a `ChatWidgetInstance`
-   — e.g. `inventory.codeCard` — with props carrying the fields verbatim: `{ title,
-   name, artifact:{id,data}, runtime:{pack}, card:{id, code}, status }`. Use
-   `status:"streaming"` on update and `"success"` on ready so the frontend injects
-   only finals. (This extends the current `inventory_artifacts.go` /
-   `chathost.WidgetArtifact` path.)
+   (port `NewInventoryArtifactPolicyMiddleware`; chathost `Options.SystemPrompt` /
+   `SystemPromptFunc` is the hook) and port the card extractor
+   (`inventoryRuntimeCardExtractor`) — parse `<hypercard:card:v2>` YAML with the
+   128 KB cap and the old required-fields validation (`name`/`title`, `card.id`,
+   `card.code`, `runtime.pack`; `hypercard_extractors.go:306-326`).
+2. **Backend emit — final-only first (verified constraint).** chathost's
+   `ArtifactExtractor func(assistantText string) []WidgetArtifact` runs **only in
+   `OnFinalTurn`**, once per prompt after inference completes; the current path
+   publishes a single `WidgetInstanceStarted` with `WIDGET_STATUS_READY`
+   (`runtime.go` `publishArtifactsFromTurn`). So v1 = publish the final
+   `inventory.codeCard` widget with props verbatim: `{ title, name,
+   artifact:{id,data}, runtime:{pack}, card:{id, code} }`. **There is no streaming
+   extraction today** — do not design the frontend around `status:"streaming"`
+   updates in v1.
+   *Optional streaming v2:* the layers below support it — chatapp's
+   `PromptRequest.Runtime.WrapSink` lets you wrap the streaming event sink (chathost
+   currently doesn't set it), and the widgets plugin has the full lifecycle
+   (`ChatWidgetInstanceStarted/Patched/Completed/Removed`, all projecting into
+   `ChatWidgetInstance` entity updates). A debounced in-sink extractor emitting
+   Started(streaming)→Patched→Completed via `hub.Publish` reproduces the old pinoweb
+   controller. Ship v1 first; the proposal-card UX (step 3) doesn't need streaming.
 3. **Frontend widget.** `defineWidget('inventory.codeCard', CodeCard)`. Two options:
    - *Proposal (old-chat parity):* Open/Edit buttons → `buildArtifactOpenWindowPayload({
      artifactId: artifact.id, title, runtimeSurfaceId: card.id, bundleId:'inventory' })`
@@ -488,9 +556,14 @@ works. The restore is five steps:
      per-card `sessionId` against a `['ui']` (and `['kanban']`) bundle.
 4. **Re-add the projection bridge** (replaces the dead os-chat middleware): on a final
    `inventory.codeCard` widget/timeline event, call
-   `registerRuntimeSurface(card.id, card.code, runtime.pack)`. It notifies
+   `registerRuntimeSurface(card.id, card.code, runtime.pack)` — exported from
+   `os-scripting/src/plugin-runtime/runtimeSurfaceRegistry.ts` (**not**
+   `artifactRuntime.ts`), signature `(surfaceId, code, packId)`. It notifies
    `onRegistryChange`, so any live host live-injects it and any later-opened surface
-   window injects it during `ensureSession`.
+   window injects it during `ensureSession`. Simplest wiring on the new stack: do it
+   inside the `inventory.codeCard` widget component on mount (widgets only render on
+   final entities in v1), or from an `onDebugEvent` ui-event listener if you want it
+   independent of rendering.
 5. **Packs already registered** at `renderInventoryApp.tsx:40-43`
    (`ui.card.v1`, `kanban.v1`). For inline hosting, open the session against a bundle
    whose `plugin.packageIds` includes `'ui'` — the existing `STACK` bundle already does.
@@ -498,7 +571,10 @@ works. The restore is five steps:
 Key old files to port from: `_pinoweb_legacy/{hypercard_extractors,hypercard_events,
 hypercard_middleware,card_prompt,middleware_definitions}.go`,
 `prompts/runtime-card-policy.md`; and on the frontend
+`os-scripting/src/plugin-runtime/runtimeSurfaceRegistry.ts` (`registerRuntimeSurface`
++ `onRegistryChange` — the live registry you call into),
 `os-scripting/src/hypercard/artifacts/{artifactProjectionMiddleware,artifactRuntime}.ts`
+(bridge reference + `buildArtifactOpenWindowPayload`)
 + `hypercard/timeline/hypercardCard.tsx` (as the renderer reference).
 
 ---
@@ -509,11 +585,21 @@ hypercard_middleware,card_prompt,middleware_definitions}.go`,
   inventory window's level: profile selector, starter suggestions, connection badge,
   Copy Conv ID, inline debug. Factor the shared chrome so assistant + inventory share
   one component.
-- **Phase 2 — Stats footer.** Wire real token usage from the run/usage frames; build
-  the `StatsFooter` equivalent (§5).
+- **Phase 2 — Stats footer.** Frontend-only: consume the
+  `ChatProviderCallMetadataUpdated`/`ChatProviderCallFinished` UI events already on
+  the WS (§5); build the `StatsFooter` equivalent.
 - **Phase 3 — Renderer registry.** Introduce a timeline renderer registry keyed by
-  entity `kind` (mirrors the old `timelineRenderers` prop + `rendererRegistry`), so
-  cards/widgets/tools plug in uniformly. Fold `renderMode` into the render ctx.
+  entity `kind` (mirrors the old `timelineRenderers` prop +
+  `renderers/rendererRegistry.ts`), so cards/widgets/tools plug in uniformly. Fold
+  `renderMode` into the render ctx. **Verified constraint:** chat-overlay's
+  `ChatMessages` takes only `{bottomRef}` and is a hardcoded switch over
+  `message | widget | tool_call` — any other entity `kind` is silently dropped, and
+  there is no override prop. So the registry cannot extend `ChatMessages`; build a
+  local `ChatTimeline` replacement that walks `selectTimelineEntities` through the
+  registry (reusing `WidgetOutlet`/`ToolCallOutlet` for the built-in kinds), then
+  upstream an extension point into chat-overlay in Phase 6. Note `widget` entities
+  already render inline automatically via `WidgetOutlet` — which is why §6 rides the
+  widget rail instead of inventing a new entity kind.
 - **Phase 4 — Debug windows with perf (§4).** Port the bounded buffers, ref-gated
   ingestion, normalized incremental model, memoized snapshot, and lazy tree; add
   virtualization + lazy serialization.
@@ -538,7 +624,7 @@ hypercard_middleware,card_prompt,middleware_definitions}.go`,
 
 Old (reference, do not ship): `workspace-links/go-go-os-frontend/packages/os-chat/src/chat/`
 — `components/ChatConversationWindow.tsx`, `components/StatsFooter.tsx`,
-`renderers/rendererRegistry.tsx`, `debug/{EventViewerWindow,TimelineDebugWindow,
+`renderers/rendererRegistry.ts`, `debug/{EventViewerWindow,TimelineDebugWindow,
 timelineDebugModel,StructuredDataTree,eventBus}.{ts,tsx}`, `state/{timelineSlice,
 selectors,chatSessionSlice}.ts`. JS-app runtime:
 `packages/os-scripting/src/{runtime-host,runtime-packs,hypercard}`,
