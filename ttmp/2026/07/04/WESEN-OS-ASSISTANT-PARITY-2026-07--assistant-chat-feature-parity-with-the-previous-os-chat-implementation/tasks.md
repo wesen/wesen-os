@@ -1,40 +1,58 @@
 # Tasks — Assistant chat feature parity
 
-See `design/01-assistant-chat-parity-intern-guide.md` for the full analysis. Phases
-are ordered to deliver visible value early and defer the largest piece (JS apps).
+See `design/01-assistant-chat-parity-intern-guide.md` for the full analysis.
 
-## Phase 1 — Assistant chrome parity
-- [ ] Factor shared chat chrome out of `InventoryChatWindow` into a reusable component
-- [ ] Assistant window: profile selector (`GET /api/chat/profiles` already exists)
-- [ ] Assistant window: starter suggestions, connection badge, Copy Conv ID
-- [ ] Assistant window: inline Debug panel + Events/Timeline buttons
-- [ ] Verify assistant round-trip unchanged
+**Architecture decision (2026-07-04):** `launcherHost.test.tsx` forbids launcher app
+code from importing `@go-go-golems/inventory` internals (federation boundary), and
+react-chat is consumed as published npm — so assistant and inventory CANNOT share
+components today. The generic chat components live launcher-local in
+`apps/os-launcher/src/chat/`; the inventory window gets a targeted retrofit in its
+own repo; true sharing happens in Phase 6 by upstreaming into react-chat.
 
-## Phase 2 — Stats footer (frontend-only — usage verified already on the WS)
-- [ ] Capture `ChatProviderCallMetadataUpdated`/`ChatProviderCallFinished` UI events (via `onDebugEvent` parsed-frame) into a per-conv stats store
-- [ ] Verify whether the metadata event carries model name; else label with the profile's engine
-- [ ] Build `StatsFooter` equivalent incl. live streaming tok/s; no fabricated `0 tok`
-- [ ] (Phase 6 follow-up) upstream a `statsSlice`/`selectRunStats` into chat-provider
+## Phase 1 — Assistant chrome parity (apps/os-launcher/src/chat/)
 
-## Phase 3 — Timeline renderer registry
-- [ ] Renderer registry keyed by entity `kind` + `default` fallback (mirror old `rendererRegistry.ts`)
-- [ ] Build a local `ChatTimeline` replacing chat-overlay `ChatMessages` (no extension point; unknown kinds dropped) — reuse `WidgetOutlet`/`ToolCallOutlet`; fold `renderMode` into ctx
-- [ ] Migrate the static `inventory.card` widget onto the registry
+- [ ] `useChatProfiles.ts`: generic profiles hook (GET `<basePrefix>/api/chat/profiles`)
+- [ ] `chatDebugStore.ts`: per-conv bounded ring buffer (cap 1000) with emit-time summaries, seq ids, subscribe API (Phase 4 foundation)
+- [ ] `ChatWindowChrome.tsx`: header (title/conn badge/profile selector/Events/Timeline/Copy Conv ID/Debug), empty state, starter suggestions, inline debug panel, composer, footer slot
+- [ ] Rewire `assistantModule.tsx` onto the chrome: profile bound at session create (`createSessionBody`), `onDebugEvent` into the store; keep generic + app-chat modes
+- [ ] Assistant starter suggestions (generic + app-chat aware)
+- [ ] Typecheck + assistant round-trip against local stack
 
-## Phase 4 — Debug windows with performance
-- [ ] Event Viewer: bounded ring buffer (1000) + component cap (500), ref-gated ingestion, precomputed summaries, memoized filter, count-keyed scroll
-- [ ] FIX old gaps: lazy per-row YAML (only expanded), add list virtualization
-- [ ] Timeline Debug: reuse provider normalized `{byId,order}`; port `buildTimelineDebugSnapshot` + `sanitizeForExport` (depth/cycle bounds) behind a memoized snapshot
-- [ ] Port `StructuredDataTree` (lazy per-node expansion, MAX_DEPTH, string truncation)
-- [ ] FIX: sanitize lazily per selected entity; `React.memo` rows
+## Phase 2 — Stats footer (frontend-only; usage verified on the wire)
 
-## Phase 5 — Generated JS HyperCard apps (see guide §6.5)
-- [ ] Backend: re-inject `runtime-card-policy.md` system block + port the `<hypercard:card:v2>` extractor (128 KB cap, required-fields validation) into the final-turn `ArtifactExtractor`
-- [ ] Backend: publish final `inventory.codeCard` widget with `{title,name,artifact,runtime.pack,card:{id,code}}` (final-only v1; streaming = optional `WrapSink` v2)
-- [ ] Frontend: `defineWidget('inventory.codeCard', CodeCard)` with Open/Edit (proposal) — inline live host optional
-- [ ] Frontend: re-add projection bridge — `registerRuntimeSurface(card.id, card.code, runtime.pack)` (from `plugin-runtime/runtimeSurfaceRegistry.ts`) on final
-- [ ] Validate: prompt → live interactive card (ui.card.v1 and kanban.v1) renders and responds to input
+- [ ] `chatStatsStore.ts`: per-conv stats fed from `parsed-frame` debug events — `ChatProviderCallMetadataUpdated`/`ChatProviderCallFinished` (`frame.payload.usage.{inputTokens,outputTokens,cachedTokens,cacheCreationInputTokens,cacheReadInputTokens}`, `durationMs`, `stopReason`); stream start on `ChatRunStarted`/`ChatTextSegmentStarted`; live out-token estimate from `ChatTextPatch` text length (chars/4) overridden by real usage
+- [ ] `StatsFooter.tsx`: idle/complete = label · In/Out/Cache/CacheWrite/CacheRead · duration · tok/s; streaming = `streaming: N tok · X tok/s`; model label = selected profile displayName (events carry no model); no fabricated `0 tok`
+- [ ] Wire into `ChatWindowChrome` footer slot
+- [ ] Validate with real inference (gpt-5-nano-low): numbers move during stream, settle on finish
 
-## Phase 6 — Upstream + cleanup
-- [ ] Promote generic ChatEventViewer / ChatTimelineDebug / StatsFooter / renderer registry into react-chat
+## Phase 3 — Timeline renderer registry + ChatTimeline
+
+- [ ] `timelineRendererRegistry.tsx`: register by entity `kind` + `default` fallback, `useSyncExternalStore` version subscription (mirror old `rendererRegistry.ts`)
+- [ ] `ChatTimeline.tsx`: replaces chat-overlay `ChatMessages` (verified: hardcoded switch, drops unknown kinds) — routes entities through the registry; built-ins reuse `WidgetOutlet`/`ToolCallOutlet` from chat-provider + message bubbles; unknown kinds → default renderer (collapsed raw view), not dropped
+- [ ] Render ctx carries `renderMode: 'normal' | 'debug'`
+- [ ] Use ChatTimeline in the assistant chrome; verify message/widget/tool rendering unchanged
+
+## Phase 4 — Debug windows with performance (assistant windows + inventory retrofit)
+
+- [ ] `StructuredDataTree.tsx`: port lazy collapsible tree (children unmounted while collapsed, MAX_DEPTH 20, 200-char truncation, empty-composite scalar lines)
+- [ ] `sanitize.ts`: port `sanitizeForExport` (MAX_DEPTH 24, WeakSet cycle guard, tagged BigInt/Date/RegExp/Error) — applied lazily per selected entity, not eagerly
+- [ ] `ChatEventViewerWindow.tsx`: component cap 500, pausedRef-gated ingestion, precomputed summaries from store, memoized filter projection, count-keyed scroll + isNearBottom(32px), LAZY per-expanded-row YAML/JSON (fixes old gap)
+- [ ] `ChatTimelineDebugWindow.tsx`: memoized snapshot keyed on `selectTimelineEntities` output identity; entity list + StructuredDataTree detail; export via lazy sanitize
+- [ ] Register both as launcher desktop windows, opened from assistant chrome Events/Timeline buttons
+- [ ] Inventory retrofit (its repo): cap + pause + summaries in `inventoryChatDebugStore`/`InventoryDebugWindows`, lazy YAML
+- [ ] Flood test: long streaming turn, UI stays responsive, memory bounded
+
+## Phase 5 — Generated JS HyperCard apps (inventory repo + wesen-os backend)
+
+- [ ] Backend: move static cards off `<hypercard:card:v2>` onto `<hypercard:widget:v1>` (JSON → `inventory.card`), update `inventorySystemPrompt` accordingly
+- [ ] Backend: port `runtime-card-policy.md` as system-prompt block (ui.card.v1 + kanban.v1 DSL rules, sandbox constraints)
+- [ ] Backend: port the YAML `<hypercard:card:v2>` code-card extractor (128 KB cap, required fields name/card.id/card.code/runtime.pack per `hypercard_extractors.go:306-326`) → publish `inventory.codeCard` widget `{title,name,artifact:{id,data},runtime:{pack},card:{id,code}}` (final-only v1)
+- [ ] Backend: contract test — assistant text with a valid code-card block yields a `ChatWidgetInstance` with `card.code` + `runtime.pack` props
+- [ ] Frontend (inventory): `defineWidget('inventory.codeCard', ...)` — title/status + code preview + Open button via `buildArtifactOpenWindowPayload({artifactId, title, runtimeSurfaceId: card.id, bundleId: 'inventory'})`
+- [ ] Frontend (inventory): projection bridge — on widget mount call `registerRuntimeSurface(card.id, card.code, runtime.pack)` (from `os-scripting/src/plugin-runtime/runtimeSurfaceRegistry.ts`)
+- [ ] Validate end-to-end with real inference: prompt → code card → Open → live interactive `ui.card.v1` surface responds to input; repeat for `kanban.v1`
+
+## Phase 6 — Upstream + cleanup (future, not this pass)
+
+- [ ] Promote ChatWindowChrome / StatsFooter / renderer registry / debug windows into react-chat; switch assistant + inventory to the published package
 - [ ] Retire os-chat from remaining consumers (coordinate with WESEN-OS-STOCKTAKE Phase 4)
