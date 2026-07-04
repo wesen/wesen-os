@@ -266,3 +266,34 @@ func TestChatContract_ClientSuppliedSessionID(t *testing.T) {
 	defer func() { _ = resp.Body.Close() }()
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
+
+func TestChatContract_ProfilesEndpoint(t *testing.T) {
+	engine := &fakeEngine{reply: "ok"}
+	host := newTestHost(t, engine, "")
+
+	mux := http.NewServeMux()
+	require.NoError(t, host.MountRoutes(mux))
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/chat/profiles")
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var body struct {
+		Profiles []struct {
+			Slug        string `json:"slug"`
+			DisplayName string `json:"displayName"`
+			IsDefault   bool   `json:"isDefault"`
+		} `json:"profiles"`
+		DefaultSlug string `json:"defaultSlug"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+
+	require.Equal(t, "default", body.DefaultSlug)
+	require.Len(t, body.Profiles, 1)
+	require.Equal(t, "default", body.Profiles[0].Slug)
+	require.Equal(t, "default", body.Profiles[0].DisplayName) // falls back to slug when unnamed
+	require.True(t, body.Profiles[0].IsDefault)
+}

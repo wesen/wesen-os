@@ -30,6 +30,13 @@ import (
 	geptools "github.com/go-go-golems/geppetto/pkg/inference/tools"
 )
 
+// ProfileDescriptor is one user-selectable engine profile as surfaced to the
+// chat window's profile selector (GET /api/chat/profiles).
+type ProfileDescriptor struct {
+	Slug        gepprofiles.EngineProfileSlug
+	DisplayName string
+}
+
 // ProfileSurface describes the engine-profile universe one app exposes: which
 // registry to resolve slugs against, which profile is the default, and the
 // launcher-wide base inference settings every profile is overlaid onto.
@@ -38,6 +45,9 @@ type ProfileSurface struct {
 	RegistrySlug       gepprofiles.RegistrySlug
 	DefaultProfileSlug gepprofiles.EngineProfileSlug
 	BaseSettings       *aisettings.InferenceSettings
+	// VisibleProfiles curates which profiles the frontend selector should show.
+	// When empty, GET /api/chat/profiles falls back to enumerating the registry.
+	VisibleProfiles []ProfileDescriptor
 }
 
 // BackendToolsFunc lets an app contribute backend-executed tools to each
@@ -181,6 +191,7 @@ func (h *Host) MountRoutes(mux *http.ServeMux) error {
 		return errors.New("chathost: host is nil")
 	}
 	mux.HandleFunc("GET /api/chat/health", h.handleHealth)
+	mux.HandleFunc("GET /api/chat/profiles", h.handleProfiles)
 	mux.HandleFunc("POST /api/chat/sessions", h.handleCreateSession)
 	mux.HandleFunc("POST /api/chat/sessions/{id}/messages", h.handleSubmitMessage)
 	mux.HandleFunc("GET /api/chat/sessions/{id}", h.handleSessionSnapshot)

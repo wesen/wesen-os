@@ -3,6 +3,7 @@ package chathost
 import (
 	"net/http"
 	"regexp"
+	"sort"
 	"strings"
 
 	gepprofiles "github.com/go-go-golems/geppetto/pkg/engineprofiles"
@@ -56,6 +57,69 @@ type toolCommandResponse struct {
 
 func (h *Host) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	serverkit.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok", "app": h.opts.AppID})
+}
+
+type profileInfoResponse struct {
+	Slug        string `json:"slug"`
+	DisplayName string `json:"displayName"`
+	IsDefault   bool   `json:"isDefault"`
+}
+
+type profilesResponse struct {
+	Profiles    []profileInfoResponse `json:"profiles"`
+	DefaultSlug string                `json:"defaultSlug"`
+}
+
+// handleProfiles lists the user-selectable engine profiles for this app's chat
+// window. It prefers the curated ProfileSurface.VisibleProfiles list and falls
+// back to enumerating the profile registry so both curated (inventory) and
+// uncurated (assistant) apps expose a usable selector.
+func (h *Host) handleProfiles(w http.ResponseWriter, r *http.Request) {
+	surface := h.opts.Profiles
+	defaultSlug := surface.DefaultProfileSlug.String()
+
+	infos := make([]profileInfoResponse, 0)
+	appendInfo := func(slug, displayName string) {
+		slug = strings.TrimSpace(slug)
+		if slug == "" {
+			return
+		}
+		if strings.TrimSpace(displayName) == "" {
+			displayName = slug
+		}
+		infos = append(infos, profileInfoResponse{Slug: slug, DisplayName: displayName, IsDefault: slug == defaultSlug})
+	}
+
+	switch {
+	case len(surface.VisibleProfiles) > 0:
+		for _, p := range surface.VisibleProfiles {
+			appendInfo(p.Slug.String(), p.DisplayName)
+		}
+	case surface.Registry != nil:
+		profiles, err := surface.Registry.ListEngineProfiles(r.Context(), surface.RegistrySlug)
+		if err != nil {
+			log.Error().Err(err).Str("app", h.opts.AppID).Msg("list engine profiles failed")
+			serverkit.WriteJSON(w, http.StatusInternalServerError, serverkit.ErrorResponse{Error: "list profiles failed"})
+			return
+		}
+		for _, p := range profiles {
+			if p == nil {
+				continue
+			}
+			appendInfo(p.Slug.String(), p.DisplayName)
+		}
+	}
+
+	// Registry enumeration walks a map, so order is non-deterministic. Sort for a
+	// stable selector: the default profile first, then alphabetically by slug.
+	sort.SliceStable(infos, func(i, j int) bool {
+		if infos[i].IsDefault != infos[j].IsDefault {
+			return infos[i].IsDefault
+		}
+		return infos[i].Slug < infos[j].Slug
+	})
+
+	serverkit.WriteJSON(w, http.StatusOK, profilesResponse{Profiles: infos, DefaultSlug: defaultSlug})
 }
 
 func (h *Host) handleCreateSession(w http.ResponseWriter, r *http.Request) {
