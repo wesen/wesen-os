@@ -1,19 +1,15 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { formatAppKey, parseAppKey, type LaunchableAppModule, type LauncherHostContext, type LaunchReason } from '@go-go-golems/os-shell';
-import { type OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
+import { openWindow, type OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
 import type { DesktopCommandHandler, DesktopContribution } from '@go-go-golems/os-core/desktop-react';
 import { showToast } from '@go-go-golems/os-core';
-import {
-  ChatProvider,
-  useChatClient,
-  useChatSelector,
-  selectOverlay,
-  type ChatProviderConfig,
-} from '@go-go-golems/chat-provider';
-import { ChatMessages, ChatComposer, useStickyScrollFollow } from '@go-go-golems/chat-overlay';
-import '../theme/assistant-chat-macos1.css';
+import { ChatProvider, type ChatProviderConfig } from '@go-go-golems/chat-provider';
+import { ChatWindowChrome } from '../chat/ChatWindowChrome';
+import { ChatEventViewerWindow, ChatTimelineDebugWindow } from '../chat/ChatDebugWindows';
+import { chatDebugStore } from '../chat/chatDebugStore';
 
 const APP_ID = 'assistant';
+const API_BASE_PREFIX = '/api/apps/assistant';
 const COMMAND_CHAT_WITH_APP = 'apps-browser.chat-with-app';
 
 interface AssistantAppChatBootstrapResponse {
@@ -86,6 +82,28 @@ function buildAssistantWindowPayload(input?: Partial<AssistantWindowState>): Ope
   };
 }
 
+type DebugWindowKind = 'event-viewer' | 'timeline-debug';
+
+// buildDebugWindowPayload opens a detached debug window as another assistant
+// app instance (`event-viewer~<convId>` / `timeline-debug~<convId>`), matching
+// the pre-migration assistant's routing so debug windows survive reloads.
+export function buildDebugWindowPayload(kind: DebugWindowKind, convId: string): OpenWindowPayload {
+  const label = kind === 'event-viewer' ? 'Event Viewer' : 'Timeline Debug';
+  const icon = kind === 'event-viewer' ? '🧭' : '🧱';
+  const instanceId = `${kind}~${convId}`;
+  return {
+    id: `window:assistant:${instanceId}`,
+    title: `${label} (${convId})`,
+    icon,
+    bounds: { x: kind === 'event-viewer' ? 240 : 300, y: 120, w: 680, h: 480 },
+    content: {
+      kind: 'app',
+      appKey: formatAppKey(APP_ID, instanceId),
+    },
+    dedupeKey: `assistant:${instanceId}`,
+  };
+}
+
 async function bootstrapAppChat(hostContext: LauncherHostContext, appId: string): Promise<AssistantAppChatBootstrapResponse> {
   const response = await fetch(`${hostContext.resolveApiBase(APP_ID)}/api/bootstrap/app-chat`, {
     method: 'POST',
@@ -128,55 +146,70 @@ function createAssistantCommandHandler(hostContext: LauncherHostContext): Deskto
   };
 }
 
-// AssistantWindowBody renders inside a ChatProvider: connect on mount, then a
-// scrollable message list and composer laid out to fill the desktop window.
-function AssistantWindowBody({ placeholder }: { placeholder: string }) {
-  const client = useChatClient();
-  const { runStatus, wsStatus, error, sessionId } = useChatSelector(selectOverlay);
-  const isStreaming = runStatus === 'streaming';
-  const scroll = useStickyScrollFollow({
-    enabled: true,
-    contentVersion: `${runStatus}:${wsStatus}`,
-    resetKey: sessionId,
-  });
-
-  useEffect(() => {
-    client.connect().catch(() => {
-      // connection state is surfaced through wsStatus/error selectors
-    });
-  }, [client]);
-
-  return (
-    <div className="assistant-chat-window" data-part="assistant-chat-window">
-      <div className="assistant-chat-status" data-part="assistant-chat-status">
-        <span>{wsStatus === 'connected' ? '● connected' : `○ ${wsStatus || 'connecting'}`}</span>
-        {isStreaming ? <span className="assistant-chat-streaming">streaming…</span> : null}
-      </div>
-      {error ? <div className="chat-overlay-error-bar">{String(error)}</div> : null}
-      <div
-        ref={scroll.containerRef}
-        onScroll={scroll.onScroll}
-        onWheel={scroll.onWheel}
-        className="chat-overlay-messages-scroll"
-      >
-        <ChatMessages bottomRef={scroll.tailRef} />
-      </div>
-      <ChatComposer disabled={isStreaming} />
-      <span className="assistant-chat-placeholder-hint" data-placeholder={placeholder} />
-    </div>
-  );
+function assistantSuggestions(state: AssistantWindowState): string[] {
+  if (state.mode === 'app-chat' && state.subjectAppName) {
+    return [
+      `What does ${state.subjectAppName} do?`,
+      `How do I get started with ${state.subjectAppName}?`,
+      `Show me an example workflow in ${state.subjectAppName}`,
+    ];
+  }
+  return [
+    'What can you help me with?',
+    'List the apps on this desktop',
+    'Help me plan my day',
+  ];
 }
 
-function AssistantChatWindow({ convId, placeholder }: { convId: string; placeholder: string }) {
-  const config = useMemo<ChatProviderConfig>(() => ({
-    basePrefix: '/api/apps/assistant',
-    sessionStorageKey: `assistant.chat.session.${convId}`,
-    createSessionBody: () => ({ sessionId: convId }),
-  }), [convId]);
+// AssistantChatWindow wires ChatProvider + the shared chrome: the profile is
+// bound at session creation (createSessionBody reads the latest selection via
+// a ref), and every debug event lands in chatDebugStore for the detached
+// Event Viewer / Timeline Debug windows.
+function AssistantChatWindow({
+  state,
+  dispatch,
+}: {
+  state: AssistantWindowState;
+  dispatch: (action: unknown) => unknown;
+}) {
+  const { convId } = state;
+  const [profile, setProfile] = useState<string | null>(null);
+  const profileRef = useRef<string | null>(profile);
+  profileRef.current = profile;
+
+  const config = useMemo<ChatProviderConfig>(
+    () => ({
+      basePrefix: API_BASE_PREFIX,
+      sessionStorageKey: `assistant.chat.session.${convId}`,
+      createSessionBody: () => ({
+        sessionId: convId,
+        profile: profileRef.current ?? undefined,
+      }),
+      onDebugEvent: (event) => chatDebugStore.push(convId, event),
+    }),
+    [convId],
+  );
+
+  const title = state.mode === 'app-chat' && state.subjectAppName
+    ? `💬 Chat with ${state.subjectAppName}`
+    : '🤖 Assistant';
+  const emptySubtitle = state.mode === 'app-chat' && state.subjectAppName
+    ? `Ask about ${state.subjectAppName} — or try one of the suggestions below.`
+    : 'Ask a question, request data, or try one of the suggestions below.';
 
   return (
     <ChatProvider config={config}>
-      <AssistantWindowBody placeholder={placeholder} />
+      <ChatWindowChrome
+        convId={convId}
+        apiBasePrefix={API_BASE_PREFIX}
+        title={title}
+        emptySubtitle={emptySubtitle}
+        starterSuggestions={assistantSuggestions(state)}
+        profile={profile}
+        onProfileChange={setProfile}
+        onOpenEventViewer={(id) => dispatch(openWindow(buildDebugWindowPayload('event-viewer', id)))}
+        onOpenTimelineDebug={(id) => dispatch(openWindow(buildDebugWindowPayload('timeline-debug', id)))}
+      />
     </ChatProvider>
   );
 }
@@ -196,21 +229,24 @@ export const assistantLauncherModule: LaunchableAppModule = {
       commands: [createAssistantCommandHandler(hostContext)],
     },
   ],
-  renderWindow: ({ appKey, instanceId }) => {
+  renderWindow: ({ appKey, instanceId, ctx }) => {
     const parsed = parseAppKey(appKey);
-    const decoded = decodeInstance(parsed.instanceId || instanceId);
+    const resolvedInstanceId = parsed.instanceId || instanceId;
+
+    if (resolvedInstanceId.startsWith('event-viewer~')) {
+      const convId = decodeURIComponent(resolvedInstanceId.slice('event-viewer~'.length));
+      return <ChatEventViewerWindow convId={convId} />;
+    }
+    if (resolvedInstanceId.startsWith('timeline-debug~')) {
+      const convId = decodeURIComponent(resolvedInstanceId.slice('timeline-debug~'.length));
+      return <ChatTimelineDebugWindow convId={convId} apiBasePrefix={API_BASE_PREFIX} />;
+    }
+
+    const decoded = decodeInstance(resolvedInstanceId);
     if (!decoded) {
       return <div style={{ padding: 12, fontFamily: 'monospace' }}>Invalid assistant window instance.</div>;
     }
-    const placeholder = decoded.mode === 'app-chat' && decoded.subjectAppName
-      ? `Ask about ${decoded.subjectAppName}...`
-      : 'Ask the assistant...';
 
-    return (
-      <AssistantChatWindow
-        convId={decoded.convId}
-        placeholder={placeholder}
-      />
-    );
+    return <AssistantChatWindow state={decoded} dispatch={ctx.dispatch} />;
   },
 };
