@@ -597,6 +597,12 @@ importers:
       '@codemirror/view':
         specifier: ^6.39.14
         version: 6.39.16
+      '@go-go-golems/chat-overlay':
+        specifier: ^0.2.1
+        version: 0.2.1(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)
+      '@go-go-golems/chat-provider':
+        specifier: ^0.2.1
+        version: 0.2.1(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)
       '@go-go-golems/os-chat':
         specifier: 0.1.1
         version: 0.1.1(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
