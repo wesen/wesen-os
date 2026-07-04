@@ -24,6 +24,7 @@ import { ChatMessages, ChatComposer, useStickyScrollFollow } from '@go-go-golems
 import { chatDebugStore } from './chatDebugStore';
 import { useChatDebugEvents } from './useChatDebugEvents';
 import { useChatProfiles } from './useChatProfiles';
+import { StatsFooter } from './StatsFooter';
 import './chat-chrome.css';
 
 export interface ChatWindowChromeProps {
@@ -41,7 +42,7 @@ export interface ChatWindowChromeProps {
   onOpenEventViewer?: (convId: string) => void;
   /** When set, renders the 🧱 Timeline header button. */
   onOpenTimelineDebug?: (convId: string) => void;
-  /** Footer content; defaults to the transport tagline. */
+  /** Footer content; defaults to the live StatsFooter (model/tokens/tok-s). */
   footer?: ReactNode;
 }
 
@@ -158,6 +159,7 @@ export function ChatWindowChrome({
   );
 
   const profileLocked = entities.length > 0; // changing profile after first message needs a new session
+  const selectedProfileLabel = profiles.find((p) => p.slug === profile)?.displayName ?? profile;
 
   return (
     <div className="oschat-window" data-part="oschat-window">
@@ -245,7 +247,7 @@ export function ChatWindowChrome({
 
       <ChatComposer disabled={isStreaming} />
       <div className="oschat-footer" data-part="footer">
-        {footer ?? 'Streaming via sessionstream'}
+        {footer ?? <StatsFooter convId={convId} label={selectedProfileLabel} />}
       </div>
     </div>
   );
