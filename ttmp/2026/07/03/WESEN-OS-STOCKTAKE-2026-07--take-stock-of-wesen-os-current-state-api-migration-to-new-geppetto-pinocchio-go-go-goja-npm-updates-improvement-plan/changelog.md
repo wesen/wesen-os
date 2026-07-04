@@ -103,3 +103,8 @@ Phase 2 npm half completed after closing the os-shell knot: recovered FederatedA
 
 Inventory chat migrated to react-chat (design-doc/06): window rebuilt on chat-provider/chat-overlay (bee438c), chathost GET /api/chat/profiles (e903c6b), generated cards on the widget rail (27afe8e/bc3fe5c/e82c57f); diary reference/02
 
+
+## 2026-07-03
+
+Phase 3 (ship): migrated profiles.runtime.yaml to new engineprofiles format (fix: legacy layout silently resolves gpt-4 not gpt-4.1-mini; validated via --print-inference-settings) (commit 8e3f3d2); ship runbook design-doc/07
+
