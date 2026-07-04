@@ -20,7 +20,8 @@ import {
   selectOverlay,
   selectTimelineEntities,
 } from '@go-go-golems/chat-provider';
-import { ChatMessages, ChatComposer, useStickyScrollFollow } from '@go-go-golems/chat-overlay';
+import { ChatComposer, useStickyScrollFollow } from '@go-go-golems/chat-overlay';
+import { ChatTimeline } from './ChatTimeline';
 import { chatDebugStore } from './chatDebugStore';
 import { useChatDebugEvents } from './useChatDebugEvents';
 import { useChatProfiles } from './useChatProfiles';
@@ -224,7 +225,11 @@ export function ChatWindowChrome({
         onWheel={scroll.onWheel}
         className="chat-overlay-messages-scroll"
       >
-        {isEmpty ? <ChatEmptyState subtitle={emptySubtitle} /> : <ChatMessages bottomRef={scroll.tailRef} />}
+        {isEmpty ? (
+          <ChatEmptyState subtitle={emptySubtitle} />
+        ) : (
+          <ChatTimeline bottomRef={scroll.tailRef} renderMode={debugOpen ? 'debug' : 'normal'} />
+        )}
       </div>
 
       {isEmpty && starterSuggestions.length > 0 ? (
