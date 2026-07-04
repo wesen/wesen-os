@@ -20,7 +20,7 @@ profiles:
     plugins:
       - wesen-os
     env:
-      WESEN_OS_PROFILE: "gpt-5-nano"
+      WESEN_OS_PROFILE: "gpt-5-nano-low"
 
 plugins:
   - id: wesen-os
