@@ -20,10 +20,10 @@ own repo; true sharing happens in Phase 6 by upstreaming into react-chat.
 
 ## Phase 2 — Stats footer (frontend-only; usage verified on the wire)
 
-- [ ] `chatStatsStore.ts`: per-conv stats fed from `parsed-frame` debug events — `ChatProviderCallMetadataUpdated`/`ChatProviderCallFinished` (`frame.payload.usage.{inputTokens,outputTokens,cachedTokens,cacheCreationInputTokens,cacheReadInputTokens}`, `durationMs`, `stopReason`); stream start on `ChatRunStarted`/`ChatTextSegmentStarted`; live out-token estimate from `ChatTextPatch` text length (chars/4) overridden by real usage
-- [ ] `StatsFooter.tsx`: idle/complete = label · In/Out/Cache/CacheWrite/CacheRead · duration · tok/s; streaming = `streaming: N tok · X tok/s`; model label = selected profile displayName (events carry no model); no fabricated `0 tok`
-- [ ] Wire into `ChatWindowChrome` footer slot
-- [ ] Validate with real inference (gpt-5-nano-low): numbers move during stream, settle on finish
+- [x] `chatStatsStore.ts`: per-conv stats fed from `parsed-frame` debug events — `ChatProviderCallMetadataUpdated`/`ChatProviderCallFinished` (`frame.payload.usage.{inputTokens,outputTokens,cachedTokens,cacheCreationInputTokens,cacheReadInputTokens}`, `durationMs`, `stopReason`); stream start on `ChatRunStarted`/`ChatTextSegmentStarted`; live out-token estimate from `ChatTextPatch` text length (chars/4) overridden by real usage
+- [x] `StatsFooter.tsx`: idle/complete = label · In/Out/Cache/CacheWrite/CacheRead · duration · tok/s; streaming = `streaming: N tok · X tok/s`; model label = selected profile displayName (events carry no model); no fabricated `0 tok`
+- [x] Wire into `ChatWindowChrome` footer slot
+- [x] Validate with real inference (gpt-5-nano-low): numbers move during stream, settle on finish
 
 ## Phase 3 — Timeline renderer registry + ChatTimeline
 
@@ -34,11 +34,11 @@ own repo; true sharing happens in Phase 6 by upstreaming into react-chat.
 
 ## Phase 4 — Debug windows with performance (assistant windows + inventory retrofit)
 
-- [ ] `StructuredDataTree.tsx`: port lazy collapsible tree (children unmounted while collapsed, MAX_DEPTH 20, 200-char truncation, empty-composite scalar lines)
-- [ ] `sanitize.ts`: port `sanitizeForExport` (MAX_DEPTH 24, WeakSet cycle guard, tagged BigInt/Date/RegExp/Error) — applied lazily per selected entity, not eagerly
-- [ ] `ChatEventViewerWindow.tsx`: component cap 500, pausedRef-gated ingestion, precomputed summaries from store, memoized filter projection, count-keyed scroll + isNearBottom(32px), LAZY per-expanded-row YAML/JSON (fixes old gap)
-- [ ] Reproduce the ORIGINAL Event Viewer look (user request 2026-07-04): event-type pills/badges, toolbar chips, visual density — match old EventViewerWindow markup/CSS, not just perf internals
-- [ ] `ChatTimelineDebugWindow.tsx`: memoized snapshot keyed on `selectTimelineEntities` output identity; entity list + StructuredDataTree detail; export via lazy sanitize
+- [x] `StructuredDataTree.tsx`: port lazy collapsible tree (children unmounted while collapsed, MAX_DEPTH 20, 200-char truncation, empty-composite scalar lines)
+- [x] `sanitize.ts`: port `sanitizeForExport` (MAX_DEPTH 24, WeakSet cycle guard, tagged BigInt/Date/RegExp/Error) — applied lazily per selected entity, not eagerly
+- [x] `ChatEventViewerWindow.tsx`: component cap 500, pausedRef-gated ingestion, precomputed summaries from store, memoized filter projection, count-keyed scroll + isNearBottom(32px), LAZY per-expanded-row YAML/JSON (fixes old gap)
+- [x] Reproduce the ORIGINAL Event Viewer look (user request 2026-07-04): event-type pills/badges, toolbar chips, visual density — match old EventViewerWindow markup/CSS, not just perf internals
+- [x] `ChatTimelineDebugWindow.tsx`: memoized snapshot keyed on `selectTimelineEntities` output identity; entity list + StructuredDataTree detail; export via lazy sanitize
 - [x] Register both as launcher desktop windows, opened from assistant chrome Events/Timeline buttons
 - [ ] Inventory retrofit (its repo): cap + pause + summaries in `inventoryChatDebugStore`/`InventoryDebugWindows`, lazy YAML
 - [ ] Flood test: long streaming turn, UI stays responsive, memory bounded
@@ -57,3 +57,4 @@ own repo; true sharing happens in Phase 6 by upstreaming into react-chat.
 
 - [ ] Promote ChatWindowChrome / StatsFooter / renderer registry / debug windows into react-chat; switch assistant + inventory to the published package
 - [ ] Retire os-chat from remaining consumers (coordinate with WESEN-OS-STOCKTAKE Phase 4)
+- [ ] Phase 5 (user request 2026-07-04): generated hypercard apps must appear in the Stacks & Cards manager list — register generated surfaces/artifacts so the manager lists them, openable/viewable from there

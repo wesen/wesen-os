@@ -231,3 +231,102 @@ source on this exact stack.
 - Profile lock: `profileLocked = entities.length > 0` — profile is only sent in
   `createSessionBody`, so changing it mid-session would silently not apply;
   locking makes that explicit (same as inventory).
+
+## Step 3: Phase 2 stats footer + Phase 4 debug windows (commits fc579bc, fea33aa)
+
+Two phases in one stretch. Phase 2 (fc579bc): `chatStatsStore` scrapes the
+transient `ChatProviderCallMetadataUpdated`/`ChatProviderCallFinished` UI events
+from `parsed-frame` debug events — per-run usage accumulated across provider
+calls, `durationMs`, conversation totals; live streaming out-tokens =
+ChatTextPatch chars/4 estimate overridden by real usage. `StatsFooter` is the
+chrome's default footer. Live verified: `Assistant · In:33 Out:750 · 5.6s ·
+134.9 tok/s`, and `Σ In:194 Out:880` totals after turn 2.
+
+Phase 4 (fea33aa): full rebuild of both debug windows with the ORIGINAL look
+(user request mid-stretch: "restore the little pills and look of the original
+event viewers") and the old perf techniques, plus the two gap fixes (lazy YAML,
+lazy sanitize). The structural novelty vs the old code: detached windows have no
+ChatProvider, so Timeline Debug reconstructs the timeline as a **mirror** — REST
+snapshot seed + `ui-event` debug entries' `TimelineMutation`s folded with
+provider-exact merge semantics ported from chat-provider's `timelineSlice`
+(`applyStreamPatch`/`mergePropsWithPatches`/`mergeTimelineEntity`).
+
+### Prompt Context
+
+**User prompt (verbatim):** "Can you also restore the little pills and look of the original event viewers? they were very useful,this is a bit terse."
+
+**Assistant interpretation:** Phase 4 must reproduce the original Event Viewer
+UI (family pills, toolbar controls, row layout), not just the perf internals.
+
+**Inferred user intent:** Keep the debugging ergonomics they relied on daily.
+
+**Commits (code):** fc579bc — "Phase 2 stats footer", fea33aa — "Phase 4 debug windows"
+
+### What I did
+- `chatStatsStore.ts` + `StatsFooter.tsx`; wired as chrome default footer.
+- Extended `chatDebugStore` entries with ingest-time `family/eventType/eventId`
+  (families llm/tool/widget/timeline/ws/raw/other; `classify()`).
+- Ports into `apps/os-launcher/src/chat/`: `yamlFormat.ts`,
+  `SyntaxHighlight.tsx`, `StructuredDataTree.tsx` (verbatim from os-chat),
+  `timelineDebugModel.ts` (adapted, raw-props + lazy sanitize), `clipboard.ts`.
+- `timelineMirror.ts`: provider-exact merge + `foldMutations` (same-ref when
+  no-op) + `seedMirrorFromSnapshot` (REST protojson entities, Any unwrap).
+- Rewrote `ChatDebugWindows.tsx` (~650 lines) with the old markup/palette.
+
+### Why
+- The debug windows were the old stack's killer tool; visual + perf parity was
+  the explicit ask.
+
+### What worked
+- Live: pills toggle (Raw default-off), 500-row cap under load, expanded
+  `ChatRunFinished` payload with 17 highlight tokens, mirror rendering both
+  message entities + collapsible props tree.
+
+### What didn't work
+- First live-streaming footer sample: gpt-5-nano finishes in ~2-5s, so the
+  sampler kept catching the completed state; the streaming branch is exercised
+  by the same ingestion path but was not visually observed. Re-verify with a
+  slower model when convenient.
+
+### What I learned
+- `ui-event` debug events carry the provider's `TimelineMutation` verbatim
+  (`{upsert?, upsertIfExists?, deleteId?, status?}` with full entities) — a
+  detached mirror is a fold, not an adapter reimplementation.
+- Old stats source: `semRegistry.applyLlmMetadata` ← `llm.*` envelope metadata
+  (proto `LlmInferenceMetadataV1`); new equivalents carry usage but NO model
+  name → profile displayName as label.
+
+### What was tricky to build
+- Mirror seeding race: mutations in flight during the REST fetch could be
+  double-applied (content appended twice). Chose to capture the fold cursor at
+  response time and accept the small race (debug view; Refresh re-seeds).
+  Symptom to watch: duplicated tail text on an entity right after opening the
+  window during an active stream.
+- Pause semantics with useSyncExternalStore would re-render on every push even
+  when paused; used the old pattern instead (component state + subscription
+  callback checking `pausedRef` before `setState`).
+
+### What warrants a second pair of eyes
+- `timelineMirror.mergePropsWithPatches` port — verify against
+  chat-provider/store/timelineSlice.js if react-chat updates (semantics drift
+  would silently corrupt the mirror).
+- No list virtualization (old code had none either); the 500-row cap is the
+  backstop. If needed later, virtualize `event-viewer-log`.
+
+### What should be done in the future
+- Inventory retrofit (tasks.md Phase 4 last items) — batched with Phase 5's
+  inventory work.
+- Streaming-branch visual check of StatsFooter with a slower profile.
+
+### Code review instructions
+- Start: `apps/os-launcher/src/chat/timelineMirror.ts` (merge semantics) vs
+  `node_modules/@go-go-golems/chat-provider/store/timelineSlice.js`.
+- Then `ChatDebugWindows.tsx` against the originals in
+  `workspace-links/go-go-os-frontend/packages/os-chat/src/chat/debug/`.
+- Validate: typecheck; open assistant → send → Events/Timeline windows.
+
+### Technical details
+- Wire fact: `ChatProviderCallFinished` payload = `{stopReason, finishClass,
+  usage{inputTokens,outputTokens,cachedTokens,cacheCreationInputTokens,
+  cacheReadInputTokens}, durationMs, hasToolCalls, correlation}` (protojson
+  camelCase; no model name).

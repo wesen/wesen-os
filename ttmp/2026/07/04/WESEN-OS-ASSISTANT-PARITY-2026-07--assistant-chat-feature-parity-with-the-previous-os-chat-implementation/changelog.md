@@ -22,3 +22,12 @@ Phase 1 complete (commit 33c6165): assistant chrome parity on chat-provider — 
 
 - /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/chat/ChatWindowChrome.tsx — New shared launcher chat chrome
 
+
+## 2026-07-04
+
+Phase 2 (fc579bc): StatsFooter with real usage from ChatProviderCall* events. Phase 4 (fea33aa): debug windows rebuilt with the original look (family pills, old toolbar/controls/row layout) + perf techniques + lazy-YAML/lazy-sanitize fixes; detached timeline via REST-seeded mutation-fold mirror. Both verified live.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/chat/timelineMirror.ts — Provider-exact merge semantics port — review against chat-provider timelineSlice
+
