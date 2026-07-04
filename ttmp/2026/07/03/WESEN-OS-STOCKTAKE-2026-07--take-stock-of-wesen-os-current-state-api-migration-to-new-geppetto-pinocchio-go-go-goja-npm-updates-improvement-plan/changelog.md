@@ -98,3 +98,8 @@ Phase 2 npm half completed after closing the os-shell knot: recovered FederatedA
 
 - /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/package.json — 8/8 os-* now published ranges; build/typecheck defaults published
 
+
+## 2026-07-03
+
+Inventory chat migrated to react-chat (design-doc/06): window rebuilt on chat-provider/chat-overlay (bee438c), chathost GET /api/chat/profiles (e903c6b), generated cards on the widget rail (27afe8e/bc3fe5c/e82c57f); diary reference/02
+
