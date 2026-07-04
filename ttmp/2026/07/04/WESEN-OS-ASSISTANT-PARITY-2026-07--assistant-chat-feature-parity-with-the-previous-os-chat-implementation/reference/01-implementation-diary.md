@@ -459,3 +459,103 @@ inventory repo bb23af1 (codeCard widget + packs), aea27b9 (debug retrofit).
   descriptors `{id,label,icon?,color?}`) and `kanban.board` (columns
   `{id,title,icon}` all required; tasks `{id,col,title,type,priority,desc,
   labels}` all required; event refs optional `{handler}` objects).
+
+## Step 5: Markdown chat, hidden card code with buildup, Edit action, inventory pills (commits 78b6dba; inventory 585852c)
+
+Polish round from live user testing. Four asks: (1) hide the generated card
+code — show a streaming buildup indicator and nothing once created; (2) render
+chat as proper markdown incl. thinking traces; (3) the inventory debug windows
+were still the terse rebuild — bring them to the pills standard; (4) add an
+✏️ Edit action on the chat code-card, matching Stacks & Cards.
+
+Both chat surfaces now render messages as markdown (micromark+GFM — already a
+launcher dep, HTML-escaping by default so model output can't inject markup).
+`stripHypercardBlocks` removes completed `<hypercard:*>` blocks from message
+text (their widgets render separately) and flags a trailing unclosed block as
+"building" → an animated `🃏 Building card…` placeholder replaces streaming raw
+YAML; a partially-typed opening tag is hidden so it never flashes. Thinking
+traces (message entities with role `thinking` — geppetto text segments carry
+the role through `ChatTextPatch`) render as a collapsible 💭 block, auto-open
+while streaming. The `inventory.codeCard` widget became a compact chip
+(name · pack · ▶ Open · ✏️ Edit) — Edit calls os-scripting's `openCodeEditor`
+(exported from the package root), the same runtime-surface editor flow the
+Stacks & Cards registry section uses. Inventory's debug windows were rebuilt
+to the launcher standard, reusing `SyntaxHighlight`/`StructuredDataTree`/
+`toYaml`/`timelineDebugModel` from `@go-go-golems/os-chat` (workspace dep —
+only the mutation-fold mirror needed copying).
+
+### Prompt Context
+
+**User prompt (verbatim):** "hide the card code (show streaming widget buildup widget) and remove it entirely when the card has been created, also render chat as proper markdown including thinking traces, and properly render the event debug timeline (it still looks like the old one?)"
+
+**User prompt (verbatim, follow-up):** "(look at how the code is displayed in \"Stacks & Cards\" and also add an edit button in the chat rendered widget to open the code"
+
+**Assistant interpretation:** Hide raw card YAML/code in chat (streaming
+placeholder while building, compact chip after), markdown message rendering
+with thinking support, upgrade the inventory debug windows to the pills
+rebuild, and add an Edit-code action mirroring Stacks & Cards.
+
+**Inferred user intent:** Chat should read like a polished product — artifacts
+as chips with actions, not code dumps.
+
+**Commits (code):** 78b6dba (launcher), 585852c (inventory).
+
+### What I did
+- Launcher: `markdown.tsx`, `hypercardBlocks.ts`, ChatTimeline MessageBody/
+  ThinkingBlock, `.oschat-md`/thinking/buildup CSS.
+- Inventory: mirrored `markdown.tsx`/`hypercardBlocks.ts`,
+  `InventoryChatMessages.tsx` (replaces chat-overlay ChatMessages), compact
+  `inventoryCodeCardWidget` with Open+Edit, pills `InventoryDebugWindows.tsx`
+  + classify() in the store + `timelineMirror.ts` copy, micromark deps.
+
+### Why
+- The assistant message text carried the raw `<hypercard:card:v2>` YAML
+  inline — the "card code in chat" the user saw was the message text itself,
+  not the widget; stripping at render is the right layer (the text stays
+  intact in the timeline/turn store).
+
+### What worked
+- Caught the buildup placeholder live mid-stream on the first try
+  ("🃏Building card…" → gone at block close).
+- Edit opened the CodeMirror editor with the generated code and "registered"
+  badge; Open still executed ("Greeting input card" rendered its button).
+- GFM table + inline code rendered in the assistant window.
+
+### What didn't work
+- N/A this round (no failed attempts; typecheck first-pass green).
+
+### What I learned
+- os-chat exports its whole debug toolkit (SyntaxHighlight,
+  StructuredDataTree, yamlFormat, timelineDebugModel) — the inventory pills
+  rebuild needed far less duplication than the launcher's (which can't import
+  os-chat source; it uses the published package).
+- `openCodeEditor(dispatch, {ownerAppId, surfaceId}, code, packId)` stashes
+  code and opens the HyperCard Tools editor window — reusable from any widget
+  with desktop-store dispatch.
+
+### What was tricky to build
+- Streaming tag flashing: a half-typed `<hyperca` at the text tail would
+  flicker into view between deltas; handled with an incremental
+  prefix-matching regex (PARTIAL_TAG_TAIL) that hides any partial opening tag.
+
+### What warrants a second pair of eyes
+- `stripHypercardBlocks` OPEN_BLOCK regex treats ANY `<hypercard:x:vN>`
+  without a closing tag as "still building" even on a final message (model
+  forgot the closing tag) — the placeholder would persist. Acceptable
+  (extractor also rejects such blocks), but a `streaming:false` + unclosed
+  combination could show "Building card…" forever; could add a fallback to
+  render nothing when !streaming.
+- Inventory `buildTimelineDebugSnapshot(convId, folded.mirror as never)` —
+  structural cast onto os-chat's old ConversationTimelineState; compatible
+  today, revisit if os-chat types change.
+
+### What should be done in the future
+- Phase 6: dedupe the markdown/message components into react-chat.
+- Consider showing tool_call chips with markdown-rendered results too.
+
+### Code review instructions
+- `apps/os-launcher/src/chat/hypercardBlocks.ts` (regex edge cases),
+  `ChatTimeline.tsx` MessageBody; inventory `InventoryChatMessages.tsx`,
+  `inventoryCodeCardWidget.tsx`, `InventoryDebugWindows.tsx`.
+- Validate: inventory New Chat → ask for markdown + an interactive card →
+  watch the buildup placeholder → chip with Open/Edit → Events window pills.

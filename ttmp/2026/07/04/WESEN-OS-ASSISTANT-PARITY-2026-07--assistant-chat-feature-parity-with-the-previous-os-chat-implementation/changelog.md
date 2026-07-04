@@ -40,3 +40,8 @@ Phase 3 (5baaad3): ChatTimeline + renderer registry replace kind-dropping ChatMe
 
 - /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/cmd/wesen-os-launcher/prompts/runtime-card-policy.md — Embedded policy — kanban sections rewritten against the 0.1.4 pack validator
 
+
+## 2026-07-04
+
+Polish round (78b6dba launcher, 585852c inventory): markdown chat rendering (micromark+GFM) with collapsible thinking traces; <hypercard:*> blocks stripped from message text with animated 'Building card…' placeholder while streaming; inventory.codeCard is a compact chip (no code) with ▶ Open + ✏️ Edit (openCodeEditor, same flow as Stacks & Cards); inventory debug windows rebuilt with the pills/two-pane standard reusing os-chat's exported debug toolkit. All verified live incl. mid-stream buildup capture.
+
