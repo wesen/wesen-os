@@ -31,3 +31,12 @@ Phase 2 (fc579bc): StatsFooter with real usage from ChatProviderCall* events. Ph
 
 - /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/chat/timelineMirror.ts — Provider-exact merge semantics port — review against chat-provider timelineSlice
 
+
+## 2026-07-04
+
+Phase 3 (5baaad3): ChatTimeline + renderer registry replace kind-dropping ChatMessages. Phase 5 (95abb11 + inventory bb23af1): generated JS HyperCard apps restored end-to-end — policy prompt embedded (kanban sections fixed to os-kanban 0.1.4 page/taxonomy/board contract), card:v2 YAML extractor, inventory.codeCard widget + registerRuntimeSurface bridge, packageIds ['ui','kanban'] in stack.ts AND vm prelude; Stacks & Cards gets a live Generated Cards section with Open. Inventory debug retrofit (aea27b9). Verified live: interactive ui.card.v1 counter (5→8), kanban.v1 restock board, manager listing/opening.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/cmd/wesen-os-launcher/prompts/runtime-card-policy.md — Embedded policy — kanban sections rewritten against the 0.1.4 pack validator
+

@@ -15,16 +15,23 @@ Owners: []
 RelatedFiles:
     - Path: apps/os-launcher/src/app/assistantModule.tsx
       Note: Rewired onto chrome + debug window routing
+    - Path: apps/os-launcher/src/app/runtimeDebugModule.tsx
+      Note: Stacks & Cards Generated Cards section (95abb11)
     - Path: apps/os-launcher/src/chat/ChatWindowChrome.tsx
       Note: Phase 1 generic chrome (commit 33c6165)
     - Path: apps/os-launcher/src/chat/chatDebugStore.ts
       Note: Bounded debug ring buffer with emit-time summaries
+    - Path: cmd/wesen-os-launcher/inventory_artifacts.go
+      Note: card:v2 YAML code-card + widget:v1 static extractors (95abb11)
+    - Path: workspace-links/go-go-app-inventory/apps/inventory/src/launcher/chat/inventoryCodeCardWidget.tsx
+      Note: codeCard proposal widget + projection bridge (inventory bb23af1)
 ExternalSources: []
 Summary: Step-by-step implementation journal for the assistant chat parity work (Phases 1-5 of tasks.md), including failures, architecture decisions, and review pointers.
 LastUpdated: 2026-07-04T14:29:07-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # Diary
@@ -330,3 +337,125 @@ UI (family pills, toolbar controls, row layout), not just the perf internals.
   usage{inputTokens,outputTokens,cachedTokens,cacheCreationInputTokens,
   cacheReadInputTokens}, durationMs, hasToolCalls, correlation}` (protojson
   camelCase; no model name).
+
+## Step 4: Phase 3 registry, Phase 5 JS HyperCard apps, inventory retrofit (commits 5baaad3, 95abb11; inventory bb23af1, aea27b9)
+
+The marquee capability is back: the model generates executable JS cards that run
+as live interactive surfaces, openable from chat AND from the Stacks & Cards
+manager (user requirement). Verified live with real inference twice over: a
+`ui.card.v1` "Stock Counter" whose +/- buttons mutate state (Quantity 5→8
+across clicks), and a `kanban.v1` "Restock tasks board" rendering Todo/Ordered/
+Received columns with model-seeded tasks. Phase 3's `ChatTimeline` +
+`timelineRendererRegistry` replaced chat-overlay's kind-dropping `ChatMessages`
+in the assistant chrome, and the inventory debug windows got the perf retrofit.
+
+The Phase 5 path end-to-end: embedded legacy `runtime-card-policy.md` system
+block (go:embed) teaches authoring → model emits `<hypercard:card:v2>` YAML →
+`extractRuntimeCards` (128 KB cap, legacy required-field validation) →
+`inventory.codeCard` ChatWidgetInstance → widget renders a proposal card and
+calls `registerRuntimeSurface(card.id, code, pack)` on mount (the projection
+bridge; hydration re-registers) → Open routes through
+`buildArtifactOpenWindowPayload` → the existing surface adapter executes it.
+Static cards moved to `<hypercard:widget:v1>` (JSON), freeing `card:v2` for its
+original meaning. Stacks & Cards got a launcher-side "Generated cards" section
+(live via `onRegistryChange`) with Open buttons — the built-in registry section
+was Edit-only (verified by a fable Explore agent against os-scripting source +
+published dist).
+
+### Prompt Context
+
+**User prompt (verbatim):** "as part of your work, i also want you to make sure that the  model can generate hypercard apps and that they can be opened and viewed in the tasks & cards manager list."
+
+**Assistant interpretation:** Phase 5 must additionally surface generated cards
+in the Stacks & Cards manager (list + open), not only in the chat stream.
+
+**Inferred user intent:** Generated apps as first-class desktop artifacts, not
+chat-transient bubbles.
+
+**Commits (code):** 5baaad3 (Phase 3), 95abb11 (backend + Stacks & Cards);
+inventory repo bb23af1 (codeCard widget + packs), aea27b9 (debug retrofit).
+
+### What I did
+- Phase 3: `timelineRendererRegistry.tsx` (old rendererRegistry API mirrored)
+  + `ChatTimeline.tsx` (built-ins reproduce ChatMessages output; unknown kinds
+  render collapsed instead of dropped; renderMode ctx) wired into the chrome.
+- Backend: rewrote `inventory_artifacts.go` (widget:v1 static JSON +
+  card:v2 YAML code cards with fence stripping + validation), embedded and
+  UPDATED the legacy policy prompt, 7 unit tests, `main.go` extractor swap.
+- Inventory: `inventoryCodeCardWidget.tsx` (proposal card + bridge + Open),
+  STACK + VM prelude `packageIds: ['ui','kanban']`, code-card CSS.
+- Launcher: `runtimeDebugModule.tsx` Generated Cards section with Open.
+- Retrofit: inventory debug store entries (summaries + evt-N ids, cap 1000),
+  pausedRef gating + lazy JSON in `InventoryDebugWindows`.
+
+### Why
+- The execution engine was verified still-live; only production + projection
+  were missing — the bridge design from the intern guide §6.5, final-only v1.
+
+### What worked
+- ui.card.v1 worked FIRST TRY end-to-end with real inference (model followed
+  the embedded policy; extractor + widget + bridge + open all clean).
+- The Stacks & Cards section live-updated the moment the widget registered a
+  surface, while the manager window was already open.
+
+### What didn't work
+- **Kanban round 1:** "Runtime render error: root.kind must be 'kanban.page'"
+  — the LEGACY policy teaches `widgets.kanban.board(...)` as root, but
+  os-kanban 0.1.4's validator requires `kanban.page(taxonomy, board)`. The
+  policy was stale relative to the shipped pack. Fixed by rewriting the
+  policy's kanban sections against the actual validator
+  (node_modules/@go-go-golems/os-kanban/runtime-packs/kanbanV1Pack.js) with a
+  worked example + tree rules.
+- **Kanban round 2:** "cannot read property 'kanban' of undefined" — inventory
+  surface sessions install only the bundle's `packageIds` (['ui']); the kanban
+  prelude was absent. Added 'kanban' to `domain/stack.ts`.
+- **Kanban round 3:** "Runtime bundle packageIds mismatch. Declared: ui;
+  installed: kanban, ui" — the VM bundle code ITSELF declares packageIds
+  (`domain/vm/00-runtimePrelude.vm.js:133`) and the host validates declared vs
+  installed. Both places must agree. Round 4 rendered the full board.
+- Playwright multi-click on VM-rendered buttons: re-render replaces nodes, so
+  repeated clicks on a stale handle no-op — re-query per click.
+
+### What I learned
+- In-memory `runtimeSurfaceRegistry` means generated cards vanish on page
+  reload until a chat window with the widget remounts (hydration re-registers)
+  — same property as the old middleware, but worth a durable-artifacts follow-up.
+- `ChatProvider` uses an isolated Redux context (`ChatReduxContext`), so plain
+  `useDispatch()` inside chat widgets reaches the desktop store — this makes
+  openWindow-from-widget trivial and is load-bearing for the design.
+- Bundle packageIds live in TWO places (TS definition + VM prelude source) and
+  the runtime host enforces agreement.
+
+### What was tricky to build
+- The kanban failure chain (stale policy → missing prelude → declared/installed
+  mismatch) — three distinct layers each producing a different error; fixing
+  in order was the only path, each fix revealed the next. Symptom-to-layer map
+  now recorded above for future card packs.
+
+### What warrants a second pair of eyes
+- The updated kanban policy example (prompts/runtime-card-policy.md) — written
+  against the 0.1.4 validator by reading it; a pack upgrade will silently
+  stale it again. Consider generating the policy from pack metadata (Phase 6).
+- `packageIds` duplication (stack.ts vs 00-runtimePrelude.vm.js) is a footgun.
+
+### What should be done in the future
+- Persist generated cards (durable artifact store) so they survive reload and
+  appear in Stacks & Cards without a mounted chat window.
+- Phase 6: upstream + Open button in os-scripting's registry section (delete
+  the launcher wrapper), react-chat promotion of the generic components.
+
+### Code review instructions
+- Backend: `cmd/wesen-os-launcher/inventory_artifacts.go` +
+  `inventory_artifacts_test.go` (`go test ./cmd/...`); policy diff in
+  `cmd/wesen-os-launcher/prompts/runtime-card-policy.md` (kanban sections).
+- Frontend: inventory `chat/inventoryCodeCardWidget.tsx` (bridge), launcher
+  `app/runtimeDebugModule.tsx` (Generated Cards), `chat/ChatTimeline.tsx`.
+- Validate: `devctl up --profile real`; inventory New Chat → ask for an
+  interactive card → Open; ask for a kanban board → Open; check Stacks & Cards.
+
+### Technical details
+- kanban.v1 contract (os-kanban 0.1.4): root `widgets.kanban.page(...)` must
+  contain `kanban.taxonomy` (props `{issueTypes[],priorities[],labels[]}`,
+  descriptors `{id,label,icon?,color?}`) and `kanban.board` (columns
+  `{id,title,icon}` all required; tasks `{id,col,title,type,priority,desc,
+  labels}` all required; event refs optional `{handler}` objects).
