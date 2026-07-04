@@ -244,7 +244,7 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 			}
 			return nil
 		},
-		ArtifactExtractor: extractInventoryCards,
+		ArtifactExtractor: extractInventoryArtifacts,
 		TimelineDB: perAppStorePath(cfg.TimelineDB, inventorybackendmodule.AppID),
 		TurnsDSN:   cfg.TurnsDSN,
 		TurnsDB:    perAppStorePath(cfg.TurnsDB, inventorybackendmodule.AppID),
