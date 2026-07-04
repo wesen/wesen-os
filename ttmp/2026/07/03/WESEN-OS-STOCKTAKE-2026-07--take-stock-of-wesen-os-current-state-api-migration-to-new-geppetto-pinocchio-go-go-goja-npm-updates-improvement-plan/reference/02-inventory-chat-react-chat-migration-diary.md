@@ -194,3 +194,78 @@ in place. Verified the full launcher production build and Go build/tests.
 
 ### Code review instructions
 - Validate end-to-end: `cd apps/os-launcher && GO_GO_OS_FRONTEND_RESOLUTION=published npx vite build` and `go build ./...`.
+
+## Step 6: Phase 3 ship prep — config migration + finding, runbook, PRs
+
+Turned to the parent plan's Phase 3 (ship). The one flagged hard blocker was the
+k3s `profiles.runtime.yaml` format. Validated it empirically with the launcher's
+own resolver and discovered the legacy layout does not error — it is silently
+ignored, so production resolves the geppetto default `gpt-4` instead of the
+intended `gpt-4.1-mini`. Migrated the in-repo ConfigMap to the new format,
+wrote the ship runbook (design-doc/07), and opened/updated the two PRs.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue next phase"
+
+**Assistant interpretation:** Execute the next parent-plan phase after the inventory chat migration; that is Phase 3 (ship).
+
+**Inferred user intent:** Get the migrated stack shipped to wesen-os.yolo.scapegoat.dev.
+
+**Follow-up prompt (verbatim):** "go ahead, also, did you keep your diary (see skill for format). If not, retroactively fill all the steps you missed"
+
+**Assistant interpretation:** Open the two PRs I offered, and backfill any missing diary steps (this Step 6).
+
+**Commits (deploy/docs):** 8e3f3d2 — "fix(deploy): migrate profiles.runtime.yaml to new engineprofiles format"; e3dda9c — "docs(phase-3): ship runbook + config-migration finding (design-doc/07)".
+
+### What I did
+- Built the launcher and validated three profile YAMLs via `wesen-os-launcher wesen-os-launcher --profile-registries=<f> --profile=default --print-inference-settings`: legacy → `gpt-4`; new-format → `gpt-4.1-mini`.
+- Migrated `deploy/k8s/wesen-os/configmap.yaml` `profiles.runtime.yaml` to `profiles.default.inference_settings.chat.engine`; dropped unsupported `default_profile_slug`.
+- Confirmed the prod GitOps copy (`wesen/2026-03-27--hetzner-k3s config/profiles.runtime.yaml`) carries the same legacy bug.
+- Read the CI pipeline (`publish-host-image.yml` push-to-main → GHCR + auto GitOps image-PR; `open_gitops_pr.py` patches only the image; `deploy-host-to-k3s.yml` is a break-glass `kubectl apply -k`).
+- Wrote design-doc/07 (ship runbook) with the coupling rule and ordered steps.
+- Opened submodule PR go-go-app-inventory#18; rewrote parent PR wesen/wesen-os#14 (title/body) to reflect the full Phase 2–3 scope.
+
+### Why
+Phase 3 is next in the parent plan, and the config-format check was flagged as a potential hard blocker; validating it early prevents a silently-wrong prod model.
+
+### What worked
+- The launcher's `--print-inference-settings` is a precise, credential-safe validator for the exact prod resolution — the definitive way to test config changes without deploying.
+
+### What didn't work
+- `gh pr edit` failed silently on this repo (`GraphQL: Projects (classic) ... projectCards` deprecation aborts the mutation). Worked around it with `gh api repos/.../pulls/14 -X PATCH -f title=... -f body=...` (REST), which succeeded.
+- The launcher CLI is a subcommand: flags live under `wesen-os-launcher wesen-os-launcher ...`, not the top-level command; `--profile-registries` is unknown at top level.
+
+### What I learned
+- The new engineprofiles YAML decoder is stricter than the struct in some places (rejects `default_profile_slug`) and looser in others (silently ignores the legacy `runtime:` block). Silent-ignore is the dangerous one — it degrades the model without any error.
+- Two config sources exist: the in-repo `deploy/k8s/wesen-os/configmap.yaml` (break-glass `kubectl apply -k`) and the authoritative GitOps `config/profiles.runtime.yaml` (Argo self-heal). Prod is the GitOps one.
+
+### What was tricky to build
+- Establishing that the config migration is *coupled to the image version*: the old image reads old-format config, the new config only works on the new image, and the current config silently downgrades the model. Symptom: naively flipping prod config ahead of the image could break the running pod (old image) or leave the wrong model (config unchanged). Resolution: documented the coupling rule — ship config + image in one GitOps PR — and did not touch prod config unilaterally.
+
+### What warrants a second pair of eyes
+- The federation-asset question: the inventory remote UI changed; whether CI rebuilds the module-federation bundle or it needs a manual object-storage publish + `federation.registry.json` manifestUrl bump before the GitOps merge (design-doc/07 §3.4).
+- The merge-strategy decision: PR #14 is stacked into `task/2026-07-upgrade-stack` (no PR to main); my branch supersets it. Retarget #14 to main vs. open `upgrade-stack → main`.
+
+### What should be done in the future
+- Execute the outward-facing ship steps (design-doc/07): merge to main → image build → GitOps config+image PR → Argo sync.
+- Phase 5: provision the LLM API-key Secret (prod ConfigMap mounts none), else prompts fail with "no API key for openai" even after this ship.
+
+### Code review instructions
+- Start at `deploy/k8s/wesen-os/configmap.yaml` and design-doc/07.
+- Validate: `go build -o /tmp/wl ./cmd/wesen-os-launcher/ && /tmp/wl wesen-os-launcher --profile-registries=<extracted-yaml> --profile=default --print-inference-settings --inventory-db=/tmp/i.db --timeline-db=/tmp/t.db --turns-db=/tmp/u.db` → expect `engine: gpt-4.1-mini` for both apps.
+
+### Technical details
+- Validated new-format registry body:
+  ```yaml
+  slug: cluster-default
+  display_name: Cluster Default
+  profiles:
+    default:
+      slug: default
+      display_name: Default
+      inference_settings:
+        chat:
+          engine: gpt-4.1-mini
+  ```
+- PRs: wesen/wesen-os#14 (parent, full scope), go-go-golems/go-go-app-inventory#18 (submodule).
