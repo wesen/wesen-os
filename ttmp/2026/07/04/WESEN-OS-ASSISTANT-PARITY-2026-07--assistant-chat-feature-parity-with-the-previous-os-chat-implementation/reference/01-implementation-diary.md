@@ -12,13 +12,20 @@ Topics:
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: apps/os-launcher/src/app/assistantModule.tsx
+      Note: Rewired onto chrome + debug window routing
+    - Path: apps/os-launcher/src/chat/ChatWindowChrome.tsx
+      Note: Phase 1 generic chrome (commit 33c6165)
+    - Path: apps/os-launcher/src/chat/chatDebugStore.ts
+      Note: Bounded debug ring buffer with emit-time summaries
 ExternalSources: []
 Summary: Step-by-step implementation journal for the assistant chat parity work (Phases 1-5 of tasks.md), including failures, architecture decisions, and review pointers.
 LastUpdated: 2026-07-04T14:29:07-04:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # Diary
 
@@ -130,3 +137,97 @@ record for review and continuation.
 - Event names: `ChatRunStarted/Finished/Stopped/Failed`,
   `ChatProviderCallStarted/MetadataUpdated/Finished`,
   `ChatTextSegmentStarted/Patch/Finished` (pinocchio `pkg/chatapp/chat.go:20-29`).
+
+## Step 2: Phase 1 — assistant chrome parity (commit 33c6165)
+
+Built the launcher-local generic chat layer (`apps/os-launcher/src/chat/`) and
+rewired the assistant window onto it. The assistant now has everything the
+inventory window has: profile selector bound at session creation (and locked once
+the first message lands), starter suggestions (mode-aware: generic vs app-chat),
+connection badge, Copy Conv ID, inline Debug panel, and detached Event Viewer /
+Timeline Debug windows routed as assistant app instances
+(`event-viewer~<convId>` / `timeline-debug~<convId>`) — the same routing the
+pre-migration assistant used, which the stale test file had documented.
+
+Verified live against the running devctl stack (profile `real`, gpt-5-nano-low):
+suggestion click → streaming reply → counter `2 messages`, profile select
+disabled after first message, detached Event Viewer showing 741 captured frames —
+including `ui ChatProviderCallFinished`, which live-confirms the Phase 2 stats
+source on this exact stack.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Execute Phase 1 of tasks.md.
+
+**Inferred user intent:** Assistant window at feature parity with inventory.
+
+**Commit (code):** 33c6165 — "Assistant chat: Phase 1 chrome parity on chat-provider"
+
+### What I did
+- New `apps/os-launcher/src/chat/`: `ChatWindowChrome.tsx` (generic chrome),
+  `chatDebugStore.ts` (cap-1000 ring buffer, emit-time `summarize()`, monotonic
+  `evt-<n>` ids), `useChatProfiles.ts`, `useChatDebugEvents.ts`,
+  `ChatDebugWindows.tsx` (simple v1 detached windows), `chat-chrome.css`
+  (adapted from inventory-chat.css, `oschat-` scope, debug-window scope added).
+- Rewrote `assistantModule.tsx`: chrome + profile ref bound into
+  `createSessionBody`, `onDebugEvent` → store, debug-instance routing in
+  `renderWindow`, exported `buildDebugWindowPayload` for tests.
+- Deleted `theme/assistant-chat-macos1.css` (fully replaced).
+- Rewrote `assistantModule.test.ts` off the deleted os-chat mocks onto the new
+  architecture (payload builders + renderWindow routing, no hook rendering).
+
+### Why
+- Chrome must be a separate reusable component for Phase 6 upstreaming, and the
+  assistant window is the ticket's headline gap (0 parity features before).
+
+### What worked
+- Live round-trip on first try after typecheck; profile endpoint already served
+  `Assistant (default)` for the assistant host (VisibleProfiles wired earlier).
+
+### What didn't work
+- `pnpm exec vitest run` in os-launcher: 17/18 test files fail PRE-EXISTING with
+  `Cannot find module .../@go-go-golems/os-shell/contracts/appManifest` (and
+  similar directory-import errors) — published-package ESM resolution under
+  node; unrelated to this change and present before it. The rewritten
+  assistantModule.test.ts therefore cannot run yet; it compiles under typecheck
+  and will run once the resolution knot is fixed.
+- First `browser_wait_for textGone: "streaming"` matched the footer tagline
+  "Streaming via sessionstream" — poor selector choice, switched to a plain wait.
+
+### What I learned
+- The stale test file was documentation: the OLD assistant had Events/Timeline
+  buttons opening `event-viewer~<convId>` instances via `dispatch(openWindow)`.
+  Restoring the same shape keeps window routing reload-safe.
+- `renderWindow` receives `ctx.dispatch` (LauncherRenderContext), so windows can
+  open sibling windows without a hostContext.
+
+### What was tricky to build
+- Placement. The obvious "shared component" reading of Phase 1 is impossible:
+  `launcherHost.test.tsx:176-181` forbids inventory imports from launcher
+  modules (federation boundary), and react-chat is published npm. Resolved by
+  going launcher-local with an explicit Phase 6 upstream plan (tasks.md header).
+
+### What warrants a second pair of eyes
+- The conn badge shows raw wsStatus strings (`subscribed` after hydration) —
+  matches the inventory window's behavior, but "subscribed" reads oddly; maybe
+  map to `connected` display. Deliberately kept consistent for now.
+- Debug-window dedupeKey `assistant:<kind>~<convId>` — one debug window per
+  conversation per kind; re-clicking focuses the existing one.
+
+### What should be done in the future
+- Phase 4 replaces the v1 debug-window internals with the old perf techniques
+  AND the original visual look (user request: type pills/badges — added to
+  tasks.md).
+
+### Code review instructions
+- Start: `apps/os-launcher/src/chat/ChatWindowChrome.tsx`, then
+  `assistantModule.tsx` renderWindow routing.
+- Validate: `pnpm --dir apps/os-launcher run typecheck`; `devctl up`, open
+  Assistant, click a suggestion, open Events/Timeline windows.
+
+### Technical details
+- Profile lock: `profileLocked = entities.length > 0` — profile is only sent in
+  `createSessionBody`, so changing it mid-session would silently not apply;
+  locking makes that explicit (same as inventory).

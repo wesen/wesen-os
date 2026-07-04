@@ -13,3 +13,12 @@ Review pass (Fable): verified all guide claims with 3 code-verification agents; 
 
 - /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/ttmp/2026/07/04/WESEN-OS-ASSISTANT-PARITY-2026-07--assistant-chat-feature-parity-with-the-previous-os-chat-implementation/design/01-assistant-chat-parity-intern-guide.md — Corrected after verification pass
 
+
+## 2026-07-04
+
+Phase 1 complete (commit 33c6165): assistant chrome parity on chat-provider — launcher-local chat/ components (ChatWindowChrome, chatDebugStore, profiles hook, detached debug windows v1), assistantModule rewired, stale test rewritten, verified live (real inference round-trip, profile lock, Event Viewer capturing ChatProviderCallFinished frames).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/src/chat/ChatWindowChrome.tsx — New shared launcher chat chrome
+

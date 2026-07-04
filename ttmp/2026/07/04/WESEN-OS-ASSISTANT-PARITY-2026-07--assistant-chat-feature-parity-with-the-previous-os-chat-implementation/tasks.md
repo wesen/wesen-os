@@ -11,12 +11,12 @@ own repo; true sharing happens in Phase 6 by upstreaming into react-chat.
 
 ## Phase 1 — Assistant chrome parity (apps/os-launcher/src/chat/)
 
-- [ ] `useChatProfiles.ts`: generic profiles hook (GET `<basePrefix>/api/chat/profiles`)
-- [ ] `chatDebugStore.ts`: per-conv bounded ring buffer (cap 1000) with emit-time summaries, seq ids, subscribe API (Phase 4 foundation)
-- [ ] `ChatWindowChrome.tsx`: header (title/conn badge/profile selector/Events/Timeline/Copy Conv ID/Debug), empty state, starter suggestions, inline debug panel, composer, footer slot
-- [ ] Rewire `assistantModule.tsx` onto the chrome: profile bound at session create (`createSessionBody`), `onDebugEvent` into the store; keep generic + app-chat modes
-- [ ] Assistant starter suggestions (generic + app-chat aware)
-- [ ] Typecheck + assistant round-trip against local stack
+- [x] `useChatProfiles.ts`: generic profiles hook (GET `<basePrefix>/api/chat/profiles`)
+- [x] `chatDebugStore.ts`: per-conv bounded ring buffer (cap 1000) with emit-time summaries, seq ids, subscribe API (Phase 4 foundation)
+- [x] `ChatWindowChrome.tsx`: header (title/conn badge/profile selector/Events/Timeline/Copy Conv ID/Debug), empty state, starter suggestions, inline debug panel, composer, footer slot
+- [x] Rewire `assistantModule.tsx` onto the chrome: profile bound at session create (`createSessionBody`), `onDebugEvent` into the store; keep generic + app-chat modes
+- [x] Assistant starter suggestions (generic + app-chat aware)
+- [x] Typecheck + assistant round-trip against local stack
 
 ## Phase 2 — Stats footer (frontend-only; usage verified on the wire)
 
@@ -37,8 +37,9 @@ own repo; true sharing happens in Phase 6 by upstreaming into react-chat.
 - [ ] `StructuredDataTree.tsx`: port lazy collapsible tree (children unmounted while collapsed, MAX_DEPTH 20, 200-char truncation, empty-composite scalar lines)
 - [ ] `sanitize.ts`: port `sanitizeForExport` (MAX_DEPTH 24, WeakSet cycle guard, tagged BigInt/Date/RegExp/Error) — applied lazily per selected entity, not eagerly
 - [ ] `ChatEventViewerWindow.tsx`: component cap 500, pausedRef-gated ingestion, precomputed summaries from store, memoized filter projection, count-keyed scroll + isNearBottom(32px), LAZY per-expanded-row YAML/JSON (fixes old gap)
+- [ ] Reproduce the ORIGINAL Event Viewer look (user request 2026-07-04): event-type pills/badges, toolbar chips, visual density — match old EventViewerWindow markup/CSS, not just perf internals
 - [ ] `ChatTimelineDebugWindow.tsx`: memoized snapshot keyed on `selectTimelineEntities` output identity; entity list + StructuredDataTree detail; export via lazy sanitize
-- [ ] Register both as launcher desktop windows, opened from assistant chrome Events/Timeline buttons
+- [x] Register both as launcher desktop windows, opened from assistant chrome Events/Timeline buttons
 - [ ] Inventory retrofit (its repo): cap + pause + summaries in `inventoryChatDebugStore`/`InventoryDebugWindows`, lazy YAML
 - [ ] Flood test: long streaming turn, UI stays responsive, memory bounded
 
