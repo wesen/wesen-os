@@ -1,0 +1,30 @@
+# devctl orchestration for wesen-os: Go launcher backend + Vite desktop frontend.
+# Usage: devctl up   (then open the vite URL); devctl status; devctl logs --service backend --stderr --follow; devctl down
+#
+# Real inference: the plugin defaults --profile-registries to
+# ~/.config/pinocchio/profiles.yaml if present. Pick a leaf profile with the
+# `real` devctl profile (or WESEN_OS_PROFILE=<slug>).
+profile:
+  active: builtin
+
+profiles:
+  builtin:
+    display_name: Builtin profiles
+    description: Backend uses its builtin engine profiles; inference needs credentials from ~/.config/pinocchio/profiles.yaml.
+    plugins:
+      - wesen-os
+
+  real:
+    display_name: Real inference (pinocchio profiles)
+    description: Use ~/.config/pinocchio/profiles.yaml and a named leaf profile for real model inference. Override WESEN_OS_PROFILE for the slug.
+    plugins:
+      - wesen-os
+    env:
+      WESEN_OS_PROFILE: "gpt-5-nano"
+
+plugins:
+  - id: wesen-os
+    path: python3
+    args:
+      - ./plugins/wesen-os-devctl.py
+    priority: 10
