@@ -269,3 +269,50 @@ Phase 3 is next in the parent plan, and the config-format check was flagged as a
           engine: gpt-4.1-mini
   ```
 - PRs: wesen/wesen-os#14 (parent, full scope), go-go-golems/go-go-app-inventory#18 (submodule).
+
+## Step 7: devctl plugin for local run + submodule conflict diagnosis
+
+Built a devctl plugin so the full stack runs with `devctl up`, and diagnosed the
+`go-go-app-inventory#18` merge conflicts. The conflicts are architectural: the
+submodule `main` (commit 0fa6f5e) independently migrated the inventory chat
+backend *to* go-go-os-chat webchat packages, while our branch moved it *off*
+webchat onto pinocchio chatapp/sessionstream (host-injected ChatRoutes). Same
+integration, opposite directions.
+
+### Prompt Context
+
+**User prompt (verbatim):** "#18 has conflicts, what are those about? also, how can i teset this locally? have you created a devctl plugin to launch this?" (+ follow-ups: "yu can also do devctl help --all", "and there's a skill as well")
+
+**Assistant interpretation:** Explain the #18 conflicts, give a local test path, and create a devctl plugin (using the devctl-plugin-authoring skill).
+
+**Inferred user intent:** A one-command local run and clarity on why #18 cannot fast-forward.
+
+**Commit (code):** 70962e6 — "feat(devctl): add wesen-os dev plugin (launcher backend + vite frontend)".
+
+### What I did
+- Read the devctl plugin-authoring guide + the react-chat `devctl_chatoverlay.py` reference; wrote `plugins/wesen-os-devctl.py` (NDJSON v2) + `.devctl.yaml`.
+- Ops: config.mutate, validate.run, prepare.run (pnpm install), build.run (go build), launch.plan (backend + vite), command.run (print-inference).
+- Verified: `devctl plan` → correct 2-service plan; `devctl up` → both healthy; `/api/apps/inventory/api/chat/profiles` returns the new endpoint; vite proxies `/api`; `devctl down` clean.
+- Diagnosed #18 via `git merge-tree --write-tree`: conflicts in go.mod/go.sum, pkg/backendcomponent/component.go, pkg/backendmodule/module.go, and a pinoweb rename-vs-add.
+
+### Why
+`devctl up` replaces the ad-hoc `launcher-dev-tmux.sh` with a supervised, health-checked, log-captured run; and the user needed to know why #18 conflicts before merging.
+
+### What worked
+- The plugin doubled as a live integration test of the whole migration — the new inventory chat contract (profiles/health) responds under `devctl up`.
+
+### What I learned
+- `main` of the inventory submodule took the go-go-os-chat route (Decision D3 was explicitly *against* that as the migration vehicle). Our branch and `main` cannot both win; the ticket's decided architecture is ours (pinocchio chatapp).
+
+### What warrants a second pair of eyes
+- The #18 resolution is an architecture call: rebase our branch onto main keeping chathost (recommended, matches D3) vs. adopt main's go-go-os-chat direction (contradicts the ticket). Needs an explicit owner decision.
+
+### What should be done in the future
+- Resolve #18 by rebasing onto submodule `main`: keep our backendcomponent/backendmodule + `_pinoweb_legacy` quarantine, drop go-go-os-chat webchat deps from go.mod, take main's infra bumps (go 1.26.4, goja, x/net security, glazed-lint, generated-db removal).
+
+### Code review instructions
+- `plugins/wesen-os-devctl.py` + `.devctl.yaml`. Validate: `devctl plan`, then `devctl up` and curl `http://127.0.0.1:5273/api/apps/inventory/api/chat/profiles`, then `devctl down`.
+
+### Technical details
+- Real inference: plugin defaults `--profile-registries` to `~/.config/pinocchio/profiles.yaml`; `devctl up --profile real` (or `WESEN_OS_PROFILE=<slug>`) selects a leaf profile.
+- Conflict source: submodule `main` 0fa6f5e "Migrate app inventory chat integration to go-go-os-chat packages" (imports `webchat.Server`, `chatservice`) vs our host-injected `ChatRoutes`.
