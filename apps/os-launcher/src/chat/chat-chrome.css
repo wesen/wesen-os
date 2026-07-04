@@ -329,6 +329,23 @@
   margin: 0;
 }
 
+/* --- Syntax highlight token palette (lezer classHighlighter, light) ------ */
+
+[data-part="syntax-highlight"] .tok-keyword { color: #cf222e; }
+[data-part="syntax-highlight"] .tok-string,
+[data-part="syntax-highlight"] .tok-string2 { color: #0a3069; }
+[data-part="syntax-highlight"] .tok-number { color: #0550ae; }
+[data-part="syntax-highlight"] .tok-bool,
+[data-part="syntax-highlight"] .tok-atom,
+[data-part="syntax-highlight"] .tok-null { color: #cf222e; }
+[data-part="syntax-highlight"] .tok-comment { color: #6e7781; font-style: italic; }
+[data-part="syntax-highlight"] .tok-propertyName,
+[data-part="syntax-highlight"] .tok-definition { color: #8250df; }
+[data-part="syntax-highlight"] .tok-variableName { color: #953800; }
+[data-part="syntax-highlight"] .tok-punctuation,
+[data-part="syntax-highlight"] .tok-separator { color: #57606a; }
+[data-part="syntax-highlight"] .tok-meta { color: #6e7781; }
+
 /* --- Tailwind utility fallbacks (scoped) -------------------------------- */
 
 .oschat-window .space-y-2 > * + * { margin-top: 8px; }

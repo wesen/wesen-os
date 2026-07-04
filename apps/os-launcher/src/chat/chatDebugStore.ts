@@ -11,24 +11,79 @@
  * Performance techniques ported from the old os-chat debug eventBus
  * (ticket WESEN-OS-ASSISTANT-PARITY-2026-07 guide §4.1):
  * - bounded ring buffer per conversation (MAX_EVENTS_PER_CONV, front-trimmed)
- * - one-line summary precomputed at ingest so render never re-derives it
+ * - summary/family/eventType/eventId precomputed at ingest so render never
+ *   re-derives them
  * - monotonically increasing ids (`evt-<n>`) usable directly as React keys
  */
 import type { ChatDebugEvent } from '@go-go-golems/chat-provider';
 
 const MAX_EVENTS_PER_CONV = 1000;
 
+/** Event families for the Event Viewer filter pills (old os-chat palette). */
+export type ChatDebugFamily = 'llm' | 'tool' | 'widget' | 'timeline' | 'ws' | 'raw' | 'other';
+
 export interface ChatDebugEntry {
-  /** Monotonic id, stable React key. */
+  /** Monotonic id, stable React key. Numeric part is `seq`. */
   id: string;
+  /** Monotonic sequence number (mirror folding uses it as a cursor). */
+  seq: number;
   /** Ingest timestamp (ms epoch). */
   at: number;
   /** One-line summary computed at ingest time. */
   summary: string;
+  /** Filter-pill family computed at ingest time. */
+  family: ChatDebugFamily;
+  /** Display event type (frame/event name) computed at ingest time. */
+  eventType: string;
+  /** Correlating id (ordinal / messageId) when available. */
+  eventId: string;
   event: ChatDebugEvent;
 }
 
 let seqCounter = 0;
+
+function familyForUIEventName(name: string): ChatDebugFamily {
+  if (name.startsWith('ChatWidgetInstance')) return 'widget';
+  if (name.startsWith('ChatToolCall') || name.startsWith('FrontendTool') || name.includes('Tool')) return 'tool';
+  if (name.startsWith('ChatRun') || name.startsWith('ChatText') || name.startsWith('ChatProviderCall') || name.startsWith('ChatUserMessage') || name.startsWith('ChatThinking')) return 'llm';
+  return 'other';
+}
+
+function classify(event: ChatDebugEvent): { family: ChatDebugFamily; eventType: string; eventId: string } {
+  switch (event.type) {
+    case 'ws-lifecycle':
+      return { family: 'ws', eventType: `ws.${event.event}`, eventId: '' };
+    case 'raw-ws':
+      return { family: 'raw', eventType: 'raw', eventId: '' };
+    case 'parsed-frame': {
+      const frameType = String(event.frameType ?? 'frame');
+      const name = String(event.name ?? '');
+      if (frameType === 'ui-event' && name) {
+        return {
+          family: familyForUIEventName(name),
+          eventType: name,
+          eventId: event.ordinal !== undefined && event.ordinal !== null ? `#${event.ordinal}` : '',
+        };
+      }
+      if (frameType === 'snapshot') {
+        return { family: 'timeline', eventType: 'snapshot', eventId: '' };
+      }
+      return { family: 'other', eventType: frameType, eventId: '' };
+    }
+    case 'snapshot':
+      return { family: 'timeline', eventType: 'snapshot.applied', eventId: '' };
+    case 'ui-event': {
+      const name = String(event.name ?? '');
+      return {
+        family: 'timeline',
+        eventType: `→ ${name || 'mutation'}`,
+        eventId: String(event.messageId ?? (event.ordinal !== undefined && event.ordinal !== null ? `#${event.ordinal}` : '')),
+      };
+    }
+    default:
+      return { family: 'other', eventType: String((event as { type?: unknown }).type ?? 'event'), eventId: '' };
+  }
+}
 
 function summarize(event: ChatDebugEvent): string {
   switch (event.type) {
@@ -78,10 +133,15 @@ export const chatDebugStore = {
   push(convId: string, event: ChatDebugEvent): void {
     const buf = getBuffer(convId);
     seqCounter += 1;
+    const { family, eventType, eventId } = classify(event);
     const entry: ChatDebugEntry = {
       id: `evt-${seqCounter}`,
+      seq: seqCounter,
       at: Date.now(),
       summary: summarize(event),
+      family,
+      eventType,
+      eventId,
       event,
     };
     // Replace the array reference so getSnapshot returns a new identity.
