@@ -1,16 +1,17 @@
 /*
- * ChatTimeline — registry-driven replacement for chat-overlay's ChatMessages.
+ * Launcher-specific ChatMessages adapter.
  *
- * ChatMessages hardcodes `message | widget | tool_call` and silently DROPS
- * every other entity kind (verified, guide §7 Phase 3). This component routes
- * every timeline entity through the timelineRendererRegistry: built-ins
- * reproduce ChatMessages' output (same class names so the chrome CSS applies;
- * widget/tool_call reuse chat-provider's outlets), registered extensions
- * override by kind, and unknown kinds fall back to a collapsed raw renderer
- * instead of disappearing.
+ * react-chat now owns the generic timeline iteration, per-kind renderer map,
+ * and unknown-kind fallback. This file only supplies launcher-specific message
+ * rendering: markdown, thinking traces, and HyperCard artifact stripping.
  */
-import { useMemo, useState, type ReactNode, type RefObject } from 'react';
-import { useChatSelector, selectTimelineEntities, WidgetOutlet, ToolCallOutlet } from '@go-go-golems/chat-provider';
+import { useMemo, useState, type RefObject } from 'react';
+import {
+  ChatMessages,
+  type ChatMessageRenderMode,
+  type TimelineEntityRenderer,
+  type TimelineEntityRendererContext,
+} from '@go-go-golems/chat-overlay';
 import {
   resolveTimelineRenderers,
   useTimelineRendererRegistryVersion,
@@ -22,11 +23,6 @@ import {
 import { Markdown } from './markdown';
 import { stripHypercardBlocks } from './hypercardBlocks';
 
-// --- built-in renderers ------------------------------------------------------
-
-// ThinkingBlock renders reasoning traces (message entities with role
-// "thinking") as a collapsible block: collapsed while done, auto-open while
-// still streaming, content rendered as markdown.
 function ThinkingBlock({ entity }: { entity: TimelineEntity }) {
   const streaming = Boolean(entity.props.streaming);
   const [open, setOpen] = useState(streaming);
@@ -46,9 +42,6 @@ function ThinkingBlock({ entity }: { entity: TimelineEntity }) {
   );
 }
 
-// MessageBody strips <hypercard:*> artifact blocks (widgets render them
-// separately), shows a "building card" placeholder while a block streams in,
-// and renders the remaining text as markdown.
 function MessageBody({ entity }: { entity: TimelineEntity }) {
   const content = String(entity.props.content ?? '');
   const streaming = Boolean(entity.props.streaming);
@@ -87,27 +80,6 @@ const MessageRenderer: TimelineRenderer = ({ entity }) => {
   );
 };
 
-const WidgetRenderer: TimelineRenderer = ({ entity }) => (
-  <WidgetOutlet
-    instanceId={String(entity.props.instanceId || entity.id)}
-    widgetName={String(entity.props.widgetName || 'unknown')}
-    status={String(entity.props.status || 'READY')}
-    props={(entity.props.props as Record<string, unknown>) || {}}
-  />
-);
-
-const ToolCallRenderer: TimelineRenderer = ({ entity }) => (
-  <ToolCallOutlet
-    toolCallId={String(entity.props.toolCallId || entity.id)}
-    toolName={String(entity.props.toolName || 'unknown')}
-    status={String(entity.props.status || 'requested')}
-    input={entity.props.input}
-    result={entity.props.result}
-    error={entity.props.error as string | undefined}
-  />
-);
-
-// Unknown kinds render as a collapsed raw line instead of being dropped.
 function DefaultEntityBody({ entity }: { entity: TimelineEntity }) {
   const [expanded, setExpanded] = useState(false);
   return (
@@ -130,26 +102,20 @@ function DefaultEntityBody({ entity }: { entity: TimelineEntity }) {
 }
 
 const DefaultRenderer: TimelineRenderer = ({ entity }) => <DefaultEntityBody entity={entity} />;
-
-const BUILTIN_RENDERERS: Record<string, TimelineRenderer> = {
-  message: MessageRenderer,
-  widget: WidgetRenderer,
-  tool_call: ToolCallRenderer,
-};
-
-// --- component ---------------------------------------------------------------
+const BUILTIN_RENDERERS: Record<string, TimelineRenderer> = { message: MessageRenderer };
 
 export interface ChatTimelineProps {
   bottomRef?: RefObject<HTMLDivElement | null>;
   renderMode?: ChatRenderMode;
-  /** Per-window renderer overrides (analog of the old timelineRenderers prop). */
   renderers?: Partial<TimelineRenderers>;
 }
 
-export function ChatTimeline({ bottomRef, renderMode = 'normal', renderers }: ChatTimelineProps) {
-  const entities = useChatSelector(selectTimelineEntities) as TimelineEntity[];
-  const registryVersion = useTimelineRendererRegistryVersion();
+function toChatMessagesRenderer(renderer: TimelineRenderer, renderMode: ChatRenderMode): TimelineEntityRenderer {
+  return ({ entity }: TimelineEntityRendererContext) => renderer({ entity: entity as TimelineEntity, ctx: { renderMode } });
+}
 
+export function ChatTimeline({ bottomRef, renderMode = 'normal', renderers }: ChatTimelineProps) {
+  const registryVersion = useTimelineRendererRegistryVersion();
   const resolved = useMemo(
     () => resolveTimelineRenderers(BUILTIN_RENDERERS, DefaultRenderer, renderers),
     // registryVersion invalidates the memo when extensions register/unregister
@@ -157,40 +123,19 @@ export function ChatTimeline({ bottomRef, renderMode = 'normal', renderers }: Ch
     [renderers, registryVersion],
   );
 
-  const ctx = useMemo(() => ({ renderMode }), [renderMode]);
-
-  if (entities.length === 0) {
-    return (
-      <div className="text-mac-gray-3 text-xs italic">
-        No messages yet. Type something below.
-        <div ref={bottomRef} />
-      </div>
+  const messageRenderers = useMemo(() => {
+    const { default: _defaultRenderer, ...byKind } = resolved;
+    return Object.fromEntries(
+      Object.entries(byKind).map(([kind, renderer]) => [kind, toChatMessagesRenderer(renderer, renderMode)]),
     );
-  }
+  }, [renderMode, resolved]);
 
   return (
-    <div className="space-y-2">
-      {entities.map((entity) => {
-        const renderer = resolved[entity.kind] ?? resolved.default;
-        let body: ReactNode;
-        try {
-          body = renderer({ entity, ctx });
-        } catch {
-          body = resolved.default({ entity, ctx });
-        }
-        return (
-          <div key={entity.id} data-timeline-kind={entity.kind}>
-            {renderMode === 'debug' ? (
-              <div className="text-mac-gray-3 text-[10px]" title={entity.id}>
-                {entity.kind} · {entity.id}
-                {entity.version !== undefined ? ` · v${entity.version}` : ''}
-              </div>
-            ) : null}
-            {body}
-          </div>
-        );
-      })}
-      <div ref={bottomRef} />
-    </div>
+    <ChatMessages
+      bottomRef={bottomRef}
+      renderMode={renderMode as ChatMessageRenderMode}
+      renderers={messageRenderers}
+      fallbackRenderer={toChatMessagesRenderer(resolved.default, renderMode)}
+    />
   );
 }

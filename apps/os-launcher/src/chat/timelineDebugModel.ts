@@ -1,13 +1,13 @@
 /*
  * Timeline debug snapshot model and export helpers — adapted port of the old
- * os-chat debug/timelineDebugModel.ts onto the timelineMirror shape.
+ * os-chat debug/timelineDebugModel.ts onto react-chat's TimelineMirrorState shape.
  *
  * Deliberate change vs the old model (guide §4.2 gap fix): the snapshot keeps
  * RAW props references; `sanitizeForExport` runs lazily — per selected entity
  * and at copy/export time — instead of eagerly cloning every entity on any
  * timeline change.
  */
-import type { TimelineMirror } from './timelineMirror';
+import type { TimelineMirrorState as TimelineMirror } from '@go-go-golems/chat-provider';
 import { toYaml } from './yamlFormat';
 
 export interface TimelineDebugEntitySnapshot {

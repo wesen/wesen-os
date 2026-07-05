@@ -7,7 +7,6 @@ import { ChatProvider, type ChatProviderConfig } from '@go-go-golems/chat-provid
 import { ChatWindowChrome } from '../chat/ChatWindowChrome';
 import { ChatEventViewerWindow, ChatTimelineDebugWindow } from '../chat/ChatDebugWindows';
 import { chatDebugStore } from '../chat/chatDebugStore';
-import { chatStatsStore } from '../chat/chatStatsStore';
 
 const APP_ID = 'assistant';
 const API_BASE_PREFIX = '/api/apps/assistant';
@@ -188,7 +187,6 @@ function AssistantChatWindow({
       }),
       onDebugEvent: (event) => {
         chatDebugStore.push(convId, event);
-        chatStatsStore.ingest(convId, event);
       },
     }),
     [convId],

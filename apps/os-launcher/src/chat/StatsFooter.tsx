@@ -1,33 +1,28 @@
 /*
- * Chat window stats footer — parity with the old os-chat StatsFooter.
+ * Chat window stats footer backed by chat-provider's upstream run stats slice.
  *
  * Idle/complete:  <label> · In:<n> Out:<n> [Cache:<n>] [CacheW:<n>] [CacheR:<n>]
  *                 · <d>s · <tps> tok/s  (+ conversation totals after >1 run)
  * Streaming:      <label> · streaming: <n> tok · <tps> tok/s
  * No stats yet:   Streaming via sessionstream
- *
- * The label is the selected profile's display name — the provider-call events
- * carry no model name (verified, guide §5), so the profile is the closest
- * honest label. No numbers are fabricated: sections render only with real data.
  */
-import { useCallback, useSyncExternalStore } from 'react';
-import { chatStatsStore, type ChatRunStats } from './chatStatsStore';
-
-function useChatStats(convId: string): ChatRunStats {
-  const subscribe = useCallback(
-    (listener: () => void) => chatStatsStore.subscribe(convId, listener),
-    [convId],
-  );
-  const getSnapshot = useCallback(() => chatStatsStore.getSnapshot(convId), [convId]);
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-}
+import { useEffect, useState } from 'react';
+import { selectRunStats, useChatSelector } from '@go-go-golems/chat-provider';
 
 function formatNumber(n: number): string {
   return n.toLocaleString('en-US');
 }
 
-export function StatsFooter({ convId, label }: { convId: string; label?: string | null }) {
-  const stats = useChatStats(convId);
+export function StatsFooter({ label }: { convId?: string; label?: string | null }) {
+  const stats = useChatSelector(selectRunStats);
+  const [, tick] = useState(0);
+
+  useEffect(() => {
+    if (!stats.isStreaming) return undefined;
+    const timer = window.setInterval(() => tick((value) => value + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [stats.isStreaming]);
+
   const parts: string[] = [];
 
   if (label) {

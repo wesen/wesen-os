@@ -13,10 +13,12 @@
  * - LAZY sanitize: entity props sanitized per selected entity / at export
  *   (old: full eager clone of all entities on any change).
  *
- * A detached window has no ChatProvider; the timeline is reconstructed via
- * timelineMirror (REST snapshot seed + folded ui-event mutations).
+ * A detached window has no ChatProvider; the timeline is reconstructed with
+ * react-chat's upstream timeline mirror helpers (REST snapshot seed + folded
+ * ui-event mutations).
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { applyTimelineMutationToMirror, createEmptyTimelineMirror, type TimelineMirrorState } from '@go-go-golems/chat-provider';
 import {
   chatDebugStore,
   type ChatDebugEntry,
@@ -35,7 +37,6 @@ import {
   sanitizeForExport,
   type TimelineDebugEntitySnapshot,
 } from './timelineDebugModel';
-import { emptyMirror, foldMutations, seedMirrorFromSnapshot, type TimelineMirror } from './timelineMirror';
 import './chat-chrome.css';
 
 // ---------------------------------------------------------------------------
@@ -425,9 +426,74 @@ function EventRowPayload({
 // Timeline Debug
 // ---------------------------------------------------------------------------
 
+type TimelineMirror = TimelineMirrorState;
+
+interface TimelineMutationLike {
+  upsert?: TimelineMirror['byId'][string];
+  upsertIfExists?: TimelineMirror['byId'][string];
+  deleteId?: string;
+  status?: string;
+}
+
+function toMillis(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Date.parse(value);
+    if (!Number.isNaN(parsed)) return parsed;
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return 0;
+}
+
+function unwrapAny(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const payload = value as Record<string, unknown>;
+  const nested = payload.value;
+  if (nested && typeof nested === 'object' && !Array.isArray(nested) && Object.keys(nested).length > 0) {
+    return nested as Record<string, unknown>;
+  }
+  return payload;
+}
+
+function seedMirrorFromSnapshot(entities: Array<Record<string, unknown>>): TimelineMirror {
+  const mirror = createEmptyTimelineMirror();
+  for (const raw of entities) {
+    const id = String(raw.id ?? '');
+    if (!id) continue;
+    mirror.byId[id] = {
+      id,
+      kind: String(raw.kind ?? 'unknown'),
+      createdAt: toMillis(raw.createdAt),
+      version: typeof raw.version === 'number' ? raw.version : undefined,
+      props: unwrapAny(raw.props),
+    };
+    mirror.order.push(id);
+  }
+  return mirror;
+}
+
+function foldMutations(
+  base: TimelineMirror,
+  entries: ChatDebugEntry[],
+  fromSeqExclusive: number,
+): { mirror: TimelineMirror; lastSeq: number } {
+  let working: TimelineMirror | null = null;
+  let lastSeq = fromSeqExclusive;
+  for (const entry of entries) {
+    if (entry.seq <= fromSeqExclusive) continue;
+    lastSeq = Math.max(lastSeq, entry.seq);
+    if (entry.event.type !== 'ui-event') continue;
+    const mutation = (entry.event as { mutation?: unknown }).mutation;
+    if (!mutation || typeof mutation !== 'object') continue;
+    working = applyTimelineMutationToMirror(working ?? base, mutation as TimelineMutationLike, { immutable: true });
+  }
+  return { mirror: working ?? base, lastSeq };
+}
+
 export function ChatTimelineDebugWindow({ convId, apiBasePrefix }: { convId: string; apiBasePrefix: string }) {
   const entries = useChatDebugEvents(convId);
-  const [base, setBase] = useState<{ mirror: TimelineMirror; seq: number }>(() => ({ mirror: emptyMirror(), seq: 0 }));
+  const [base, setBase] = useState<{ mirror: TimelineMirror; seq: number }>(() => ({ mirror: createEmptyTimelineMirror(), seq: 0 }));
   const [fetchState, setFetchState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [fetchError, setFetchError] = useState<string | null>(null);
 
@@ -463,7 +529,8 @@ export function ChatTimelineDebugWindow({ convId, apiBasePrefix }: { convId: str
 
   // foldMutations returns the SAME mirror reference when no new mutations
   // applied, so the snapshot memo below only recomputes on real change (the
-  // old memoized-snapshot-projection technique).
+  // old memoized-snapshot-projection technique, now backed by react-chat's
+  // upstream merge semantics).
   const folded = useMemo(() => foldMutations(base.mirror, entries, base.seq), [base, entries]);
   const snapshot = useMemo(() => buildTimelineDebugSnapshot(convId, folded.mirror), [convId, folded.mirror]);
 
