@@ -43,6 +43,106 @@ windows to feature parity with the old os-chat `ChatConversationWindow` on the n
 chat-provider/chatapp/sessionstream stack — per
 `design/01-assistant-chat-parity-intern-guide.md` and `tasks.md`.
 
+## Step 0: Verification review pass over the intern guide (commit bd4e541) — backfilled
+
+*(Backfilled 2026-07-05: this step predates the diary's creation — the review
+pass was recorded only in the ticket changelog at the time. Reconstructed here
+so the diary covers the full session.)*
+
+Before any implementation, the intern guide itself was put through a
+verification review: every load-bearing file/symbol/constant claim in
+`design/01-assistant-chat-parity-intern-guide.md` was re-checked against the
+actual code by three parallel verification agents (backend chathost claims;
+chat-provider/chat-overlay internals; old os-chat code + JS-app machinery).
+The reference layer held up almost verbatim, but three design-level claims
+were wrong or under-specified in ways that would have cost an implementor real
+time — and all three changed the implementation plan that Steps 1-4 executed.
+
+The three plan-changing findings: (1) token usage ALREADY reaches the WS as
+transient `ChatProviderCallMetadataUpdated`/`ChatProviderCallFinished` UI
+events, so the stats footer is frontend-only (the guide had said "confirm
+which frame carries usage; maybe extend the backend"); (2) chathost's
+`ArtifactExtractor` runs only in `OnFinalTurn` — the guide's §6.5
+`status:"streaming"` widget updates were impossible as written, so JS cards
+ship final-only v1 with an optional `WrapSink` streaming v2; (3) chat-overlay's
+`ChatMessages` takes only `{bottomRef}`, hardcodes `message|widget|tool_call`,
+and silently DROPS unknown entity kinds — the Phase 3 renderer registry must
+replace it locally, not extend it.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Ok, we are now the big brother model fable, and we should review the last intern guide and make sure it makes sense, so that an implementor has an easier chance of properly implementing them."
+
+**Assistant interpretation:** Re-verify the previously written intern guide's
+claims against the code and fix anything that would mislead an implementor.
+
+**Inferred user intent:** De-risk the upcoming implementation by catching
+guide errors before they become wasted implementation effort.
+
+**Commit (docs):** bd4e541 — "Docs: verification review pass on assistant-parity intern guide"
+
+### What I did
+- Ran three parallel verification agents over: (a) pkg/chathost routes +
+  ArtifactExtractor timing + widget lifecycle + usage-on-the-wire question;
+  (b) chat-provider timelineSlice/overlay/ChatDebugEvent/ChatMessages
+  extensibility; (c) every §4 perf constant, §6 JS-app symbol, and old
+  StatsFooter data source in os-chat/os-scripting/_pinoweb_legacy.
+- Corrected the guide: §5 rewritten as a verified frontend-only design (incl.
+  the OLD data source — `semRegistry.applyLlmMetadata` off `llm.*` envelope
+  metadata — and the model-name caveat); §6.5 steps 1-2 rewritten final-only
+  with the WrapSink v2 path; Phase 3 constraint documented; §4.3 provider
+  nuances (no version guard, `createSelector` memoization semantics); path
+  fixes (`rendererRegistry.ts`, `registerRuntimeSurface` lives in
+  `plugin-runtime/runtimeSurfaceRegistry.ts`); added `GET /api/chat/health`;
+  review banner at the top of the guide summarizing the three plan changes.
+- Synced `tasks.md` Phases 2/3/5 to the corrected design; changelog entry.
+- Uploaded the corrected guide to reMarkable as a **v2 document** (same
+  folder, no `--force`) so annotations on the original PDF survive.
+
+### Why
+- The guide was written from exploration-agent findings a session earlier;
+  design-level claims (as opposed to file references) had not been
+  adversarially checked against the code.
+
+### What worked
+- All §4/§6 reference-layer claims (constants, line numbers, behaviors)
+  verified verbatim — the earlier exploration agents' factual layer was solid.
+- Every one of the three design corrections was directly load-bearing during
+  implementation (Steps 2-4 each consumed one).
+
+### What didn't work
+- N/A — no failed attempts this step; all three agents returned conclusive
+  findings on the first pass.
+
+### What I learned
+- "Verified reference + unverified design inference" is the failure shape to
+  watch for in agent-written guides: the file:line facts were all right while
+  three architectural conclusions drawn from them were wrong.
+
+### What was tricky to build
+- Nothing built; the subtlety was distinguishing which guide claims were
+  observations (kept) vs inferences (re-derived): e.g. "usage rides the
+  sessionstream run/usage events" sounded observational but was a guess.
+
+### What warrants a second pair of eyes
+- The §5 caveat left open whether `ChatProviderCallMetadataUpdated` carries a
+  model name (resolved during Step 1 grounding: it does not — profile
+  displayName is the label).
+
+### What should be done in the future
+- Treat this verify-before-implement pass as standard for agent-written
+  design docs (cheap relative to the misimplementation it prevents).
+
+### Code review instructions
+- Read the guide's top "Review pass 2026-07-04" banner, then diff bd4e541 for
+  the §5/§6.5/Phase 3 rewrites.
+
+### Technical details
+- Verification agents' key negative results: chat-provider contains zero
+  usage/model state (grep-verified); `TimelineEntity.version` exists but is
+  never compared (LWW merges); os-chat's `eventBus`/`timelineSlice` perf
+  claims all confirmed at the cited lines.
+
 ## Step 1: Pre-implementation grounding and the federation-boundary architecture decision
 
 Before writing code I re-grounded the plan against the actual wiring, because the
@@ -559,3 +659,79 @@ as chips with actions, not code dumps.
   `inventoryCodeCardWidget.tsx`, `InventoryDebugWindows.tsx`.
 - Validate: inventory New Chat → ask for markdown + an interactive card →
   watch the buildup placeholder → chip with Open/Edit → Events window pills.
+
+## Step 6: Session meta-instructions and diary backfill audit
+
+Housekeeping step recording two mid-session user instructions that changed how
+the work was carried out (rather than what was built), plus the backfill audit
+itself. Neither produced repo code, but both are standing directives that a
+future session should know about, and the diary is the record of "how", not
+just "what".
+
+### Prompt Context
+
+**User prompt (verbatim):** "make sure to use the fable model for this kind of complex thinking work, not jus topus"
+
+**User prompt (verbatim, second):** "bacfill all the work you did in the diary (see diary skill for the format), because I think you forgot to write into it"
+
+**Assistant interpretation:** (1) Complex analysis/design/review work —
+including spawned subagents — should run on the Fable 5 model, not default to
+Opus. (2) Audit the diary against the full session and backfill anything not
+captured.
+
+**Inferred user intent:** Better reasoning quality on the hard parts, and a
+complete implementation record.
+
+### What I did
+- Saved the model preference as a persistent feedback memory
+  (`use-fable-for-complex-agent-work`) and applied it immediately: the
+  Stacks & Cards listing-path analysis agent (Step 4's design input) ran with
+  `model: fable`.
+- Handled the `/statusline` request via the statusline-setup agent (model
+  name, context progress bar, cwd, git branch → `~/.claude/statusline-command.sh`
+  + `settings.json` — user-level config, not repo work).
+- Audited the diary against every user prompt this session: Steps 1-5 were
+  written contemporaneously and cover the implementation prompts; the guide
+  review pass (pre-diary) was missing → backfilled as Step 0; this step
+  records the meta-prompts.
+
+### Why
+- The diary skill requires each user prompt's context captured once verbatim;
+  the review pass and meta-instructions had only changelog/memory traces.
+
+### What worked
+- The contemporaneous Steps 1-5 needed no correction — only additions at the
+  edges of the session.
+
+### What didn't work
+- Process miss worth owning: the review pass should have gone into a diary
+  from the start; it was treated as "pre-implementation" and only
+  changelogged. Backfilling from context is reliable now but would have been
+  lossy a week later.
+
+### What I learned
+- Start the diary at the first substantive step of a session, not at the
+  first *implementation* step — analysis/review steps are exactly the ones
+  whose reasoning evaporates fastest.
+
+### What was tricky to build
+- N/A (bookkeeping).
+
+### What warrants a second pair of eyes
+- N/A.
+
+### What should be done in the future
+- Keep spawning analysis/design/review subagents with `model: fable` per the
+  standing directive (persisted in agent memory).
+
+### Code review instructions
+- N/A — no code. Verify Step 0 against commit bd4e541's diff if auditing the
+  backfill.
+
+### Technical details
+- Session prompt → diary coverage map: guide review → Step 0 (backfilled);
+  "add detailed tasks… implement it" → Steps 1-4; "restore the little pills"
+  → Step 3; "generate hypercard apps + Stacks & Cards" → Step 4; "fable model"
+  → Step 6; "hide the card code / markdown / debug timeline" + "Edit button"
+  → Step 5; "/statusline" → Step 6 (user-level config); "backfill the diary"
+  → Step 6.

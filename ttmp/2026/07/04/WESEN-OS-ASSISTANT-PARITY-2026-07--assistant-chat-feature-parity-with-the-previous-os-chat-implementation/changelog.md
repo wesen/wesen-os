@@ -45,3 +45,8 @@ Phase 3 (5baaad3): ChatTimeline + renderer registry replace kind-dropping ChatMe
 
 Polish round (78b6dba launcher, 585852c inventory): markdown chat rendering (micromark+GFM) with collapsible thinking traces; <hypercard:*> blocks stripped from message text with animated 'Building card…' placeholder while streaming; inventory.codeCard is a compact chip (no code) with ▶ Open + ✏️ Edit (openCodeEditor, same flow as Stacks & Cards); inventory debug windows rebuilt with the pills/two-pane standard reusing os-chat's exported debug toolkit. All verified live incl. mid-stream buildup capture.
 
+
+## 2026-07-05
+
+Diary backfill: Step 0 (guide verification review pass, bd4e541) reconstructed — it predated the diary and was only changelogged; Step 6 records the session meta-instructions (fable-model directive → persisted memory + applied to agents; /statusline; the backfill audit itself) and a prompt→step coverage map.
+
