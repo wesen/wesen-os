@@ -13,6 +13,12 @@ function formatNumber(n: number): string {
   return n.toLocaleString('en-US');
 }
 
+function runLabel({ label, model, provider }: { label?: string | null; model?: string | null; provider?: string | null }): string | null {
+  if (model && provider) return `${provider}/${model}`;
+  if (model) return model;
+  return label ?? null;
+}
+
 export function StatsFooter({ label }: { convId?: string; label?: string | null }) {
   const stats = useChatSelector(selectRunStats);
   const [, tick] = useState(0);
@@ -25,8 +31,10 @@ export function StatsFooter({ label }: { convId?: string; label?: string | null 
 
   const parts: string[] = [];
 
-  if (label) {
-    parts.push(label);
+  const effectiveLabel = runLabel({ label, model: stats.model, provider: stats.provider });
+
+  if (effectiveLabel) {
+    parts.push(effectiveLabel);
   }
 
   if (stats.isStreaming && stats.streamStartTime) {
@@ -58,8 +66,11 @@ export function StatsFooter({ label }: { convId?: string; label?: string | null 
     }
   }
 
-  if (parts.length === 0 || (parts.length === 1 && Boolean(label))) {
+  if (parts.length === 0) {
     return <>{'Streaming via sessionstream'}</>;
+  }
+  if (parts.length === 1 && Boolean(effectiveLabel)) {
+    return <>{`${effectiveLabel} · Streaming via sessionstream`}</>;
   }
   return <>{parts.join(' · ')}</>;
 }
