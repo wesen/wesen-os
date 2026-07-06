@@ -1,39 +1,6 @@
 import { formatAppKey, parseAppKey, type LauncherHostContext } from '@go-go-golems/os-shell';
-import { openWindow } from '@go-go-golems/os-core/desktop-core';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const {
-  mockDispatch,
-  mockChatConversationWindow,
-  mockEventViewerWindow,
-  mockTimelineDebugWindow,
-} = vi.hoisted(() => ({
-  mockDispatch: vi.fn(),
-  mockChatConversationWindow: vi.fn(
-    (props: { headerActions?: ReactNode }) => ({ type: 'chat-window', props }) as unknown as ReactElement,
-  ),
-  mockEventViewerWindow: vi.fn(
-    (props: { conversationId: string }) => ({ type: 'event-viewer', props }) as unknown as ReactElement,
-  ),
-  mockTimelineDebugWindow: vi.fn(
-    (props: { conversationId: string }) => ({ type: 'timeline-debug', props }) as unknown as ReactElement,
-  ),
-}));
-
-vi.mock('react-redux', () => ({
-  useDispatch: () => mockDispatch,
-}));
-
-vi.mock('@go-go-golems/os-chat', async () => {
-  const actual = await vi.importActual<typeof import('@go-go-golems/os-chat')>('@go-go-golems/os-chat');
-  return {
-    ...actual,
-    ChatConversationWindow: mockChatConversationWindow,
-    EventViewerWindow: mockEventViewerWindow,
-    TimelineDebugWindow: mockTimelineDebugWindow,
-  };
-});
 
 function createHostContext(): LauncherHostContext {
   return {
@@ -46,27 +13,14 @@ function createHostContext(): LauncherHostContext {
   };
 }
 
-function flattenChildren(node: ReactNode): ReactElement[] {
-  if (Array.isArray(node)) {
-    return node.flatMap((child) => flattenChildren(child));
-  }
-  if (!node || typeof node === 'string' || typeof node === 'number' || typeof node === 'boolean') {
-    return [];
-  }
-  const element = node as ReactElement & { props?: { children?: ReactNode } };
-  if (element.type === Symbol.for('react.fragment')) {
-    return flattenChildren(element.props?.children);
-  }
-  return [element];
-}
-
 beforeEach(() => {
   vi.clearAllMocks();
   vi.unstubAllGlobals();
 });
 
 describe('assistantLauncherModule', async () => {
-  const { assistantLauncherModule } = await import('./assistantModule');
+  const { assistantLauncherModule, buildDebugWindowPayload } = await import('./assistantModule');
+  const { ChatEventViewerWindow, ChatTimelineDebugWindow } = await import('../chat/ChatDebugWindows');
 
   it('builds a generic assistant window payload', () => {
     const payload = assistantLauncherModule.buildLaunchWindow(createHostContext(), 'icon');
@@ -127,46 +81,22 @@ describe('assistantLauncherModule', async () => {
     expect(payload.title).toBe('Chat with SQLite');
   });
 
-  it('renders debug header actions for assistant app chat', () => {
-    const rendered = assistantLauncherModule.renderWindow({
-      appId: 'assistant',
-      appKey: 'assistant:app-chat~conv-123~sqlite~SQLite',
-      instanceId: 'app-chat~conv-123~sqlite~SQLite',
-      windowId: 'window:assistant:test',
-      ctx: createHostContext(),
-    }) as ReactElement;
+  it('builds debug window payloads routed back into the assistant app', () => {
+    const events = buildDebugWindowPayload('event-viewer', 'conv-123');
+    const timeline = buildDebugWindowPayload('timeline-debug', 'conv-123');
 
-    const chatWindowElement = (rendered.type as (props: Record<string, unknown>) => ReactElement)(rendered.props);
-    expect(chatWindowElement.type).toBe(mockChatConversationWindow);
-    const headerActions = flattenChildren(chatWindowElement.props.headerActions);
-    expect(headerActions).toHaveLength(2);
-
-    const eventsButton = headerActions[0];
-    const timelineButton = headerActions[1];
-    expect(eventsButton.props.children).toBe('🧭 Events');
-    expect(timelineButton.props.children).toBe('🧱 Timeline');
-
-    eventsButton.props.onClick();
-    timelineButton.props.onClick();
-
-    expect(mockDispatch).toHaveBeenCalledTimes(2);
-    const firstAction = mockDispatch.mock.calls[0][0];
-    const secondAction = mockDispatch.mock.calls[1][0];
-    expect(firstAction.type).toBe(openWindow({} as never).type);
-    expect(secondAction.type).toBe(openWindow({} as never).type);
-
-    const firstPayload = firstAction.payload;
-    const secondPayload = secondAction.payload;
-    expect(firstPayload.title).toBe('Event Viewer (conv-123)');
-    expect(secondPayload.title).toBe('Timeline Debug (conv-123)');
-    expect(parseAppKey(String(firstPayload.content.appKey))).toMatchObject({
+    expect(events.title).toBe('Event Viewer (conv-123)');
+    expect(timeline.title).toBe('Timeline Debug (conv-123)');
+    expect(parseAppKey(String(events.content.appKey))).toMatchObject({
       appId: 'assistant',
       instanceId: 'event-viewer~conv-123',
     });
-    expect(parseAppKey(String(secondPayload.content.appKey))).toMatchObject({
+    expect(parseAppKey(String(timeline.content.appKey))).toMatchObject({
       appId: 'assistant',
       instanceId: 'timeline-debug~conv-123',
     });
+    expect(events.dedupeKey).toBe('assistant:event-viewer~conv-123');
+    expect(timeline.dedupeKey).toBe('assistant:timeline-debug~conv-123');
   });
 
   it('routes debug instance ids to debug windows', () => {
@@ -176,22 +106,34 @@ describe('assistantLauncherModule', async () => {
       instanceId: 'event-viewer~conv-123',
       windowId: 'window:assistant:event',
       ctx: createHostContext(),
-    });
+    }) as ReactElement<{ convId: string }>;
     const timelineRendered = assistantLauncherModule.renderWindow({
       appId: 'assistant',
       appKey: formatAppKey('assistant', 'timeline-debug~conv-123'),
       instanceId: 'timeline-debug~conv-123',
       windowId: 'window:assistant:timeline',
       ctx: createHostContext(),
-    });
+    }) as ReactElement<{ convId: string; apiBasePrefix: string }>;
 
-    expect(eventRendered).toEqual(expect.objectContaining({
-      type: mockEventViewerWindow,
-      props: expect.objectContaining({ conversationId: 'conv-123' }),
-    }));
-    expect(timelineRendered).toEqual(expect.objectContaining({
-      type: mockTimelineDebugWindow,
-      props: expect.objectContaining({ conversationId: 'conv-123' }),
-    }));
+    expect(eventRendered.type).toBe(ChatEventViewerWindow);
+    expect(eventRendered.props.convId).toBe('conv-123');
+    expect(timelineRendered.type).toBe(ChatTimelineDebugWindow);
+    expect(timelineRendered.props.convId).toBe('conv-123');
+    expect(timelineRendered.props.apiBasePrefix).toBe('/api/apps/assistant');
+  });
+
+  it('renders a chat window for chat instance ids', () => {
+    const rendered = assistantLauncherModule.renderWindow({
+      appId: 'assistant',
+      appKey: formatAppKey('assistant', 'generic~conv-xyz~~'),
+      instanceId: 'generic~conv-xyz~~',
+      windowId: 'window:assistant:chat',
+      ctx: createHostContext(),
+    }) as ReactElement;
+
+    expect(rendered).toBeTruthy();
+    expect(typeof rendered.type).toBe('function');
+    expect(rendered.type).not.toBe(ChatEventViewerWindow);
+    expect(rendered.type).not.toBe(ChatTimelineDebugWindow);
   });
 });

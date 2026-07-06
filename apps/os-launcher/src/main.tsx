@@ -4,7 +4,6 @@ import { Provider } from 'react-redux';
 import { bootstrapLauncherApp } from './app/bootstrapLauncherApp';
 
 import '@go-go-golems/os-core/theme';
-import '@go-go-golems/os-chat/theme';
 import '@go-go-golems/os-widgets/theme';
 import '@go-go-golems/os-kanban/theme';
 // Launcher-level shell overrides must load after the os-core theme so they win.

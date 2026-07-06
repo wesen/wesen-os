@@ -1,6 +1,6 @@
 module github.com/go-go-golems/wesen-os
 
-go 1.26.3
+go 1.26.4
 
 require (
 	github.com/go-go-golems/clay v0.4.11

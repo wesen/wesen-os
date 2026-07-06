@@ -541,3 +541,148 @@ Follow-up messages during the session (verbatim):
 ### Technical details
 - Real-inference proof: `POST /api/apps/assistant/api/chat/sessions/{id}/messages {"prompt":"Reply with the single word: pong"}` → snapshot entity `ChatMessage assistant 'pong'` (engine gpt-5-nano via openai-responses).
 - `--print-inference-settings` output masks keys as `sk-p…y4gA` and reports engine/api_type/base_urls per app.
+
+## Step 13: Phase 2 npm half completed for real — os-shell contract recovered, os-core split collapsed, runtime smoke added
+
+The earlier handoff overstated completion: os-core had shipped and most launcher deps were on npm, but `os-shell` was still linked, `tsc` was red, the package graph still contained a linked os-core 0.1.0 path, and the assistant/window-manager runtime had not been exercised. This step closes that knot by recovering the missing federation contract, publishing os-shell twice (first the contract, then the store-core fix), switching the launcher fully to published os-* packages, and adding the runtime checks that should have been part of the original gate.
+
+The most important correction was that the blocker was not conceptual. `FederatedAppHostContract` already existed as a small TypeScript interface on an old branch and as a built `.d.ts` artifact in the submodule; the real work was to land it in canonical source, then notice that published os-shell also needed the newer `createAppStore`-backed store implementation so `runtimeSessions`/`hypercardArtifacts` are mounted consistently.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, here's what the boss says:
+
+  Finish the Phase 2 npm half — close the os-shell knot
+
+  The prior \"done\" report was premature. os-core 0.1.4 (Chicago-free) shipped and 7/8 deps are on npm — real progress — but the branch is unpushed, the launcher runs on a split os-core (0.1.4 from npm +
+  0.1.0 dragged in by the still-linked os-shell), the typecheck is red, and the assistant round-trip was never re-verified. All of that traces back to one blocker, and it's small.
+
+  The blocker is trivial. FederatedAppHostContract — the type that keeps os-shell on the submodule — is an 11-line pure TypeScript interface, already committed on branch task/js-runtime-manager (commit
+  2561acc), just never merged to main. Federation is used at runtime, so lift the type, don't cut it.
+
+  Part A — publish os-shell 0.1.2 (canonical repo ~/code/wesen/go-go-golems/go-go-os-frontend, NOT the submodule):
+  1. git checkout main && git pull && git cherry-pick 2561acc — adds src/contracts/federatedAppHostContract.ts + the os-shell index export. Confirm with grep -rn FederatedAppHostContract 
+  packages/os-shell/src/.
+  2. pnpm --filter @go-go-golems/os-shell run typecheck.
+  3. Bump os-shell → 0.1.2, refresh lockfile; make sure packages/os-core/package.json is at 0.1.4 first so the rewritten os-core range dedupes.
+  4. Validate + publish through the existing publish-npm.yml workflow (dry-run → real with CONFIRM_LATEST; exact gh commands in design-doc/02 §4).
+  5. Confirm npm view @go-go-golems/os-shell version = 0.1.2 and the tarball exports the type.
+
+  Part B — finish the switch (wesen-os, on the colleague's branch task/2026-07-os-launcher-published-npm-deps):
+  6. apps/os-launcher/package.json: os-shell workspace:* → ^0.1.2 (the 8th dep).
+  7. pnpm install, commit lockfile.
+  8. Verify the split is gone: pnpm why @go-go-golems/os-core --filter @go-go-golems/os-launcher must show a single 0.1.4, no link:/0.1.0.
+  9. Typecheck must go green: pnpm --filter @go-go-golems/os-launcher run typecheck exits 0.
+
+  Part C — the verification that was skipped (real profile: ~/.config/pinocchio/profiles.yaml):
+  10. Build binary, run --profile default, open the Assistant window, send a prompt, confirm a model reply (not just the echo).
+  11. Open two windows + a right-click context menu + launch an app — the interaction a dual-os-core would have broken silently.
+  12. docker build . green.
+
+  Part D — land it:
+  13. Push branch, open PR into task/2026-07-upgrade-stack.
+  14. In the PR, state that os-chat is still wired (store.ts reducers, main.tsx theme) — that's Phase 4 (os-chat retirement), deliberately not this task. Don't let \"Phase 2 done\" read as \"os-chat
+  removed.\"
+
+  Done = all of §5's checklist in the doc. Explicitly out of scope: full submodule removal (needs the app packages published), os-chat retirement (Phase 4), and Phase 3 deploy.
+
+---
+
+Let's fix this"
+
+Follow-up prompts during the same step (verbatim):
+- "index-CSXcEnMc.js:49 TypeError: Cannot read properties of undefined (reading 'sessions') ... [WindowRenderErrorBoundary] Window body crashed Object"
+- "does generating hypercards still work? how about wiring the event viewer debugger that got removed? do you know anything about that in the diaries?
+
+Btw, keep a detailed diary (retroactively too), see skill"
+- Screenshot supplied at `/tmp/pi-clipboard-1b0766d3-3878-4e26-a0ec-24d2b22b9d95.png` showing the original Inventory Chat window with toolbar buttons `Events`, `Timeline`, `Copy Conv ID`, and `Debug`.
+
+**Assistant interpretation:** Finish the npm package switch rather than merely documenting why it was blocked: recover/publish the missing os-shell federation contract, eliminate the linked os-core 0.1.0 graph path, make typecheck green, perform the missing browser/assistant/window-manager checks, and record the exact debugging path retroactively.
+
+**Inferred user intent:** Produce a branch that can honestly be described as Phase 2 npm-half complete while preserving an audit trail for the boss and for the next engineer.
+
+**Commit (code):** `83e44aa` — "os-launcher: finish npm os-shell switch and collapse os-core graph" (wesen-os). Upstream canonical go-go-os-frontend commits: `790c4c1f` (contract type), `2e9848d0` (os-shell 0.1.2), `99798e42` (os-shell 0.1.3 store-core fix).
+
+### What I did
+- In canonical `~/code/wesen/go-go-golems/go-go-os-frontend`:
+  - Fetched commit `2561accc2205e40fe5ba5615f6c8eccdb24c1151` from the local workspace submodule because `origin/task/js-runtime-manager` did not contain it in the canonical checkout.
+  - Cherry-picked it onto main: added `packages/os-shell/src/contracts/federatedAppHostContract.ts` and exported `FederatedAppHostContract` from `packages/os-shell/src/index.ts`.
+  - Bumped/published `@go-go-golems/os-shell@0.1.2`; validated local typecheck/test/build-dist/pack-smoke/dry-run; CI dry-run `28687133735`; real publish `28687151034`; confirmed npm latest and tarball export.
+  - Runtime smoke then exposed that `os-shell@0.1.2` still had the older standalone `createLauncherStore` implementation: it reserved `runtimeSessions` but did not mount the reducer.
+  - Copied the newer branch implementation of `packages/os-shell/src/store/createLauncherStore.ts`, which delegates to `createAppStore` from `@go-go-golems/os-scripting`, and added `@go-go-golems/os-scripting` as an os-shell dependency.
+  - Preserved `SHELL_CORE_REDUCER_KEYS` as an alias export for compatibility, and updated `packages/os-shell/src/__tests__/launcherStore.test.ts` to expect `runtimeSessions` and `hypercardArtifacts` in the store.
+  - Bumped/published `@go-go-golems/os-shell@0.1.3`; validation green; CI dry-run `28687448325`; real publish `28687470377`; confirmed npm latest.
+- In wesen-os (`task/2026-07-os-launcher-published-npm-deps`):
+  - Changed `apps/os-launcher/package.json` `@go-go-golems/os-shell` from `workspace:*` to `^0.1.3`.
+  - Added root `pnpm.overrides` pinning the os-* package family to published versions (`os-core 0.1.4`, `os-shell 0.1.3`, etc.). This collapses transitive `workspace:*` deps from linked app packages to the published packages without editing submodule package.json files.
+  - Made default `typecheck` use `tsconfig.published.json` and kept `typecheck:linked` for the old workspace-source check, mirroring the already-published default `build` and `build:linked` split.
+  - Patched `apps/os-launcher/vite.config.ts` so published package alias discovery checks both `apps/os-launcher/node_modules` and root `node_modules`. Fresh pnpm installs hoist os-* packages to the root, so the previous alias logic silently missed them.
+  - Verified `pnpm why @go-go-golems/os-core --filter @go-go-golems/os-launcher` shows `@go-go-golems/os-core 0.1.4` everywhere and no `@go-go-golems/os-core link:` / `0.1.0` entries.
+  - Verified `pnpm --filter @go-go-golems/os-launcher run typecheck` exits 0.
+  - Built the binary with `npm run launcher:binary:build`, ran it with `--profile default`, and opened it in a browser.
+  - Confirmed Assistant round-trip with the real profile: prompt `Reply with exactly: phase2-npm-ok` returned assistant text `phase2-npm-ok` (not merely an echo).
+  - Exercised the window-manager path that would have exposed the split-core bug: opened Assistant + Inventory windows, opened a right-click desktop context menu, and launched Apps Browser via the context menu (`Open New`). No render crashes; only expected local `/api/os/federation-registry` 404 remained.
+  - Smoked the generated HyperCard/Kanban path: clicked `Open Sprint Board`; it rendered the generated `Sprint Radar` board with lanes/cards and no dialog errors.
+  - Ran final `pnpm install --frozen-lockfile` and `docker build -t wesen-os-launcher:npm-switch-os-shell-013-final .`; both green.
+
+### Why
+- `FederatedAppHostContract` was the blocker keeping os-shell linked and the package graph split. Publishing it removes the typecheck blocker for launcher and inventory.
+- Publishing the contract alone was insufficient because the published os-shell store implementation lagged behind the branch used by wesen-os; the new branch implementation wires `runtimeSessions`, `hypercardArtifacts`, and runtime middleware via os-scripting's `createAppStore`.
+- Root `pnpm.overrides` is the cleanest way to collapse os-* dependencies for linked app packages without publishing/removing those app packages. It keeps the app packages linked while forcing their os-* transitive dependencies to the published graph.
+- Vite alias discovery must match pnpm's actual layout after a clean install. Looking only under `apps/os-launcher/node_modules` works accidentally in some dirty worktrees but fails after hoisting/root install.
+
+### What worked
+- The boss's direction that the federation contract existed on an old branch was correct; the type was small and could be recovered exactly.
+- Trusted publishing workflow worked twice for os-shell after local validation.
+- `pnpm.overrides` successfully collapsed the os-core graph: linked app packages still appear as `link:` apps, but their os-* deps resolve to published versions.
+- The runtime smoke caught two real issues that static build/typecheck did not: missing `runtimeSessions` state and Vite alias discovery missing root node_modules.
+- After os-shell 0.1.3 + Vite alias fallback, Launcher Home, Assistant, Inventory, context menu, Apps Browser, and generated Sprint Board all render.
+
+### What didn't work
+1. `git cherry-pick 2561acc` initially failed in the canonical repo: `fatal: bad revision '2561acc'`. `origin/task/js-runtime-manager` in that clone did not contain the commit. I fetched the object from the workspace submodule path and cherry-picked the full hash `2561accc2205e40fe5ba5615f6c8eccdb24c1151`.
+2. `os-shell@0.1.2` fixed the type export but not the runtime store. Browser smoke failed with `TypeError: Cannot read properties of undefined (reading 'sessions')`, traced to os-scripting selector `state.runtimeSessions.sessions[...]` and the older published os-shell store missing the core reducer.
+3. My first attempted local fix (adding `runtimeSessionsReducer` to launcher `sharedReducers`) failed at bootstrap: `Launcher store reducer key "runtimeSessions" is reserved by engine core reducers.` This proved the correct fix belonged upstream in os-shell/createAppStore, not in the launcher.
+4. After `pnpm.overrides`, local `node_modules` had stale symlinks under linked app packages. A fresh reinstall (`rm -rf node_modules apps/os-launcher/node_modules workspace-links/*/apps/*/node_modules workspace-links/*/packages/*/node_modules && pnpm install`) aligned local state with the lockfile and made typecheck resolve the published os-shell.
+5. Todo launched from the context menu but its runtime bundle failed with `Runtime surface packId is required for surface: home`. This appears to be a Todo/app-package metadata issue exposed by the stricter published runtime; I did not treat it as the core/window-manager smoke because Apps Browser launched cleanly and Todo metadata cleanup is outside the npm package switch.
+
+### What I learned
+- The package split was not only a direct-dependency issue. Linked app packages (`apps-browser`, `inventory`, etc.) also carry `workspace:*` os-* deps. `pnpm.overrides` can collapse those transitive os-* deps while keeping the apps linked.
+- Published package aliasing needs to account for pnpm hoisting. A clean install put os-* packages under root `node_modules`, not `apps/os-launcher/node_modules`; Vite's published-mode alias collector was therefore incomplete.
+- os-shell's published main had diverged from the submodule branch in two separate ways: the federation contract type and the store implementation. The branch's store implementation depends on os-scripting's core app store; that dependency had to be published too.
+- HyperCard/Kanban generation still works at least for the launcher-local generated cards: the prebuild `vmmeta:generate` command runs during typecheck/build, and the browser smoke rendered the generated Sprint Board.
+- The original Inventory Chat screenshot's `Events` and `Timeline` buttons are old os-chat debug windows (`EventViewerWindow`, `TimelineDebugWindow`). The design docs/diary already classify them as unique os-chat value to rebuild in Phase 4 on chat-provider/sessionstream debug events, not part of Phase 2.
+
+### What was tricky to build
+- The hardest invariant is "published by default, linked apps still local." The launcher must consume published os-* packages while still loading unpublished app packages from submodules. Removing workspace globs breaks those apps; leaving raw workspace deps creates split core packages. Root `pnpm.overrides` is the compromise that preserves app links and forces os-* package identity to npm.
+- The runtime bug had misleading symptoms. It looked like a missing reducer in the launcher store, but os-shell was already reserving the key. The correct mental model is that `runtimeSessions` is an engine-core reducer owned by os-scripting's `createAppStore`, and os-shell should delegate store creation there.
+- Browser cache also confused one smoke pass: the browser kept loading an older asset name until I used query-string cache busts. The real persistent error after cache-busting was the `runtimeSessions` state mismatch, not stale JS.
+
+### What warrants a second pair of eyes
+- os-shell now depends on os-scripting. This matches the working submodule branch and fixes runtime state, but it changes the published package layering; review for acceptable package architecture and bundle impact.
+- `pnpm.overrides` forces transitive os-* deps for linked app packages. This is intentional, but reviewers should confirm it is preferable to editing every app package or publishing those apps now.
+- The Todo runtime `packId` failure is outside this task but should be triaged before claiming all app packages are clean against the published runtime stack.
+- The old os-chat reducers/theme remain wired (`store.ts`, `main.tsx`), by design for Phase 4. Do not describe this Phase 2 work as os-chat retirement.
+
+### What should be done in the future
+- Push the branch and open the PR into `task/2026-07-upgrade-stack`, explicitly stating os-chat is still wired and Phase 4 owns its retirement.
+- Triage/fix Todo's `Runtime surface packId is required for surface: home` metadata issue.
+- Rebuild the old EventViewer/TimelineDebug experience on chat-provider's `ChatDebugEvent` / sessionstream frames. Existing `chat-provider` already exports `ChatDebugEvent`, `ChatDebugHandler`, raw websocket debug events, parsed frame events, snapshot debug info, and timeline adapters; what is missing is the desktop UI window layer equivalent to os-chat's `EventViewerWindow` and `TimelineDebugWindow`. This can be implemented locally first and later upstreamed as a `chat-debug` package if useful.
+- Validate whether hypercard artifact-projection timeline adapters can reproduce the old os-chat SEM artifact flow before Phase 4 scheduling.
+
+### Code review instructions
+- Upstream os-shell: start at canonical `packages/os-shell/src/contracts/federatedAppHostContract.ts`, `packages/os-shell/src/store/createLauncherStore.ts`, `packages/os-shell/package.json`, and `packages/os-shell/src/__tests__/launcherStore.test.ts` in commits `790c4c1f`, `2e9848d0`, `99798e42`.
+- wesen-os: start at `apps/os-launcher/package.json` (os-shell `^0.1.3`, published build/typecheck defaults), root `package.json` (`pnpm.overrides`), `apps/os-launcher/vite.config.ts` (root node_modules alias fallback), and `pnpm-lock.yaml`.
+- Validate with:
+  - `pnpm why @go-go-golems/os-core --filter @go-go-golems/os-launcher` (no `@go-go-golems/os-core link:` / `0.1.0`)
+  - `pnpm --filter @go-go-golems/os-launcher run typecheck`
+  - `npm run launcher:binary:build`
+  - Browser: `./build/wesen-os-launcher wesen-os-launcher --addr=:8095 --profile default --arc-enabled=false`, open Assistant, send `Reply with exactly: phase2-npm-ok`, verify assistant reply; open Assistant + Inventory; right-click Apps Browser; Open New; open Sprint Board.
+  - `pnpm install --frozen-lockfile`
+  - `docker build .`
+
+### Technical details
+- os-shell 0.1.2 npm publish: dry-run `28687133735`, real `28687151034`.
+- os-shell 0.1.3 npm publish: dry-run `28687448325`, real `28687470377`.
+- Runtime assistant proof: Assistant window text after prompt was `YOU / Reply with exactly: phase2-npm-ok / ASSISTANT / phase2-npm-ok`.
+- Clean window-manager smoke console after avoiding Todo: only `404 /api/os/federation-registry`, which is expected for the local run without a federation registry endpoint.
+- Original Inventory Chat screenshot (`/tmp/pi-clipboard-1b0766d3-3878-4e26-a0ec-24d2b22b9d95.png`) shows the old os-chat debug affordances: `Events`, `Timeline`, `Copy Conv ID`, and `Debug`. Source confirms inventory still imports `EventViewerWindow` and `TimelineDebugWindow` from os-chat; the Phase 4 design says to rebuild those on chat-provider/sessionstream rather than carry SEM/os-chat forward.

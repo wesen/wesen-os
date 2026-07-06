@@ -75,3 +75,36 @@ Session 2 execution: chathost contract tests (2873def); profile-stack resolution
 
 Added design-doc/02: npm package publishing + consumer switchover implementation guide (for colleague hand-off). Key finding: all 9 os-* packages now published; only os-core is behind (npm 0.1.2 vs repo 0.1.3) and needs the Chicago font edit. Documents the go-go-os-frontend trusted-publishing workflow, the os-core release steps, the launcher workspace:* → published-range switch, and the submodule-removal scoping boundary (app packages out of scope).
 
+
+## 2026-07-03
+
+Phase 2 npm half executed: os-core font fix published as 0.1.4 (upstream commit ec19a1c7, npm latest); wesen-os launcher switched to published @go-go-golems/os-* npm ranges (7 of 8) on branch task/2026-07-os-launcher-published-npm-deps (commit 7caa3c9). os-shell held on workspace:* because the launcher+inventory app reference the unreleased FederatedAppHostContract type. Launcher default build set to published resolution mode so Docker/CI ships the Chicago-free os-core 0.1.4; temporary Chicago override removed. Verified: published build, frozen-lockfile, go build, docker build all green; runtime desktop renders with Chicago-free font. Boss-facing handoff report written as design-doc/03. Findings: design-doc/02 §2.2/§5 glob-narrowing recommendation is incorrect (8 workspace apps consume os-* via workspace:*; narrowing strands them; also unnecessary since submodule os-* are all 0.1.0); tsc typecheck is pre-existing-broken on FederatedAppHostContract (fails at clean HEAD, not caused by this work).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/package.json — os-* deps switched to npm ranges; build -> published mode
+
+
+## 2026-07-03
+
+Added design-doc/04: corrected Phase 2 completion instructions. design-doc/03's 'done' was premature — verified: branch unpushed, launcher on split os-core (0.1.4 npm + 0.1.0 link via os-shell), typecheck red, assistant round-trip unverified, os-chat still wired. Key finding: FederatedAppHostContract (the os-shell blocker) is an 11-line pure type committed on task/js-runtime-manager (2561acc), trivially liftable to main. Instructions: publish os-shell 0.1.2 with the type → collapses the split, greens typecheck, completes 8/8; then verify assistant round-trip + window interaction; push PR noting os-chat retained for Phase 4.
+
+
+## 2026-07-03
+
+Phase 2 npm half completed after closing the os-shell knot: recovered FederatedAppHostContract from commit 2561acc and published os-shell 0.1.2, then fixed/published os-shell 0.1.3 so createLauncherStore delegates to os-scripting createAppStore and mounts runtimeSessions/hypercardArtifacts. wesen-os now uses published semver ranges for all 8 os-* deps plus root pnpm.overrides to collapse linked app transitive os-* deps. Verified: pnpm why os-core shows 0.1.4 everywhere (no link:/0.1.0), default typecheck green, binary build green, real-profile Assistant reply phase2-npm-ok, window-manager smoke (Assistant + Inventory + context menu + Apps Browser) green, generated Sprint Board HyperCard smoke green, frozen-lockfile + docker build green. Remaining/out of scope: submodule removal waits on app packages; os-chat retirement Phase 4; Todo runtime packId metadata issue.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/os-openai-app-server/wesen-os/apps/os-launcher/package.json — 8/8 os-* now published ranges; build/typecheck defaults published
+
+
+## 2026-07-03
+
+Inventory chat migrated to react-chat (design-doc/06): window rebuilt on chat-provider/chat-overlay (bee438c), chathost GET /api/chat/profiles (e903c6b), generated cards on the widget rail (27afe8e/bc3fe5c/e82c57f); diary reference/02
+
+
+## 2026-07-03
+
+Phase 3 (ship): migrated profiles.runtime.yaml to new engineprofiles format (fix: legacy layout silently resolves gpt-4 not gpt-4.1-mini; validated via --print-inference-settings) (commit 8e3f3d2); ship runbook design-doc/07
+

@@ -229,7 +229,7 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 	// backend-executed geppetto tools registered per prompt.
 	inventoryHost, err := chathost.New(chathost.Options{
 		AppID:        inventorybackendmodule.AppID,
-		SystemPrompt: "You are an inventory assistant. Be concise, accurate, and tool-first.",
+		SystemPrompt: inventorySystemPrompt,
 		Profiles: chathost.ProfileSurface{
 			Registry:           inventoryProfileRegistry,
 			RegistrySlug:       inventoryDefaultRegistrySlug,
@@ -244,6 +244,7 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 			}
 			return nil
 		},
+		ArtifactExtractor: extractInventoryArtifacts,
 		TimelineDB: perAppStorePath(cfg.TimelineDB, inventorybackendmodule.AppID),
 		TurnsDSN:   cfg.TurnsDSN,
 		TurnsDB:    perAppStorePath(cfg.TurnsDB, inventorybackendmodule.AppID),

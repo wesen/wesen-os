@@ -30,6 +30,13 @@ import (
 	geptools "github.com/go-go-golems/geppetto/pkg/inference/tools"
 )
 
+// ProfileDescriptor is one user-selectable engine profile as surfaced to the
+// chat window's profile selector (GET /api/chat/profiles).
+type ProfileDescriptor struct {
+	Slug        gepprofiles.EngineProfileSlug
+	DisplayName string
+}
+
 // ProfileSurface describes the engine-profile universe one app exposes: which
 // registry to resolve slugs against, which profile is the default, and the
 // launcher-wide base inference settings every profile is overlaid onto.
@@ -38,6 +45,9 @@ type ProfileSurface struct {
 	RegistrySlug       gepprofiles.RegistrySlug
 	DefaultProfileSlug gepprofiles.EngineProfileSlug
 	BaseSettings       *aisettings.InferenceSettings
+	// VisibleProfiles curates which profiles the frontend selector should show.
+	// When empty, GET /api/chat/profiles falls back to enumerating the registry.
+	VisibleProfiles []ProfileDescriptor
 }
 
 // BackendToolsFunc lets an app contribute backend-executed tools to each
@@ -53,6 +63,25 @@ type SystemPromptFunc func(sid sessionstream.SessionId) string
 // default is factory.NewEngineFromSettings; tests inject fakes here.
 type EngineFactory func(settings *aisettings.InferenceSettings) (gepengine.Engine, error)
 
+// WidgetArtifact is a widget instance an app renders in the chat timeline after
+// an assistant turn completes (for example a generated inventory card). It is
+// published on the chatapp widget rail as a ChatWidgetInstance so the
+// chat-provider frontend renders it via its widget registry.
+type WidgetArtifact struct {
+	// InstanceID uniquely identifies the widget in the session timeline. When
+	// empty the host generates one.
+	InstanceID string
+	// WidgetName selects the frontend widget component (defineWidget name).
+	WidgetName string
+	// Props is the widget's JSON-serializable data payload.
+	Props map[string]any
+}
+
+// ArtifactExtractor inspects a completed assistant turn's text and returns any
+// widget artifacts to publish into the session timeline. Returning nil emits
+// nothing. It runs after inference on the background run goroutine.
+type ArtifactExtractor func(assistantText string) []WidgetArtifact
+
 // Options configures one chat host.
 type Options struct {
 	AppID string
@@ -63,7 +92,11 @@ type Options struct {
 	Profiles         ProfileSurface
 	BackendTools     BackendToolsFunc
 	EngineFactory    EngineFactory
-	ChunkDelay       time.Duration
+	// ArtifactExtractor, when set, is run on each completed assistant turn; any
+	// widget artifacts it returns are published into the session timeline
+	// (generated-card path). See design-doc/06 §8.
+	ArtifactExtractor ArtifactExtractor
+	ChunkDelay        time.Duration
 	// TimelineDB is an optional sqlite path for durable timeline hydration.
 	TimelineDB string
 	// TurnsDSN/TurnsDB configure the durable conversation accumulator store.
@@ -181,6 +214,7 @@ func (h *Host) MountRoutes(mux *http.ServeMux) error {
 		return errors.New("chathost: host is nil")
 	}
 	mux.HandleFunc("GET /api/chat/health", h.handleHealth)
+	mux.HandleFunc("GET /api/chat/profiles", h.handleProfiles)
 	mux.HandleFunc("POST /api/chat/sessions", h.handleCreateSession)
 	mux.HandleFunc("POST /api/chat/sessions/{id}/messages", h.handleSubmitMessage)
 	mux.HandleFunc("GET /api/chat/sessions/{id}", h.handleSessionSnapshot)
