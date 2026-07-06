@@ -17,7 +17,7 @@
  * react-chat's upstream timeline mirror helpers (REST snapshot seed + folded
  * ui-event mutations).
  */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { applyTimelineMutationToMirror, createEmptyTimelineMirror, type TimelineMirrorState } from '@go-go-golems/chat-provider';
 import {
   chatDebugStore,
@@ -351,7 +351,7 @@ export function ChatEventViewerWindow({ convId }: { convId: string }) {
   );
 }
 
-function EventRow({
+const EventRow = memo(function EventRow({
   entry,
   expanded,
   copyFeedback,
@@ -394,7 +394,7 @@ function EventRow({
       {expanded && <EventRowPayload entry={entry} copyFeedback={copyFeedback} onCopy={onCopy} />}
     </div>
   );
-}
+});
 
 // Payload YAML is computed HERE — only for expanded rows (fixes the old
 // eager-toYaml-per-visible-row gap).
