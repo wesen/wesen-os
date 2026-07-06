@@ -68,11 +68,11 @@ importers:
         specifier: workspace:*
         version: link:../../workspace-links/go-go-os-frontend/apps/book-tracker-debug
       '@go-go-golems/chat-overlay':
-        specifier: ^0.3.0
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)
+        specifier: ^0.4.1
+        version: 0.4.1(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)
       '@go-go-golems/chat-provider':
-        specifier: ^0.3.0
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)
+        specifier: ^0.4.1
+        version: 0.4.1(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)
       '@go-go-golems/crm':
         specifier: workspace:*
         version: link:../../workspace-links/go-go-os-frontend/apps/crm
@@ -82,9 +82,6 @@ importers:
       '@go-go-golems/inventory':
         specifier: workspace:*
         version: link:../../workspace-links/go-go-app-inventory/apps/inventory
-      '@go-go-golems/os-chat':
-        specifier: 0.1.1
-        version: 0.1.1(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
       '@go-go-golems/os-core':
         specifier: 0.1.4
         version: 0.1.4(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
@@ -598,14 +595,11 @@ importers:
         specifier: ^6.39.14
         version: 6.39.16
       '@go-go-golems/chat-overlay':
-        specifier: ^0.3.0
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)
+        specifier: ^0.4.1
+        version: 0.4.1(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)
       '@go-go-golems/chat-provider':
-        specifier: ^0.3.0
-        version: 0.3.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)
-      '@go-go-golems/os-chat':
-        specifier: 0.1.1
-        version: 0.1.1(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+        specifier: ^0.4.1
+        version: 0.4.1(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)
       '@go-go-golems/os-confirm':
         specifier: 0.1.1
         version: 0.1.1(@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
@@ -1679,14 +1673,14 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@go-go-golems/chat-overlay@0.3.0':
-    resolution: {integrity: sha512-I5q+bA4vhH7P/6ZuDbCs1QyTXNp0vGvZZYsGlOChDR9564U0PZVRrRrgYpJuy10Ag6W0mIGfQoIdzDE+l6YuYA==}
+  '@go-go-golems/chat-overlay@0.4.1':
+    resolution: {integrity: sha512-jR8tgu4HvApaBxpLZ6mFF7eeq1Ixo9v4evMYoIC6YSw46g1YfvMOeNMd01MtCK1h9d5EGretdPqV8fzWZWrrUA==}
     peerDependencies:
       react: ^18 || ^19
       react-dom: ^18 || ^19
 
-  '@go-go-golems/chat-provider@0.3.0':
-    resolution: {integrity: sha512-hvTLM6aLgYPNVCmDKp2GAk+WFXeqXSIFesxGYo+7wU3+8ODrig80m58KMT9QL/rRgM1EY/IWiJJRL9MQavBtFg==}
+  '@go-go-golems/chat-provider@0.4.1':
+    resolution: {integrity: sha512-vwTvNUxcIzkplXGmmzKMVEMTR+mA6E3x1AISp+xN7LhfONrcR64jkJckESFq/V0roMQITo+WZCPcLkgSFpU+DA==}
     peerDependencies:
       react: ^18 || ^19
       react-dom: ^18 || ^19
@@ -3912,9 +3906,9 @@ snapshots:
   '@esbuild/win32-x64@0.25.12':
     optional: true
 
-  '@go-go-golems/chat-overlay@0.3.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)':
+  '@go-go-golems/chat-overlay@0.4.1(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)':
     dependencies:
-      '@go-go-golems/chat-provider': 0.3.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)
+      '@go-go-golems/chat-provider': 0.4.1(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
       react-redux: 9.3.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
@@ -3922,7 +3916,7 @@ snapshots:
       - '@types/react'
       - redux
 
-  '@go-go-golems/chat-provider@0.3.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)':
+  '@go-go-golems/chat-provider@0.4.1(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(redux@5.0.1)':
     dependencies:
       '@reduxjs/toolkit': 2.12.0(react-redux@9.3.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
       react: 19.2.4
