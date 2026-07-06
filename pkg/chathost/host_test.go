@@ -326,6 +326,73 @@ func TestChatContract_ArtifactExtractorPublishesWidget(t *testing.T) {
 	require.True(t, found, "expected a ChatWidgetInstance entity in snapshot, got %+v", snap.Entities)
 }
 
+func TestChatContract_ArtifactExtractorUsesOnlyLatestAssistantTurn(t *testing.T) {
+	engine := &fakeEngine{reply: "first card <hypercard:widget:v1>{\"title\":\"First\"}</hypercard:widget:v1>"}
+
+	registrySlug := gepprofiles.MustRegistrySlug("test")
+	profileSlug := gepprofiles.MustEngineProfileSlug("default")
+	store := gepprofiles.NewInMemoryEngineProfileStore()
+	require.NoError(t, store.UpsertRegistry(context.Background(), &gepprofiles.EngineProfileRegistry{
+		Slug:                     registrySlug,
+		DefaultEngineProfileSlug: profileSlug,
+		Profiles: map[gepprofiles.EngineProfileSlug]*gepprofiles.EngineProfile{
+			profileSlug: {Slug: profileSlug, InferenceSettings: &aisettings.InferenceSettings{}},
+		},
+	}, gepprofiles.SaveOptions{}))
+	registry, err := gepprofiles.NewStoreRegistry(store, registrySlug)
+	require.NoError(t, err)
+
+	var extracted []string
+	host, err := New(Options{
+		AppID:        "testapp",
+		SystemPrompt: "",
+		Profiles: ProfileSurface{
+			Registry:           registry,
+			RegistrySlug:       registrySlug,
+			DefaultProfileSlug: profileSlug,
+		},
+		EngineFactory: func(*aisettings.InferenceSettings) (gepengine.Engine, error) { return engine, nil },
+		ChunkDelay:    time.Millisecond,
+		ArtifactExtractor: func(assistantText string) []WidgetArtifact {
+			extracted = append(extracted, assistantText)
+			if strings.Contains(assistantText, "First") {
+				return []WidgetArtifact{{InstanceID: "first-card", WidgetName: "inventory.card", Props: map[string]any{"title": "First"}}}
+			}
+			if strings.Contains(assistantText, "Second") {
+				return []WidgetArtifact{{InstanceID: "second-card", WidgetName: "inventory.card", Props: map[string]any{"title": "Second"}}}
+			}
+			return nil
+		},
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = host.Close() })
+
+	mux := http.NewServeMux()
+	require.NoError(t, host.MountRoutes(mux))
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	sid := createSession(t, srv, `{"sessionId":"latest-artifact-conv"}`)
+	submitAndWait(t, srv, host, sid, "first")
+	engine.reply = "second card <hypercard:widget:v1>{\"title\":\"Second\"}</hypercard:widget:v1>"
+	submitAndWait(t, srv, host, sid, "second")
+
+	require.Len(t, extracted, 2)
+	require.Contains(t, extracted[0], "First")
+	require.NotContains(t, extracted[0], "Second")
+	require.Contains(t, extracted[1], "Second")
+	require.NotContains(t, extracted[1], "First")
+
+	snap := fetchSnapshot(t, srv, sid)
+	var widgets int
+	for _, e := range snap.Entities {
+		if e.Kind == "ChatWidgetInstance" {
+			widgets++
+		}
+	}
+	require.Equal(t, 2, widgets, "previous widget artifact should not be re-published on the second turn")
+}
+
 func TestChatContract_ProfilesEndpoint(t *testing.T) {
 	engine := &fakeEngine{reply: "ok"}
 	host := newTestHost(t, engine, "")

@@ -141,14 +141,15 @@ func (h *Host) initialTurnIfFirstMessage(ctx context.Context, sid sessionstream.
 }
 
 // publishArtifactsFromTurn runs the app's ArtifactExtractor over the completed
-// assistant text and publishes each returned widget as a ChatWidgetInstance on
-// the session's timeline. It runs on the background inference goroutine, so it
-// uses a background context (the request context is already gone).
+// assistant text from the latest user turn and publishes each returned widget as
+// a ChatWidgetInstance on the session's timeline. It runs on the background
+// inference goroutine, so it uses a background context (the request context is
+// already gone).
 func (h *Host) publishArtifactsFromTurn(sid sessionstream.SessionId, t *turns.Turn) {
 	if h == nil || h.opts.ArtifactExtractor == nil || h.hub == nil || t == nil {
 		return
 	}
-	text := assistantTextFromTurn(t)
+	text := assistantTextAfterLatestUser(t)
 	if strings.TrimSpace(text) == "" {
 		return
 	}
@@ -183,13 +184,23 @@ func (h *Host) publishArtifactsFromTurn(sid sessionstream.SessionId, t *turns.Tu
 	}
 }
 
-// assistantTextFromTurn concatenates the LLM text blocks of a turn.
-func assistantTextFromTurn(t *turns.Turn) string {
+// assistantTextAfterLatestUser concatenates LLM text blocks emitted after the
+// latest user block. Final turns are durable conversation accumulators, so
+// scanning every LLM block would re-project artifacts from previous assistant
+// responses on every later message.
+func assistantTextAfterLatestUser(t *turns.Turn) string {
 	if t == nil {
 		return ""
 	}
+	start := 0
+	for i := len(t.Blocks) - 1; i >= 0; i-- {
+		if t.Blocks[i].Kind == turns.BlockKindUser {
+			start = i + 1
+			break
+		}
+	}
 	var b strings.Builder
-	for _, block := range t.Blocks {
+	for _, block := range t.Blocks[start:] {
 		if block.Kind != turns.BlockKindLLMText {
 			continue
 		}
