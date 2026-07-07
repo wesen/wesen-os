@@ -50,15 +50,25 @@ function resolveFrontendResolutionMode(): FrontendResolutionMode {
   return existsSync(workspaceFrontendRoot) ? 'workspace' : 'published';
 }
 
+function resolveInstalledPackageDir(packageName: string): string | undefined {
+  const packagePathParts = packageName.split('/');
+  const candidates = [
+    path.resolve(__dirname, 'node_modules', ...packagePathParts),
+    path.resolve(workspaceRoot, 'node_modules', ...packagePathParts),
+  ];
+
+  return candidates.find((packageDir) => existsSync(path.join(packageDir, 'package.json')));
+}
+
 function createPublishedPackageAliases(): AliasEntry[] {
   const aliases: AliasEntry[] = [];
 
   for (const packageName of publishedPlatformPackageNames) {
-    const packageDir = path.resolve(__dirname, 'node_modules', ...packageName.split('/'));
-    const packageJsonPath = path.join(packageDir, 'package.json');
-    if (!existsSync(packageJsonPath)) {
+    const packageDir = resolveInstalledPackageDir(packageName);
+    if (!packageDir) {
       continue;
     }
+    const packageJsonPath = path.join(packageDir, 'package.json');
 
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {
       exports?: PackageExports;

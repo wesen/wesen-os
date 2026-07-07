@@ -339,3 +339,350 @@ The user asked to lock in the complete os-chat replacement in the design guide (
 
 ### Technical details
 - v2 bundle: design doc + diary + various/01–06, uploaded as "WESEN-OS Stocktake 2026-07 — Analysis, Migration Guide & Improvement Plan (v2)".
+
+## Step 9: Phase 0 executed — wesen-os consolidated onto main
+
+Execution began. Phase 0 (consolidation) is done: the dirty April workspace state is committed, previously-uncommitted submodule work is preserved on a pushed branch, the two stray DEPLOY-001 doc branches are merged, everything landed on `wesen/wesen-os` main via PR #12, and a lockfile regression that PR introduced was fixed via PR #13.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, go ahead and work, commit at appropriate intervals, keep a diary as you work (see skill for the diary format)"
+
+**Assistant interpretation:** Execute the six-phase plan starting at Phase 0, committing in logical chunks and keeping this diary current.
+
+**Inferred user intent:** Turn the plan into landed code without further hand-holding.
+
+**Commit (code):** 52a26d0 (merge of PR #12) and 41ac183 → PR #13 (lockfile fix); submodule commit 9a1e267 on go-go-os-frontend `task/2026-04-widget-showcase-wip`.
+
+### What I did
+- Inspected the dirty tree: `go.work.sum`, `ttmp/vocabulary.yaml`, dirty `workspace-links/go-go-os-frontend` (17 modified source files: SelectableDataTable, desktop shell windowing, macos1 theme, build tooling + 12 untracked build artifacts), untracked agent dirs, `apps/os-launcher/public/__federation-smoke/` fixtures, `docs/window-resize-behavior.md`, three ttmp trees.
+- Preserved the submodule WIP: branch `task/2026-04-widget-showcase-wip` in go-go-os-frontend, commit `9a1e267` (source files only, artifacts excluded), pushed to `go-go-golems/go-go-os-frontend`.
+- Three wesen-os commits: `08bb6a8` gitignore (agent dirs + smoke fixtures), `114f688` workspace state + submodule pin → 9a1e267, `a93ac8e` ttmp trees incl. this ticket.
+- Branch sweep: `git branch --no-merged HEAD` → `task/deploy-001-draft-review-flow` (4 commits) and `task/deploy-001-require-gitops-pr-token` (1 commit). Verified their code (workflow/scripts) already lives in HEAD in newer form; unique content was ttmp docs. Merged both (`74403a9`, `11171f4`), resolving diary conflicts by chronological union (python strip of diff3 markers keeping both sides) and tasks.md/workflow with `--ours` (HEAD strict superset).
+- **D1 verification**: `git merge-base --is-ancestor 13ce252 HEAD` ✓ and `git ls-remote` showed origin/main == `13ce252` == the deployed image tag. The "stale main" from the earlier analysis was only the `~/code/wesen/wesen-os` clone, not the remote.
+- Pushed, opened PR #12, merged → main `52a26d0`. CI `publish-host-image` failed: `ERR_PNPM_OUTDATED_LOCKFILE` — the preserved macos1-react WIP added react dev-deps without a lockfile refresh. Ran `pnpm install` (lockfile regenerated with exactly the expected macos1-react block), verified `--frozen-lockfile` passes, committed `41ac183`, PR #13, merged. Baseline image build re-running on main.
+- Cut and pushed `task/2026-07-upgrade-stack` for Phase 1.
+
+### Why
+- Preserving the submodule WIP on a pushed branch keeps wesen-os's pinned pointer resolvable for anyone cloning with submodules.
+
+### What worked
+- The union merge strategy for append-only diaries; `--ours` for tasks.md where HEAD was a strict superset.
+
+### What didn't work
+1. `git pull` in `~/code/wesen/wesen-os` failed: `error: unable to create file .dockerignore: Read-only file system` — the whole `/home` mount is `ro` in this session except workspace mounts (`findmnt`: `/home … ro,nosuid,nodev`). Canonical clones under `~/code` cannot be synced from here; they need a `git pull` from a normal session. A stray `task/2026-07-upgrade-stack` at the stale commit was created there and deleted again; the clone remains on old main `068a8b8`.
+2. First `pnpm install` failed with `ERR_PNPM_EROFS`: the pnpm store dir pointed into another (read-only) workspace (`workspaces/2026-05-03/add-upload-sync/...pnpm-store`). Worked around with `--store-dir <scratchpad>/pnpm-store`.
+3. CI lockfile failure as above — self-inflicted by the WIP preservation, fixed within minutes.
+
+### What I learned
+- origin/main was never stale — the analysis doc's Phase 0 assumption ("main at 2026-03-01") was an artifact of the unsyncable local clone. Consolidation was therefore only ~15 commits of delta, all doc/bookkeeping except the submodule pin.
+
+### What was tricky to build
+- The frontend submodule pointer: index said `a554dc3`, checkout was `c74347e`+dirty. Committing the WIP moved HEAD to `9a1e267`; pinning wesen-os to that keeps the built-against state reproducible. The `.js/.d.ts/.map` files sitting next to `src/` were deliberately left uncommitted (build outputs).
+
+### What warrants a second pair of eyes
+- The two diary union-merges in `ttmp/2026/03/29/DEPLOY-001--…/diary.md` — verify no narrative was lost (`git show 74403a9`, `git show 11171f4`).
+- Whether the preserved WIP branch should eventually be rebased onto go-go-os-frontend main or treated as archaeology.
+
+### What should be done in the future
+- `git pull` the `~/code/wesen/wesen-os` clone from a session with a writable `/home`.
+- Delete the now-merged local branches (`task/deploy-001-*`, `task/sqlite-federation-runtime-fix`) once Phase 1 lands.
+
+### Code review instructions
+- `git log --graph --oneline 13ce252..main` in wesen-os; the interesting commits are `114f688` (submodule pin) and the two merges.
+- CI: `gh run list --repo wesen/wesen-os --branch main` — the run after PR #13 is the Phase 0 baseline build.
+
+### Technical details
+- pnpm workaround: `pnpm install --store-dir /tmp/claude-1000/…/scratchpad/pnpm-store`; the frozen-lockfile check passes in 0.9s once the store is warm.
+
+## Step 10: Phase 1 — the Go stack port to chatapp/sessionstream
+
+The core migration landed: wesen-os, inventory, and gepa now build and test green against geppetto v0.13.3 / pinocchio v0.11.5 / sessionstream v0.1.0, with both chat surfaces (assistant + inventory) rewritten from the deleted pinocchio webchat onto a new reusable `pkg/chathost` package that speaks the chat-provider wire contract. Verified live: the launcher boots, creates sessions, accepts prompts, and projects timeline entities (including a controlled "no API key" error) end-to-end.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 9)
+
+**Assistant interpretation:** Continue executing: Phase 1 dependency bump + assistant/inventory rewrite.
+
+**Inferred user intent:** Same as Step 9.
+
+**Commit (code):** wesen-os `ca9098e` (port) + `232a960` (submodule removal) on task/2026-07-upgrade-stack; inventory `4397deb`; gepa `c01a8e1` (same branch names, pushed).
+
+### What I did
+- Read the reference implementations before coding: `react-chat/internal/webchat/{server,handlers,real_runtime}.go`, `pinocchio/pkg/chatapp/{service.go,runtime_inference.go}`, serverkit helpers. Key learnings: conversation history lives in the turn store as a "final" accumulator turn reloaded per prompt (`runtime_inference.go:107-137`); serverkit ships the HTTP contracts/helpers; the frontend-tool bridge is `frontendtools.Manager` + `NewBridgeExecutor` + `WithBridgeContext`.
+- Wrote `pkg/chathost` (host.go/handlers.go/runtime.go): per-app chatapp host with engine-profile surface (`Registry.GetEngineProfile` → `MergeInferenceSettings` → `factory.NewEngineFromSettings`), per-session profile selection via `createSessionBody.profile`, backend-tools hook, frontend-tools bridge, and system-prompt seeding via `InitialTurn` only on a session's first message.
+- Rewrote `pkg/assistantbackendmodule` on chathost; moved `ConversationContext` in-repo (2-field struct), severing the go-go-os-chat Go dependency entirely.
+- Inventory submodule: `backendcomponent`/`backendmodule` now take host-injected `ChatRoutes` instead of a webchat server; `pkg/pinoweb` (2.7k LOC of SEM/hypercard extensions) quarantined as `pkg/_pinoweb_legacy` (underscore dir = invisible to the go tool) pending its Phase 4 chatapp port; reflection doc + tests updated to the session API.
+- gepa submodule: goja renames (`NewRunner`→`NewRuntimeOwner`, `Options.Runner`→`RuntimeOwner`), middleware func swap.
+- main.go: two chathosts (assistant with app-context `SystemPromptFunc`, inventory with `InventoryToolFactories` as backend tools — `infruntime.ToolRegistrar` survived unchanged), self-owned `http.Server` (webchat's Run is gone), `perAppStorePath` suffixing for shared sqlite flags.
+- profile_bootstrap.go ported to `ResolveCLIProfileRuntime` + `bootstrap.ResolveProfileRegistryChain`; docs_endpoint.go to `glazed/pkg/help/model` section types; cobra middlewares to `pinocchiocmds.GetPinocchioCommandMiddlewares`.
+- Dropped the four library submodules (D2) after green builds.
+
+### Why
+- One reusable chathost instead of per-app rewrites keeps assistant/inventory symmetric and gives Phase 2's chat-provider frontend a single contract.
+
+### What worked
+- The full smoke: `POST /api/apps/assistant/api/chat/sessions` → uuid; `POST …/messages` → accepted; `GET …/sessions/{id}` → snapshot with user message + correlated error entity ("no API key for openai") — the canonical pipeline works without a real engine.
+- `inventorytools` needed zero changes — `pinocchio/pkg/inference/runtime.ToolRegistrar` survived the refactor exactly as the drift report predicted.
+
+### What didn't work
+1. geppetto v0.13.3 requires go ≥ 1.26.3 (had 1.26.1) — bumped go directives; toolchain auto-fetched.
+2. `go mod tidy` ignores go.work — the workspace submodule rewrites were invisible to it; fixed with `replace` directives for inventory/gepa (works in Docker too since submodules are committed).
+3. Drift-report misses: `profilebootstrap.ResolveCLIProfileSelection` was replaced by `ResolveCLIProfileRuntime` (report said stable); glazed help `SectionType` moved to `help/model`; `geppettosections.GetCobraCommandGeppettoMiddlewares` is gone (use pinocchio's).
+4. The **profile-first config break bit immediately**: legacy `profile-settings:`/`ai-chat:` top-level keys are hard errors in pinocchio v0.11.5 (`configdoc.validateTopLevelKeys`). Test fixtures rewritten to `profile: {active, registries}`. **The prod `profiles.runtime.yaml` in the k3s repo must be checked before Phase 3** (tasks.md item).
+5. Env-override test failed by design: `PINOCCHIO_*` env now applies through the cobra middleware chain, which `NewCLISelectionValues` bypasses — test removed with explanation.
+6. A python heredoc `.replace()` silently no-opped on reflection.go (whitespace mismatch) — caught by the still-failing test; redone with the Edit tool. Lesson: never trust silent replaces; let the test re-run adjudicate.
+7. Inventory's lefthook pre-commit blocked the first commit on its own outdated tests (old manifest capabilities and "requires server" lifecycle errors) — tests updated to the new contract rather than bypassing hooks.
+
+### What was tricky to build
+- System-prompt semantics under chatapp: the accumulator-turn history means the system block must be seeded exactly once (first message) via `InitialTurn`; later prompts must NOT pass InitialTurn or history would be dropped. `initialTurnIfFirstMessage` checks `LoadLatestTurn(sid, "final") == nil` to decide.
+- Keeping the frozen webchat features honest: middleware definitions (`webchat_runtime@v1` extensions), the confirm surface, and hypercard SEM entities are *not* ported — they ride on the Phase 4 pinoweb/os-scripting sub-ticket. The inventory profile fixtures still carry the extension blocks; they decode fine but the middleware policies are not applied by chathost.
+
+### What warrants a second pair of eyes
+- `chathost.promptRequest` merges base settings with the profile overlay but does **not** apply profile `extensions` (middlewares/tools policy from `webchat_runtime@v1`) — check whether any prod profile depends on middleware policies before shipping.
+- Per-session profile map is in-memory only (lost on restart; sessions survive in sqlite hydration when configured) — acceptable at demo tier, flag for Phase 5 persistence work.
+- The DSN (vs file-path) variants of the store flags are passed through unsuffixed to both hosts — collision risk if anyone sets `--turns-dsn` with a file DSN.
+
+### What should be done in the future
+- Remaining Phase 1 items: Go contract test (httptest, fake engine), chat-provider WS-URL-under-basePrefix verification (moves with Phase 2), prod profiles.runtime.yaml migration check.
+- Phase 4 sub-ticket now has a concrete anchor: `go-go-app-inventory/pkg/_pinoweb_legacy`.
+
+### Code review instructions
+- Start with `pkg/chathost/runtime.go` (promptRequest — the correctness core), then `initialTurnIfFirstMessage`, then main.go's two chathost constructions.
+- Validate: `go build ./... && go test ./...` in wesen-os; smoke: build the launcher, run with a scratch single-registry profiles.yaml, curl the session flow (Step 10 commands in the shell history; also scripts/smoke to be extended in Phase 3).
+
+### Technical details
+- Version triple shipped: geppetto v0.13.3, pinocchio v0.11.5, sessionstream v0.1.0, go-go-os-backend v0.0.7, go-go-goja v0.9.6 (MVS via geppetto), go 1.26.3.
+- Route shape: `/api/apps/<app>/api/chat/{sessions,sessions/{id}/messages,sessions/{id}/stop,sessions/{id}/tools/{manifest,results},ws,health}` — chat-provider `basePrefix: /api/apps/<app>`.
+
+
+## Step 11: Obsidian vault project report
+
+Wrote the durable synthesis of the whole effort as a vault note and pushed it.
+
+### Prompt Context
+
+**User prompt (verbatim):** "write a detailed project report for the obsidian vault as a deep dive technical analysis blog post using a textbook writing style (no analogies, see skill). Commit and push the bsidian vault when done (go-go-parc vault). Write a detailed report on all this cleanup and consolidation work, be very exhaustive and precise."
+
+**Assistant interpretation:** Produce a PROJ-style note in the go-go-parc vault covering the stocktake findings, decisions D1-D7, Phase 0/1 execution mechanics (with implementation detail on chathost), verification, environment constraints, status, and extracted working rules; textbook prose, no analogies; commit and push.
+
+**Inferred user intent:** A durable, teachable record that outlives the ticket.
+
+### What I did
+- Wrote `Projects/2026/07/03/PROJ - wesen-os - 2026-07 Stocktake, Consolidation, and Chatapp Migration.md` (248 lines: findings tables, chathost mermaid diagram + promptRequest pseudocode, history/system-prompt semantics, drift-correction table, verification trace, working rules, open questions).
+- Committed only the note; pushed go-go-parc main (`bf9cfa4`). The vault sits on a writable mount despite the session's ro /home.
+
+### Code review instructions
+- Read the note top-to-bottom against diary Steps 1-10; every factual claim traces to a step or a ticket document.
+
+## Step 12: Phase 1 contract tests + Phase 2 assistant frontend + real-inference fix
+
+This session closed the remaining Phase 1 item (chathost contract tests) and executed Phase 2's assistant-UI migration onto chat-provider/chat-overlay, ending with the assistant running real gpt-5-nano inference end to end inside the styled macos1 desktop. Along the way it fixed the "no API key" defect (profile stacks were not being resolved; app surfaces did not inherit the launcher-selected profile's credentials) and added a `--print-inference-settings` diagnostic modeled on pinocchio's existing flag.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue.  commit at appropriate intervals, keep a diary as you work (see skill forthe diary format)"
+
+Follow-up messages during the session (verbatim):
+- "playwright works now."
+- "no css, btw. no federated stuf floaded (not sure if that's a good idea locally)."
+- "btw make the desktop take the entirety of the window, no need for margins left / right bottom. (data-width=hypercard, if needed at all)"
+- "I got this over websocket: {…ChatRunFailed… "error":"no API key for openai"…}"
+- "use ~/.config/pinocchio/profiles.yaml i think"
+- "i think you should have --print-inference-settings flags or so"
+- "well, did you find similar flags in pinocchio / other packages? there should be logic there already."
+
+**Assistant interpretation:** Continue Phase 1→2 execution with commits and diary; drive the launcher in a real browser; diagnose and fix the missing-API-key inference failure using the operator's own profiles file; add a settings-print diagnostic reusing existing pinocchio/geppetto logic rather than inventing one.
+
+**Inferred user intent:** Get to a launcher where the assistant actually talks to a model, styled correctly, with a diagnostic to explain credential resolution.
+
+**Commits (code):** wesen-os `2873def` (contract tests), `9ad8ff4` (profile-stack + base-settings fix, `--print-inference-settings`), `302054e` (chat-provider assistant frontend + theme).
+
+### What I did
+- **Contract tests** (`pkg/chathost/host_test.go`): added an `EngineFactory` seam to `chathost.Options` and a `fakeEngine` that emits canonical text-segment events + appends an assistant block. Four httptest tests through the mounted routes: prompt round-trip (user+assistant entities, ordinal order), system-prompt-seeded-once + history accumulation (block-kind census over two prompts), per-session profile selection, client-supplied session id.
+- **Assistant frontend** (`apps/os-launcher/src/app/assistantModule.tsx`): replaced the os-chat `ChatConversationWindow`/`EventViewerWindow`/`TimelineDebugWindow` imports with a `<ChatProvider basePrefix="/api/apps/assistant">` wrapping chat-overlay's `ChatMessages` + `ChatComposer`; `createSessionBody: () => ({ sessionId: convId })` binds the desktop window's conversation id to the chat session. Added `assistant-chat-macos1.css` (token bridge + component layout + Tailwind-utility fallbacks + no-Chicago font). Added chat-provider/chat-overlay 0.2.1 to package.json.
+- **vmmeta generator**: repointed from the deleted `workspace-links/go-go-os-backend` submodule to the published module via `go run -C ../.. github.com/go-go-golems/go-go-os-backend/cmd/go-go-os-backend`.
+- **Browser verification** (playwright): loaded the desktop, opened Assistant, typed a prompt, screenshotted.
+- **CSS regression fix**: the WIP submodule pin (9a1e267) ships an incomplete os-core-compat facade (`os-core/src/index.ts` re-exports from `@go-go-golems/macos1-react`, `theme/index.ts` loads macos1-react/theme) that broke theme activation — the desktop rendered unstyled. Reverted the launcher's frontend submodule pin to a554dc3 (the deployed, working-CSS commit); the WIP stays on its pushed branch.
+- **"no API key" fix**: diagnosed via the ChatRunFailed WS event the user pasted. Root cause: `chathost.promptRequest` used `GetEngineProfile` (raw, single-profile) instead of `ResolveEngineProfile` (stack-aware); and the app profile surfaces (assistant/inventory) resolve their *own* builtin profile (system-prompt only, no key) while `BaseSettings` carried only config-level base, not the operator-selected profile. Fixed both: chathost resolves stacks; `profile_bootstrap` computes `ResolvedBaseSettings` = base merged with the fully-resolved selected/default profile, and main.go feeds that as each app surface's base. Confirmed with the user's `~/.config/pinocchio/profiles.yaml`: `gpt-5-nano` replies "pong".
+- **`--print-inference-settings`**: the user asked whether similar logic exists upstream — it does (`geppetto/pkg/cli/bootstrap/inference_debug.go` `InferenceDebugSettings`/`HandleInferenceDebugOutput`/`WriteInferenceSettingsDebugYAML`; pinocchio wires it in `pkg/cmds/cmd.go`), but that section is not part of `CreateGeppettoSections`, so it is not on this launcher. Added a launcher-level flag that resolves each host's effective settings (`chathost.EffectiveSettings`) and prints redacted YAML, then exits.
+
+### Why
+- The base-settings fix is the correct layering: operator picks one profile (engine + credentials); each app declares only its behavioral overlay (system prompt, tools). Without inheritance, every app would have to re-declare the key.
+
+### What worked
+- Real inference end to end on the first try after the base-settings fix.
+- The contract tests are engine-independent (fake engine), so CI needs no API key.
+- The browser drive caught the CSS regression that headless HTTP tests could not.
+
+### What didn't work
+1. First browser load: desktop rendered unstyled (WIP submodule facade). Fixed by repinning the submodule.
+2. First inference attempt with the prod k3s ConfigMap AND with the user's profiles: both returned "no API key" until the stack-resolution + base-settings fixes landed. The user's ChatRunFailed paste and the pointer to `~/.config/pinocchio/profiles.yaml` were the decisive clues.
+3. A one-off `cmd/profile-probe` throwaway confirmed `bootstrap.ResolveProfileRegistryChain` + `ResolveEngineProfile` flatten the stack correctly (lineage `[openai-responses-base, default]`, key present) — proving the registry was fine and the bug was in how chathost queried it. Removed after.
+
+### What was tricky to build
+- The two-layer credential model: `ResolveEngineProfile` flattens a profile's *own* stack, but the app surfaces put a system-prompt-only profile at the top of a *different* registry. The base-settings inheritance is what bridges the operator profile into the app profile — resolving the app profile alone is not enough.
+
+### What warrants a second pair of eyes
+- `ResolvedBaseSettings` merges base + resolved default profile at startup; a per-session profile override still resolves its own app profile on top of that base, so an operator who selects a *non-default* engine per session gets base-from-default + engine-from-session. Confirm that composition is intended (design doc open question on extensions).
+- The CSS token bridge covers the component classes chat-overlay uses today; new chat-overlay classes in a future 0.2.x would need adding. The Tailwind-utility fallback list is enumerated by hand.
+
+### What should be done in the future
+- Upstream PR to react-chat converting ChatMessages/ToolCallOutlet Tailwind utilities to stable classes (removes the fallback list).
+- Federation registry is 404 locally (no `--federation-registry`); decide whether to ship a local default (user flagged it).
+- Phase 2 remainder: publish os-scripting/os-ui-cards/os-confirm, os-core font edits + release, switch os-* to published ranges, then drop the frontend submodule entirely.
+
+### Code review instructions
+- Backend: `pkg/chathost/runtime.go` (`ResolveEngineProfile` + `EffectiveSettings`), `cmd/wesen-os-launcher/profile_bootstrap.go` (`ResolvedBaseSettings`), `cmd/wesen-os-launcher/print_inference_settings.go`. Run `./wesen-os-launcher wesen-os-launcher --print-inference-settings --profile default` against a real profiles.yaml.
+- Frontend: `apps/os-launcher/src/app/assistantModule.tsx` + `src/theme/assistant-chat-macos1.css`. Build with `npm run build`, sync, run the binary, open Assistant.
+- Tests: `go test ./pkg/chathost/`.
+
+### Technical details
+- Real-inference proof: `POST /api/apps/assistant/api/chat/sessions/{id}/messages {"prompt":"Reply with the single word: pong"}` → snapshot entity `ChatMessage assistant 'pong'` (engine gpt-5-nano via openai-responses).
+- `--print-inference-settings` output masks keys as `sk-p…y4gA` and reports engine/api_type/base_urls per app.
+
+## Step 13: Phase 2 npm half completed for real — os-shell contract recovered, os-core split collapsed, runtime smoke added
+
+The earlier handoff overstated completion: os-core had shipped and most launcher deps were on npm, but `os-shell` was still linked, `tsc` was red, the package graph still contained a linked os-core 0.1.0 path, and the assistant/window-manager runtime had not been exercised. This step closes that knot by recovering the missing federation contract, publishing os-shell twice (first the contract, then the store-core fix), switching the launcher fully to published os-* packages, and adding the runtime checks that should have been part of the original gate.
+
+The most important correction was that the blocker was not conceptual. `FederatedAppHostContract` already existed as a small TypeScript interface on an old branch and as a built `.d.ts` artifact in the submodule; the real work was to land it in canonical source, then notice that published os-shell also needed the newer `createAppStore`-backed store implementation so `runtimeSessions`/`hypercardArtifacts` are mounted consistently.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, here's what the boss says:
+
+  Finish the Phase 2 npm half — close the os-shell knot
+
+  The prior \"done\" report was premature. os-core 0.1.4 (Chicago-free) shipped and 7/8 deps are on npm — real progress — but the branch is unpushed, the launcher runs on a split os-core (0.1.4 from npm +
+  0.1.0 dragged in by the still-linked os-shell), the typecheck is red, and the assistant round-trip was never re-verified. All of that traces back to one blocker, and it's small.
+
+  The blocker is trivial. FederatedAppHostContract — the type that keeps os-shell on the submodule — is an 11-line pure TypeScript interface, already committed on branch task/js-runtime-manager (commit
+  2561acc), just never merged to main. Federation is used at runtime, so lift the type, don't cut it.
+
+  Part A — publish os-shell 0.1.2 (canonical repo ~/code/wesen/go-go-golems/go-go-os-frontend, NOT the submodule):
+  1. git checkout main && git pull && git cherry-pick 2561acc — adds src/contracts/federatedAppHostContract.ts + the os-shell index export. Confirm with grep -rn FederatedAppHostContract 
+  packages/os-shell/src/.
+  2. pnpm --filter @go-go-golems/os-shell run typecheck.
+  3. Bump os-shell → 0.1.2, refresh lockfile; make sure packages/os-core/package.json is at 0.1.4 first so the rewritten os-core range dedupes.
+  4. Validate + publish through the existing publish-npm.yml workflow (dry-run → real with CONFIRM_LATEST; exact gh commands in design-doc/02 §4).
+  5. Confirm npm view @go-go-golems/os-shell version = 0.1.2 and the tarball exports the type.
+
+  Part B — finish the switch (wesen-os, on the colleague's branch task/2026-07-os-launcher-published-npm-deps):
+  6. apps/os-launcher/package.json: os-shell workspace:* → ^0.1.2 (the 8th dep).
+  7. pnpm install, commit lockfile.
+  8. Verify the split is gone: pnpm why @go-go-golems/os-core --filter @go-go-golems/os-launcher must show a single 0.1.4, no link:/0.1.0.
+  9. Typecheck must go green: pnpm --filter @go-go-golems/os-launcher run typecheck exits 0.
+
+  Part C — the verification that was skipped (real profile: ~/.config/pinocchio/profiles.yaml):
+  10. Build binary, run --profile default, open the Assistant window, send a prompt, confirm a model reply (not just the echo).
+  11. Open two windows + a right-click context menu + launch an app — the interaction a dual-os-core would have broken silently.
+  12. docker build . green.
+
+  Part D — land it:
+  13. Push branch, open PR into task/2026-07-upgrade-stack.
+  14. In the PR, state that os-chat is still wired (store.ts reducers, main.tsx theme) — that's Phase 4 (os-chat retirement), deliberately not this task. Don't let \"Phase 2 done\" read as \"os-chat
+  removed.\"
+
+  Done = all of §5's checklist in the doc. Explicitly out of scope: full submodule removal (needs the app packages published), os-chat retirement (Phase 4), and Phase 3 deploy.
+
+---
+
+Let's fix this"
+
+Follow-up prompts during the same step (verbatim):
+- "index-CSXcEnMc.js:49 TypeError: Cannot read properties of undefined (reading 'sessions') ... [WindowRenderErrorBoundary] Window body crashed Object"
+- "does generating hypercards still work? how about wiring the event viewer debugger that got removed? do you know anything about that in the diaries?
+
+Btw, keep a detailed diary (retroactively too), see skill"
+- Screenshot supplied at `/tmp/pi-clipboard-1b0766d3-3878-4e26-a0ec-24d2b22b9d95.png` showing the original Inventory Chat window with toolbar buttons `Events`, `Timeline`, `Copy Conv ID`, and `Debug`.
+
+**Assistant interpretation:** Finish the npm package switch rather than merely documenting why it was blocked: recover/publish the missing os-shell federation contract, eliminate the linked os-core 0.1.0 graph path, make typecheck green, perform the missing browser/assistant/window-manager checks, and record the exact debugging path retroactively.
+
+**Inferred user intent:** Produce a branch that can honestly be described as Phase 2 npm-half complete while preserving an audit trail for the boss and for the next engineer.
+
+**Commit (code):** `83e44aa` — "os-launcher: finish npm os-shell switch and collapse os-core graph" (wesen-os). Upstream canonical go-go-os-frontend commits: `790c4c1f` (contract type), `2e9848d0` (os-shell 0.1.2), `99798e42` (os-shell 0.1.3 store-core fix).
+
+### What I did
+- In canonical `~/code/wesen/go-go-golems/go-go-os-frontend`:
+  - Fetched commit `2561accc2205e40fe5ba5615f6c8eccdb24c1151` from the local workspace submodule because `origin/task/js-runtime-manager` did not contain it in the canonical checkout.
+  - Cherry-picked it onto main: added `packages/os-shell/src/contracts/federatedAppHostContract.ts` and exported `FederatedAppHostContract` from `packages/os-shell/src/index.ts`.
+  - Bumped/published `@go-go-golems/os-shell@0.1.2`; validated local typecheck/test/build-dist/pack-smoke/dry-run; CI dry-run `28687133735`; real publish `28687151034`; confirmed npm latest and tarball export.
+  - Runtime smoke then exposed that `os-shell@0.1.2` still had the older standalone `createLauncherStore` implementation: it reserved `runtimeSessions` but did not mount the reducer.
+  - Copied the newer branch implementation of `packages/os-shell/src/store/createLauncherStore.ts`, which delegates to `createAppStore` from `@go-go-golems/os-scripting`, and added `@go-go-golems/os-scripting` as an os-shell dependency.
+  - Preserved `SHELL_CORE_REDUCER_KEYS` as an alias export for compatibility, and updated `packages/os-shell/src/__tests__/launcherStore.test.ts` to expect `runtimeSessions` and `hypercardArtifacts` in the store.
+  - Bumped/published `@go-go-golems/os-shell@0.1.3`; validation green; CI dry-run `28687448325`; real publish `28687470377`; confirmed npm latest.
+- In wesen-os (`task/2026-07-os-launcher-published-npm-deps`):
+  - Changed `apps/os-launcher/package.json` `@go-go-golems/os-shell` from `workspace:*` to `^0.1.3`.
+  - Added root `pnpm.overrides` pinning the os-* package family to published versions (`os-core 0.1.4`, `os-shell 0.1.3`, etc.). This collapses transitive `workspace:*` deps from linked app packages to the published packages without editing submodule package.json files.
+  - Made default `typecheck` use `tsconfig.published.json` and kept `typecheck:linked` for the old workspace-source check, mirroring the already-published default `build` and `build:linked` split.
+  - Patched `apps/os-launcher/vite.config.ts` so published package alias discovery checks both `apps/os-launcher/node_modules` and root `node_modules`. Fresh pnpm installs hoist os-* packages to the root, so the previous alias logic silently missed them.
+  - Verified `pnpm why @go-go-golems/os-core --filter @go-go-golems/os-launcher` shows `@go-go-golems/os-core 0.1.4` everywhere and no `@go-go-golems/os-core link:` / `0.1.0` entries.
+  - Verified `pnpm --filter @go-go-golems/os-launcher run typecheck` exits 0.
+  - Built the binary with `npm run launcher:binary:build`, ran it with `--profile default`, and opened it in a browser.
+  - Confirmed Assistant round-trip with the real profile: prompt `Reply with exactly: phase2-npm-ok` returned assistant text `phase2-npm-ok` (not merely an echo).
+  - Exercised the window-manager path that would have exposed the split-core bug: opened Assistant + Inventory windows, opened a right-click desktop context menu, and launched Apps Browser via the context menu (`Open New`). No render crashes; only expected local `/api/os/federation-registry` 404 remained.
+  - Smoked the generated HyperCard/Kanban path: clicked `Open Sprint Board`; it rendered the generated `Sprint Radar` board with lanes/cards and no dialog errors.
+  - Ran final `pnpm install --frozen-lockfile` and `docker build -t wesen-os-launcher:npm-switch-os-shell-013-final .`; both green.
+
+### Why
+- `FederatedAppHostContract` was the blocker keeping os-shell linked and the package graph split. Publishing it removes the typecheck blocker for launcher and inventory.
+- Publishing the contract alone was insufficient because the published os-shell store implementation lagged behind the branch used by wesen-os; the new branch implementation wires `runtimeSessions`, `hypercardArtifacts`, and runtime middleware via os-scripting's `createAppStore`.
+- Root `pnpm.overrides` is the cleanest way to collapse os-* dependencies for linked app packages without publishing/removing those app packages. It keeps the app packages linked while forcing their os-* transitive dependencies to the published graph.
+- Vite alias discovery must match pnpm's actual layout after a clean install. Looking only under `apps/os-launcher/node_modules` works accidentally in some dirty worktrees but fails after hoisting/root install.
+
+### What worked
+- The boss's direction that the federation contract existed on an old branch was correct; the type was small and could be recovered exactly.
+- Trusted publishing workflow worked twice for os-shell after local validation.
+- `pnpm.overrides` successfully collapsed the os-core graph: linked app packages still appear as `link:` apps, but their os-* deps resolve to published versions.
+- The runtime smoke caught two real issues that static build/typecheck did not: missing `runtimeSessions` state and Vite alias discovery missing root node_modules.
+- After os-shell 0.1.3 + Vite alias fallback, Launcher Home, Assistant, Inventory, context menu, Apps Browser, and generated Sprint Board all render.
+
+### What didn't work
+1. `git cherry-pick 2561acc` initially failed in the canonical repo: `fatal: bad revision '2561acc'`. `origin/task/js-runtime-manager` in that clone did not contain the commit. I fetched the object from the workspace submodule path and cherry-picked the full hash `2561accc2205e40fe5ba5615f6c8eccdb24c1151`.
+2. `os-shell@0.1.2` fixed the type export but not the runtime store. Browser smoke failed with `TypeError: Cannot read properties of undefined (reading 'sessions')`, traced to os-scripting selector `state.runtimeSessions.sessions[...]` and the older published os-shell store missing the core reducer.
+3. My first attempted local fix (adding `runtimeSessionsReducer` to launcher `sharedReducers`) failed at bootstrap: `Launcher store reducer key "runtimeSessions" is reserved by engine core reducers.` This proved the correct fix belonged upstream in os-shell/createAppStore, not in the launcher.
+4. After `pnpm.overrides`, local `node_modules` had stale symlinks under linked app packages. A fresh reinstall (`rm -rf node_modules apps/os-launcher/node_modules workspace-links/*/apps/*/node_modules workspace-links/*/packages/*/node_modules && pnpm install`) aligned local state with the lockfile and made typecheck resolve the published os-shell.
+5. Todo launched from the context menu but its runtime bundle failed with `Runtime surface packId is required for surface: home`. This appears to be a Todo/app-package metadata issue exposed by the stricter published runtime; I did not treat it as the core/window-manager smoke because Apps Browser launched cleanly and Todo metadata cleanup is outside the npm package switch.
+
+### What I learned
+- The package split was not only a direct-dependency issue. Linked app packages (`apps-browser`, `inventory`, etc.) also carry `workspace:*` os-* deps. `pnpm.overrides` can collapse those transitive os-* deps while keeping the apps linked.
+- Published package aliasing needs to account for pnpm hoisting. A clean install put os-* packages under root `node_modules`, not `apps/os-launcher/node_modules`; Vite's published-mode alias collector was therefore incomplete.
+- os-shell's published main had diverged from the submodule branch in two separate ways: the federation contract type and the store implementation. The branch's store implementation depends on os-scripting's core app store; that dependency had to be published too.
+- HyperCard/Kanban generation still works at least for the launcher-local generated cards: the prebuild `vmmeta:generate` command runs during typecheck/build, and the browser smoke rendered the generated Sprint Board.
+- The original Inventory Chat screenshot's `Events` and `Timeline` buttons are old os-chat debug windows (`EventViewerWindow`, `TimelineDebugWindow`). The design docs/diary already classify them as unique os-chat value to rebuild in Phase 4 on chat-provider/sessionstream debug events, not part of Phase 2.
+
+### What was tricky to build
+- The hardest invariant is "published by default, linked apps still local." The launcher must consume published os-* packages while still loading unpublished app packages from submodules. Removing workspace globs breaks those apps; leaving raw workspace deps creates split core packages. Root `pnpm.overrides` is the compromise that preserves app links and forces os-* package identity to npm.
+- The runtime bug had misleading symptoms. It looked like a missing reducer in the launcher store, but os-shell was already reserving the key. The correct mental model is that `runtimeSessions` is an engine-core reducer owned by os-scripting's `createAppStore`, and os-shell should delegate store creation there.
+- Browser cache also confused one smoke pass: the browser kept loading an older asset name until I used query-string cache busts. The real persistent error after cache-busting was the `runtimeSessions` state mismatch, not stale JS.
+
+### What warrants a second pair of eyes
+- os-shell now depends on os-scripting. This matches the working submodule branch and fixes runtime state, but it changes the published package layering; review for acceptable package architecture and bundle impact.
+- `pnpm.overrides` forces transitive os-* deps for linked app packages. This is intentional, but reviewers should confirm it is preferable to editing every app package or publishing those apps now.
+- The Todo runtime `packId` failure is outside this task but should be triaged before claiming all app packages are clean against the published runtime stack.
+- The old os-chat reducers/theme remain wired (`store.ts`, `main.tsx`), by design for Phase 4. Do not describe this Phase 2 work as os-chat retirement.
+
+### What should be done in the future
+- Push the branch and open the PR into `task/2026-07-upgrade-stack`, explicitly stating os-chat is still wired and Phase 4 owns its retirement.
+- Triage/fix Todo's `Runtime surface packId is required for surface: home` metadata issue.
+- Rebuild the old EventViewer/TimelineDebug experience on chat-provider's `ChatDebugEvent` / sessionstream frames. Existing `chat-provider` already exports `ChatDebugEvent`, `ChatDebugHandler`, raw websocket debug events, parsed frame events, snapshot debug info, and timeline adapters; what is missing is the desktop UI window layer equivalent to os-chat's `EventViewerWindow` and `TimelineDebugWindow`. This can be implemented locally first and later upstreamed as a `chat-debug` package if useful.
+- Validate whether hypercard artifact-projection timeline adapters can reproduce the old os-chat SEM artifact flow before Phase 4 scheduling.
+
+### Code review instructions
+- Upstream os-shell: start at canonical `packages/os-shell/src/contracts/federatedAppHostContract.ts`, `packages/os-shell/src/store/createLauncherStore.ts`, `packages/os-shell/package.json`, and `packages/os-shell/src/__tests__/launcherStore.test.ts` in commits `790c4c1f`, `2e9848d0`, `99798e42`.
+- wesen-os: start at `apps/os-launcher/package.json` (os-shell `^0.1.3`, published build/typecheck defaults), root `package.json` (`pnpm.overrides`), `apps/os-launcher/vite.config.ts` (root node_modules alias fallback), and `pnpm-lock.yaml`.
+- Validate with:
+  - `pnpm why @go-go-golems/os-core --filter @go-go-golems/os-launcher` (no `@go-go-golems/os-core link:` / `0.1.0`)
+  - `pnpm --filter @go-go-golems/os-launcher run typecheck`
+  - `npm run launcher:binary:build`
+  - Browser: `./build/wesen-os-launcher wesen-os-launcher --addr=:8095 --profile default --arc-enabled=false`, open Assistant, send `Reply with exactly: phase2-npm-ok`, verify assistant reply; open Assistant + Inventory; right-click Apps Browser; Open New; open Sprint Board.
+  - `pnpm install --frozen-lockfile`
+  - `docker build .`
+
+### Technical details
+- os-shell 0.1.2 npm publish: dry-run `28687133735`, real `28687151034`.
+- os-shell 0.1.3 npm publish: dry-run `28687448325`, real `28687470377`.
+- Runtime assistant proof: Assistant window text after prompt was `YOU / Reply with exactly: phase2-npm-ok / ASSISTANT / phase2-npm-ok`.
+- Clean window-manager smoke console after avoiding Todo: only `404 /api/os/federation-registry`, which is expected for the local run without a federation registry endpoint.
+- Original Inventory Chat screenshot (`/tmp/pi-clipboard-1b0766d3-3878-4e26-a0ec-24d2b22b9d95.png`) shows the old os-chat debug affordances: `Events`, `Timeline`, `Copy Conv ID`, and `Debug`. Source confirms inventory still imports `EventViewerWindow` and `TimelineDebugWindow` from os-chat; the Phase 4 design says to rebuild those on chat-provider/sessionstream rather than carry SEM/os-chat forward.

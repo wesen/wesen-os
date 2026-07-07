@@ -8,43 +8,44 @@ improvement backlog.
 
 ## Phase 0 — Consolidate wesen-os (D1)
 
-- [ ] Commit/stash the dirty workspace state (`go.work.sum`, `ttmp/vocabulary.yaml`, submodule pointers); commit this ticket's ttmp tree
-- [ ] Push `task/sqlite-federation-runtime-fix`; open + merge PR into `wesen/wesen-os` main
-- [ ] Sweep local `task/*` branches for unmerged work (`git branch --no-merged main`); merge or discard explicitly
-- [ ] Verify the deployed image `sha-13ce252` really descends from the merged history (basis of D1)
-- [ ] Sync `~/code/wesen/wesen-os` to new main; cut `task/2026-07-upgrade-stack`
-- [ ] Baseline: `docker build .` reproduces a working image (rollback reference)
+- [x] Commit/stash the dirty workspace state (`go.work.sum`, `ttmp/vocabulary.yaml`, submodule pointers); commit this ticket's ttmp tree
+- [x] Push `task/sqlite-federation-runtime-fix`; open + merge PR into `wesen/wesen-os` main
+- [x] Sweep local `task/*` branches for unmerged work (`git branch --no-merged main`); merge or discard explicitly
+- [x] Verify the deployed image `sha-13ce252` really descends from the merged history (basis of D1)
+- [x] Cut `task/2026-07-upgrade-stack` (workspace checkout; `~/code/wesen/wesen-os` clone unsyncable this session — /home mounted ro; pull it later)
+- [x] Baseline: publish-host-image CI green on consolidated main (after pnpm-lock fix PR #13); deployed image sha-13ce252 untouched
 
 ## Phase 1 — Go stack bump + assistant backend (D2, D3)
 
-- [ ] Answer open question: current pinocchio release tag ≥ v0.11.5; pin the version triple (chat-provider 0.2.1 ↔ pinocchio ↔ sessionstream ≥ v0.0.6)
-- [ ] go.mod: geppetto ≥ v0.13.3, pinocchio ≥ v0.11.5, go-go-goja v0.8.3, go-go-os-backend ≥ v0.0.5, + sessionstream; drop library `go.work` use-entries and the go-go-os-chat replace; `go mod tidy`
-- [ ] Mechanical fixes: geppetto canonical events (§5.1 table), `pinocchio/pkg/cmds/helpers` → `profilebootstrap` (`profile_bootstrap.go:27,31`), goja `engine` → `pkg/engine` renames (mostly in gepa)
-- [ ] Read `pinocchio/pkg/chatapp/{chat.go,service.go,serverkit/contracts.go}` + `react-chat/internal/webchat/handlers.go` before coding; decide the APP-31 profile hook point (session-create hook vs runtime composer)
-- [ ] Rewrite `pkg/assistantbackendmodule` on chatapp/sessionstream: hub + engine + service + serverkit handlers (sessions/messages/stop/tools/ws) under `/api/apps/assistant/…`
-- [ ] Verify chat-provider WS URL composition works under the namespaced `basePrefix` (`ws/protocol.ts:10-13`)
-- [ ] Re-map manifest capabilities (`chat, ws, timeline, profiles`) to the new endpoints
-- [ ] Bump + fix app repos: go-go-gepa (goja renames in `js_runtime.go`), go-go-app-inventory (pinoweb events/webchat exposure — biggest), go-go-app-sqlite, go-go-app-arc-agi-3; tag or keep linked per D2
-- [ ] Validate `profiles.runtime.yaml` (local + k3s ConfigMap copy) against the new engineprofiles decoder; reformat from legacy `profiles:` map if rejected
-- [ ] Add assistant contract test: fake engine, create-session → submit → stream, assert canonical event order
-- [ ] Gate: `go build ./... && go test ./...` green with no go.work library overrides
+- [x] Version triple pinned: geppetto v0.13.3, pinocchio v0.11.5, sessionstream v0.1.0, go-go-os-backend v0.0.7, goja v0.9.6 via MVS, go 1.26.3
+- [x] go.mod bumped + sessionstream added; library go.work entries and submodules dropped (232a960); go-go-os-chat dependency removed entirely; replaces for in-flight inventory/gepa submodules
+- [x] Mechanical fixes done (profile_bootstrap → ResolveCLIProfileRuntime; glazed help/model sections; pinocchio cobra middlewares; gepa goja renames c01a8e1)
+- [x] Reference reading done; APP-31 profile hook = per-session profile in createSessionBody, resolved per prompt in chathost
+- [x] pkg/chathost written (reusable host); assistant + inventory rewritten on it (ca9098e, inventory 4397deb)
+- [x] Verified: chat-provider `buildWebSocketURL` composes `${proto}://${host}${basePrefix}/api/chat/ws`; assistant window connects under `/api/apps/assistant` (browser-confirmed, ws subscribed)
+- [x] Manifest capabilities re-mapped (chat, chat-sessions, ws, frontend-tools, profiles); inventory reflection doc updated
+- [x] App repos bumped: gepa + inventory ported (pinoweb quarantined as _pinoweb_legacy → Phase 4 sub-ticket); sqlite + arc-agi build clean unchanged
+- [x] Validated prod profiles.runtime.yaml: decodes + boots under the new stack, BUT `runtime.step_settings_patch.ai-chat.ai-engine` is dead config for chathost — Phase 3 must rewrite it to `profiles.default.inference_settings.chat: {api_type, engine}` in the k3s repo
+- [x] chathost contract tests (2873def): fake engine + httptest — prompt round-trip, system-prompt-once + history accumulation, per-session profile, client session id
+- [x] Gate passed: build+test green, no library overrides; launcher smoke on :18099 (session create → prompt → snapshot with correlated error entity)
+- [x] Fixed profile-stack resolution + app-surface credential inheritance (ResolveEngineProfile + ResolvedBaseSettings, 9ad8ff4); added --print-inference-settings diagnostic; real gpt-5-nano inference verified
 
 ## Phase 2 — Frontend to published npm packages + assistant UI (D4, D6)
 
-- [ ] Publish missing packages from go-go-os-frontend main: os-scripting, os-ui-cards, os-confirm; release os-core 0.1.3 (repo ahead of npm)
-- [ ] os-core font cleanup (no-Chicago decision, §5.6(4)): edit `theme/classic.css:4`, `theme/desktop/theme/macos1.css:3`, `theme/desktop/tokens.css:9` to `"Geneva", "Helvetica Neue", Helvetica, Arial, sans-serif`; release
-- [ ] `apps/os-launcher/package.json`: replace `workspace:*` with published semver ranges; make `build:published` the default; keep `build:linked` for dev
-- [ ] Add `@go-go-golems/chat-provider` + `@go-go-golems/chat-overlay`; mount `<ChatProvider config={{basePrefix:'/api/apps/assistant'}}>` + overlay as first milestone (same branch as Phase 1 assistant rewrite)
-- [ ] Theming (§5.6): wesen-os stylesheet for `chat-overlay-*` classes (token bridge `--color-mac-* → --hc-*` or replacement for retro-mac.css); plain-CSS fallbacks for the Tailwind utilities in `ChatMessages.tsx`; optional upstream PR to react-chat finishing the Tailwind→stable-classes conversion (incl. `--font-sans` without Chicago)
-- [ ] Verify theme side effects survive the vite build (CSS present for every os-* `./theme` import; diff built CSS size vs pre-migration)
-- [ ] Drop `workspace-links/go-go-os-frontend` submodule + pnpm glob once green (app-repo frontends stay linked until published)
-- [ ] Gate: `pnpm -r build && pnpm -r test` green in published mode; launcher runs locally with assistant round-trip
+- [x] Publish missing packages from go-go-os-frontend main — os-scripting/os-ui-cards/os-confirm were already published & version-current; os-core released as **0.1.4** (font fix, upstream `ec19a1c7`, npm latest)
+- [x] os-core font cleanup (no-Chicago decision, §5.6(4)): edited `theme/classic.css:4`, `theme/desktop/theme/macos1.css:3`, `theme/desktop/tokens.css:9` to `"Geneva", "Helvetica Neue", Helvetica, Arial, sans-serif`; released in os-core 0.1.4
+- [x] `apps/os-launcher/package.json`: replaced `workspace:*` with published semver ranges for **8 of 8** os-* (os-shell published as **0.1.3** with `FederatedAppHostContract` + store-core fix); made `build:published` the default; added `build:linked` for dev; made published typecheck the default and kept `typecheck:linked` for dev. Branch `task/2026-07-os-launcher-published-npm-deps` (`83e44aa`). See diary Step 13.
+- [x] Assistant window mounts ChatProvider(basePrefix=/api/apps/assistant) + chat-overlay ChatMessages/ChatComposer (302054e); real gpt-5-nano round-trip verified in browser
+- [x] assistant-chat-macos1.css: token bridge + component layout + Tailwind-utility fallbacks + no-Chicago font (302054e). Upstream Tailwind→stable-classes PR still open (future)
+- [x] Verify theme side effects survive the vite build — published-mode build bundles the os-core macos1 theme CSS; built `--hc-font-family` is Chicago-free (4 residual "Chicago" tokens are os-widgets `--mac-font` widget-art themes, out of scope)
+- [ ] Drop `workspace-links/go-go-os-frontend` submodule + pnpm glob once green — **deferred/out of scope**: os-* package graph is now published via semver ranges + root `pnpm.overrides`, but unpublished app packages (`crm`, `todo`, `book-tracker-debug`, `apps-browser`, `hypercard-tools`, `inventory`, etc.) still require the submodules.
+- [x] Gate: published-mode launcher build green; `pnpm --filter @go-go-golems/os-launcher run typecheck` green; `pnpm why @go-go-golems/os-core --filter @go-go-golems/os-launcher` shows os-core `0.1.4` everywhere with no `link:`/`0.1.0`; real-profile Assistant round-trip verified (`phase2-npm-ok`); window-manager smoke verified (Assistant + Inventory + context menu + Apps Browser); generated Sprint Board HyperCard smoke verified; frozen-lockfile + **`docker build`** green. Todo has a separate runtime `packId` metadata issue to triage later.
 
 ## Phase 3 — Ship (D5)
 
 - [ ] Confirm `GITOPS_PR_TOKEN` still valid (3 months old)
 - [ ] Local `docker build`; extend + run `scripts/smoke-wesen-os-launcher.sh` (/, /api/os/apps, /api/os/federation-registry, assistant round-trip with NoopEngine profile, one sqlite query)
-- [ ] Update k3s repo `gitops/kustomize/wesen-os/config/profiles.runtime.yaml` if the format changed (config-hash rollout)
+- [ ] Update k3s repo `gitops/kustomize/wesen-os/config/profiles.runtime.yaml`: migrate `runtime.step_settings_patch` to `inference_settings.chat` (config-hash rollout)
 - [ ] Merge to main → GHCR image → merge auto-opened GitOps PR → Argo sync
 - [ ] Verify: `kubectl -n wesen-os rollout status deployment/wesen-os`; `curl https://wesen-os.yolo.scapegoat.dev/api/os/apps`; desktop smoke (assistant, sqlite, gepa); deliberate pod restart to confirm emptyDir behavior
 - [ ] Bake period defined and observed (entry criterion for Phase 4)

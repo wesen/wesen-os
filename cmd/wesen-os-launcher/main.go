@@ -2,16 +2,16 @@ package main
 
 import (
 	"context"
-	"embed"
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	clay "github.com/go-go-golems/clay/pkg"
 	gepprofiles "github.com/go-go-golems/geppetto/pkg/engineprofiles"
-	"github.com/go-go-golems/geppetto/pkg/inference/middlewarecfg"
+	geptools "github.com/go-go-golems/geppetto/pkg/inference/tools"
 	geppettosections "github.com/go-go-golems/geppetto/pkg/sections"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
@@ -20,8 +20,8 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/help"
 	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
-	profilechat "github.com/go-go-golems/go-go-os-chat/pkg/profilechat"
-	webchat "github.com/go-go-golems/pinocchio/pkg/webchat"
+	pinocchiocmds "github.com/go-go-golems/pinocchio/pkg/cmds"
+	sessionstream "github.com/go-go-golems/sessionstream/pkg/sessionstream"
 	"github.com/pkg/errors"
 
 	wesendoc "github.com/go-go-golems/wesen-os/pkg/doc"
@@ -30,56 +30,59 @@ import (
 	inventorybackendmodule "github.com/go-go-golems/go-go-app-inventory/pkg/backendmodule"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorydb"
 	"github.com/go-go-golems/go-go-app-inventory/pkg/inventorytools"
-	"github.com/go-go-golems/go-go-app-inventory/pkg/pinoweb"
 	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
 	arcagibackend "github.com/go-go-golems/wesen-os/pkg/arcagi"
 	assistantbackendmodule "github.com/go-go-golems/wesen-os/pkg/assistantbackendmodule"
+	"github.com/go-go-golems/wesen-os/pkg/chathost"
 	gepabackend "github.com/go-go-golems/wesen-os/pkg/gepa"
 	"github.com/go-go-golems/wesen-os/pkg/launcherui"
 	sqlitebackend "github.com/go-go-golems/wesen-os/pkg/sqlite"
 )
-
-//go:embed static
-var inventoryStaticFS embed.FS
 
 type Command struct {
 	*cmds.CommandDescription
 }
 
 type serverSettings struct {
-	Root                 string `glazed:"root"`
-	RequiredApps         string `glazed:"required-apps"`
-	LegacyAliases        string `glazed:"legacy-aliases"`
-	GEPAScriptsRoot      string `glazed:"gepa-scripts-root"`
-	GEPARunTimeout       int    `glazed:"gepa-run-timeout-seconds"`
-	GEPAMaxConcurrent    int    `glazed:"gepa-max-concurrent-runs"`
-	InventoryDB          string `glazed:"inventory-db"`
-	InventorySeedOnStart bool   `glazed:"inventory-seed-on-start"`
-	InventoryResetOnBoot bool   `glazed:"inventory-reset-on-start"`
-	SQLiteDB             string `glazed:"sqlite-db"`
-	SQLiteReadOnly       bool   `glazed:"sqlite-db-read-only"`
-	SQLiteAutoCreate     bool   `glazed:"sqlite-db-auto-create"`
-	SQLiteRowLimit       int    `glazed:"sqlite-default-row-limit"`
-	SQLiteTimeoutSeconds int    `glazed:"sqlite-statement-timeout-seconds"`
-	SQLiteBusyTimeoutMS  int    `glazed:"sqlite-busy-timeout-ms"`
-	SQLiteMultiStatement bool   `glazed:"sqlite-enable-multi-statement"`
-	SQLiteAllowlist      string `glazed:"sqlite-statement-allowlist"`
-	SQLiteDenylist       string `glazed:"sqlite-statement-denylist"`
-	SQLiteRedactColumns  string `glazed:"sqlite-redact-columns"`
-	SQLiteRateLimit      int    `glazed:"sqlite-rate-limit-requests"`
-	SQLiteRateWindowSec  int    `glazed:"sqlite-rate-limit-window-seconds"`
-	SQLiteMaxPayload     int    `glazed:"sqlite-max-payload-bytes"`
-	SQLiteAuditEvents    bool   `glazed:"sqlite-audit-log-events"`
-	ARCEnabled           bool   `glazed:"arc-enabled"`
-	ARCDriver            string `glazed:"arc-driver"`
-	ARCRuntimeMode       string `glazed:"arc-runtime-mode"`
-	ARCRepoRoot          string `glazed:"arc-repo-root"`
-	ARCStartupTimeout    int    `glazed:"arc-startup-timeout-seconds"`
-	ARCRequestTimeout    int    `glazed:"arc-request-timeout-seconds"`
-	ARCRawListenAddr     string `glazed:"arc-raw-listen-addr"`
-	ARCAPIKey            string `glazed:"arc-api-key"`
-	ARCMaxSessionEvents  int    `glazed:"arc-max-session-events"`
-	FederationRegistry   string `glazed:"federation-registry"`
+	Addr                   string `glazed:"addr"`
+	Root                   string `glazed:"root"`
+	TimelineDSN            string `glazed:"timeline-dsn"`
+	TimelineDB             string `glazed:"timeline-db"`
+	TurnsDSN               string `glazed:"turns-dsn"`
+	TurnsDB                string `glazed:"turns-db"`
+	RequiredApps           string `glazed:"required-apps"`
+	LegacyAliases          string `glazed:"legacy-aliases"`
+	GEPAScriptsRoot        string `glazed:"gepa-scripts-root"`
+	GEPARunTimeout         int    `glazed:"gepa-run-timeout-seconds"`
+	GEPAMaxConcurrent      int    `glazed:"gepa-max-concurrent-runs"`
+	InventoryDB            string `glazed:"inventory-db"`
+	InventorySeedOnStart   bool   `glazed:"inventory-seed-on-start"`
+	InventoryResetOnBoot   bool   `glazed:"inventory-reset-on-start"`
+	SQLiteDB               string `glazed:"sqlite-db"`
+	SQLiteReadOnly         bool   `glazed:"sqlite-db-read-only"`
+	SQLiteAutoCreate       bool   `glazed:"sqlite-db-auto-create"`
+	SQLiteRowLimit         int    `glazed:"sqlite-default-row-limit"`
+	SQLiteTimeoutSeconds   int    `glazed:"sqlite-statement-timeout-seconds"`
+	SQLiteBusyTimeoutMS    int    `glazed:"sqlite-busy-timeout-ms"`
+	SQLiteMultiStatement   bool   `glazed:"sqlite-enable-multi-statement"`
+	SQLiteAllowlist        string `glazed:"sqlite-statement-allowlist"`
+	SQLiteDenylist         string `glazed:"sqlite-statement-denylist"`
+	SQLiteRedactColumns    string `glazed:"sqlite-redact-columns"`
+	SQLiteRateLimit        int    `glazed:"sqlite-rate-limit-requests"`
+	SQLiteRateWindowSec    int    `glazed:"sqlite-rate-limit-window-seconds"`
+	SQLiteMaxPayload       int    `glazed:"sqlite-max-payload-bytes"`
+	SQLiteAuditEvents      bool   `glazed:"sqlite-audit-log-events"`
+	ARCEnabled             bool   `glazed:"arc-enabled"`
+	ARCDriver              string `glazed:"arc-driver"`
+	ARCRuntimeMode         string `glazed:"arc-runtime-mode"`
+	ARCRepoRoot            string `glazed:"arc-repo-root"`
+	ARCStartupTimeout      int    `glazed:"arc-startup-timeout-seconds"`
+	ARCRequestTimeout      int    `glazed:"arc-request-timeout-seconds"`
+	ARCRawListenAddr       string `glazed:"arc-raw-listen-addr"`
+	ARCAPIKey              string `glazed:"arc-api-key"`
+	ARCMaxSessionEvents    int    `glazed:"arc-max-session-events"`
+	FederationRegistry     string `glazed:"federation-registry"`
+	PrintInferenceSettings bool   `glazed:"print-inference-settings"`
 }
 
 func NewCommand() (*Command, error) {
@@ -136,6 +139,7 @@ func NewCommand() (*Command, error) {
 			fields.New("arc-api-key", fields.TypeString, fields.WithDefault("1234"), fields.WithHelp("X-API-Key header used for ARC requests")),
 			fields.New("arc-max-session-events", fields.TypeInteger, fields.WithDefault(200), fields.WithHelp("Maximum ARC session events retained per session")),
 			fields.New("federation-registry", fields.TypeString, fields.WithDefault(""), fields.WithHelp("Optional JSON file served at /api/os/federation-registry for frontend remote discovery")),
+			fields.New("print-inference-settings", fields.TypeBool, fields.WithDefault(false), fields.WithHelp("Resolve and print each app's effective inference settings (API keys redacted) and exit")),
 		),
 		cmds.WithSections(geLayers...),
 	)
@@ -221,58 +225,70 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 		return errors.Wrap(err, "build assistant profile surface")
 	}
 
-	composer := pinoweb.NewRuntimeComposer(parsed, pinoweb.RuntimeComposerOptions{
-		// These values are launcher-owned fallbacks. When the selected engine profile
-		// carries pinocchio.webchat_runtime@v1, the resolved runtime policy overrides them.
-		RuntimeKey:   "inventory",
-		SystemPrompt: "You are an inventory assistant. Be concise, accurate, and tool-first.",
-		AllowedTools: append([]string(nil), inventorytools.InventoryToolNames...),
+	// Inventory chat host (pinocchio chatapp/sessionstream). Inventory tools are
+	// backend-executed geppetto tools registered per prompt.
+	inventoryHost, err := chathost.New(chathost.Options{
+		AppID:        inventorybackendmodule.AppID,
+		SystemPrompt: inventorySystemPrompt,
+		Profiles: chathost.ProfileSurface{
+			Registry:           inventoryProfileRegistry,
+			RegistrySlug:       inventoryDefaultRegistrySlug,
+			DefaultProfileSlug: inventoryDefaultProfileSlug,
+			BaseSettings:       launcherBootstrap.ResolvedBaseSettings,
+		},
+		BackendTools: func(_ sessionstream.SessionId, registry *geptools.InMemoryToolRegistry) error {
+			for name, registrar := range inventorytools.InventoryToolFactories(inventoryStore) {
+				if err := registrar(registry); err != nil {
+					return errors.Wrapf(err, "register inventory tool %q", name)
+				}
+			}
+			return nil
+		},
+		ArtifactExtractor: extractInventoryArtifacts,
+		TimelineDSN:       cfg.TimelineDSN,
+		TimelineDB:        perAppStorePath(cfg.TimelineDB, inventorybackendmodule.AppID),
+		TurnsDSN:          cfg.TurnsDSN,
+		TurnsDB:           perAppStorePath(cfg.TurnsDB, inventorybackendmodule.AppID),
 	})
-	pinoweb.RegisterInventoryHypercardExtensions()
-	requestResolver := pinoweb.NewStrictRequestResolver("inventory").WithProfileRegistry(
-		inventoryProfileRegistry,
-		inventoryDefaultRegistrySlug,
-	).WithBaseInferenceSettings(launcherBootstrap.BaseInferenceSettings)
-	requestResolver = requestResolver.WithDefaultProfileSelection(inventoryDefaultProfileSlug)
-
-	srv, err := webchat.NewServer(
-		ctx,
-		parsed,
-		inventoryStaticFS,
-		webchat.WithRuntimeComposer(composer),
-		webchat.WithEventSinkWrapper(pinoweb.NewInventoryEventSinkWrapper(ctx)),
-		webchat.WithDebugRoutesEnabled(os.Getenv("PINOCCHIO_WEBCHAT_DEBUG") == "1"),
-	)
 	if err != nil {
-		return errors.Wrap(err, "new webchat server")
-	}
-	for name, factory := range inventorytools.InventoryToolFactories(inventoryStore) {
-		srv.RegisterTool(name, factory)
+		return errors.Wrap(err, "new inventory chat host")
 	}
 
 	assistantContextStore := assistantbackendmodule.NewAppChatContextStore()
-	assistantComposer := profilechat.NewRuntimeComposer(parsed, profilechat.RuntimeComposerOptions{
-		// Assistant also keeps a minimal code-owned fallback for profiles that omit the
-		// Pinocchio runtime extension; profile runtime data remains authoritative when present.
-		RuntimeKey:      "assistant",
-		SystemPrompt:    "You are a helpful OS assistant. Be concise, clear, and direct.",
-		ContextProvider: assistantContextStore,
-	}, nil, middlewarecfg.BuildDeps{}, nil)
-	assistantRequestResolver := profilechat.NewStrictRequestResolver("assistant").WithProfileRegistry(
-		assistantProfileRegistry,
-		assistantDefaultRegistrySlug,
-	).WithBaseInferenceSettings(launcherBootstrap.BaseInferenceSettings).WithDefaultProfileSelection(
-		assistantbackendmodule.DefaultProfileSlug(),
-	)
-	assistantSrv, err := webchat.NewServer(
-		ctx,
-		parsed,
-		nil,
-		webchat.WithRuntimeComposer(assistantComposer),
-		webchat.WithDebugRoutesEnabled(os.Getenv("PINOCCHIO_WEBCHAT_DEBUG") == "1"),
-	)
+	const assistantBasePrompt = "You are a helpful OS assistant. Be concise, clear, and direct."
+	assistantHost, err := chathost.New(chathost.Options{
+		AppID: assistantbackendmodule.AppID,
+		SystemPromptFunc: func(sid sessionstream.SessionId) string {
+			prompt := assistantBasePrompt
+			if convContext, _ := assistantContextStore.Lookup(ctx, string(sid)); convContext != nil {
+				if addendum := strings.TrimSpace(convContext.SystemPromptAddendum); addendum != "" {
+					prompt = prompt + "\n\n" + addendum
+				}
+			}
+			return prompt
+		},
+		Profiles: chathost.ProfileSurface{
+			Registry:           assistantProfileRegistry,
+			RegistrySlug:       assistantDefaultRegistrySlug,
+			DefaultProfileSlug: assistantbackendmodule.DefaultProfileSlug(),
+			BaseSettings:       launcherBootstrap.ResolvedBaseSettings,
+		},
+		TimelineDSN: cfg.TimelineDSN,
+		TimelineDB:  perAppStorePath(cfg.TimelineDB, assistantbackendmodule.AppID),
+		TurnsDSN:    cfg.TurnsDSN,
+		TurnsDB:     perAppStorePath(cfg.TurnsDB, assistantbackendmodule.AppID),
+	})
 	if err != nil {
-		return errors.Wrap(err, "new assistant webchat server")
+		_ = inventoryHost.Close()
+		return errors.Wrap(err, "new assistant chat host")
+	}
+
+	// Diagnostic: print each chat host's resolved effective inference settings
+	// (with credentials redacted) and exit without starting the server.
+	if cfg.PrintInferenceSettings {
+		defer func() { _ = inventoryHost.Close() }()
+		defer func() { _ = assistantHost.Close() }()
+		return printInferenceSettings(ctx, os.Stdout, assistantHost, inventoryHost)
 	}
 
 	gepaModule, err := gepabackend.NewModule(gepabackend.ModuleConfig{
@@ -305,22 +321,17 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 		return errors.Wrap(err, "create sqlite backend module")
 	}
 	assistantModule := assistantbackendmodule.NewModule(assistantbackendmodule.Options{
-		Server:              assistantSrv,
-		RequestResolver:     assistantRequestResolver,
-		ProfileRegistry:     assistantProfileRegistry,
-		DefaultRegistrySlug: assistantDefaultRegistrySlug,
-		ContextStore:        assistantContextStore,
+		Host:         assistantHost,
+		ContextStore: assistantContextStore,
 	})
 
 	modules := []backendhost.AppBackendModule{
 		assistantModule,
 		inventorybackendmodule.NewModule(inventorybackendmodule.Options{
-			Server:                srv,
-			RequestResolver:       requestResolver,
-			ProfileRegistry:       inventoryProfileRegistry,
-			DefaultRegistrySlug:   inventoryDefaultRegistrySlug,
-			MiddlewareDefinitions: composer.MiddlewareDefinitions(),
-			ConfirmMountPath:      "/confirm",
+			Chat: inventoryHost.MountRoutes,
+			ChatStop: func(context.Context) error {
+				return inventoryHost.Close()
+			},
 		}),
 		sqliteModule,
 		gepaModule,
@@ -374,11 +385,7 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 	registerLegacyAliasNotFoundHandlers(appMux)
 	appMux.Handle("/", launcherui.Handler())
 
-	httpSrv := srv.HTTPServer()
-	if httpSrv == nil {
-		return errors.New("http server is not initialized")
-	}
-
+	var handler http.Handler = appMux
 	if cfg.Root != "" && cfg.Root != "/" {
 		parent := http.NewServeMux()
 		prefix := cfg.Root
@@ -389,12 +396,46 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 			prefix += "/"
 		}
 		parent.Handle(prefix, http.StripPrefix(strings.TrimRight(prefix, "/"), appMux))
-		httpSrv.Handler = parent
-	} else {
-		httpSrv.Handler = appMux
+		handler = parent
 	}
 
-	return srv.Run(ctx)
+	addr := strings.TrimSpace(cfg.Addr)
+	if addr == "" {
+		addr = ":8091"
+	}
+	httpSrv := &http.Server{
+		Addr:              addr,
+		Handler:           handler,
+		ReadHeaderTimeout: 30 * time.Second,
+	}
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- httpSrv.ListenAndServe()
+	}()
+	select {
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_ = httpSrv.Shutdown(shutdownCtx)
+		<-errCh
+		return nil
+	case err := <-errCh:
+		if err != nil && err != http.ErrServerClosed {
+			return errors.Wrap(err, "http server")
+		}
+		return nil
+	}
+}
+
+// perAppStorePath derives a per-app sqlite file path from a shared flag value
+// so two chat hosts never contend on the same database file.
+func perAppStorePath(path string, appID string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return ""
+	}
+	ext := filepath.Ext(path)
+	return strings.TrimSuffix(path, ext) + "." + appID + ext
 }
 
 func parseCSV(raw string) []string {
@@ -445,7 +486,7 @@ func main() {
 
 	c, err := NewCommand()
 	cobra.CheckErr(err)
-	command, err := cli.BuildCobraCommand(c, cli.WithCobraMiddlewaresFunc(geppettosections.GetCobraCommandGeppettoMiddlewares))
+	command, err := cli.BuildCobraCommand(c, cli.WithCobraMiddlewaresFunc(pinocchiocmds.GetPinocchioCommandMiddlewares))
 	cobra.CheckErr(err)
 	root.AddCommand(command)
 	cobra.CheckErr(root.Execute())

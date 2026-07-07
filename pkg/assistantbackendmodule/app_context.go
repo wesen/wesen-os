@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	profilechat "github.com/go-go-golems/go-go-os-chat/pkg/profilechat"
 	"github.com/go-go-golems/go-go-os-backend/pkg/backendhost"
 	"github.com/go-go-golems/go-go-os-backend/pkg/docmw"
 )
@@ -15,7 +14,7 @@ import (
 var errAppChatContextAppNotFound = errors.New("app not found")
 
 type AppChatBootstrapContext struct {
-	profilechat.ConversationContext
+	ConversationContext
 	AppID         string
 	Name          string
 	Description   string
@@ -58,7 +57,7 @@ func ResolveAppChatContext(ctx context.Context, registry *backendhost.ModuleRegi
 
 	addendum := buildSystemPromptAddendum(manifest, docsText, reflectionText)
 	return &AppChatBootstrapContext{
-		ConversationContext: profilechat.ConversationContext{
+		ConversationContext: ConversationContext{
 			SystemPromptAddendum: addendum,
 			Metadata: map[string]any{
 				"subject_app_id":   strings.TrimSpace(manifest.AppID),

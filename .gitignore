@@ -34,3 +34,6 @@ data/*.db*
 
 # federation smoke fixtures (regenerate via ttmp DEPLOY-001 scripts/31-prepare-launcher-remote-manifest-smoke.sh)
 apps/os-launcher/public/__federation-smoke/
+/var/devctl/
+/.devctl/
+/wesen-os-launcher

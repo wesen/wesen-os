@@ -1,14 +1,16 @@
+import { useMemo, useRef, useState } from 'react';
 import { formatAppKey, parseAppKey, type LaunchableAppModule, type LauncherHostContext, type LaunchReason } from '@go-go-golems/os-shell';
 import { openWindow, type OpenWindowPayload } from '@go-go-golems/os-core/desktop-core';
 import type { DesktopCommandHandler, DesktopContribution } from '@go-go-golems/os-core/desktop-react';
 import { showToast } from '@go-go-golems/os-core';
-import { ChatConversationWindow, EventViewerWindow, TimelineDebugWindow } from '@go-go-golems/os-chat';
-import { useDispatch } from 'react-redux';
+import { ChatProvider, type ChatProviderConfig } from '@go-go-golems/chat-provider';
+import { ChatWindowChrome } from '../chat/ChatWindowChrome';
+import { ChatEventViewerWindow, ChatTimelineDebugWindow } from '../chat/ChatDebugWindows';
+import { chatDebugStore } from '../chat/chatDebugStore';
 
 const APP_ID = 'assistant';
+const API_BASE_PREFIX = '/api/apps/assistant';
 const COMMAND_CHAT_WITH_APP = 'apps-browser.chat-with-app';
-const EVENT_VIEW_INSTANCE_PREFIX = 'event-viewer~';
-const TIMELINE_DEBUG_INSTANCE_PREFIX = 'timeline-debug~';
 
 interface AssistantAppChatBootstrapResponse {
   conv_id: string;
@@ -80,31 +82,25 @@ function buildAssistantWindowPayload(input?: Partial<AssistantWindowState>): Ope
   };
 }
 
-function buildEventViewerWindowPayload(convId: string): OpenWindowPayload {
-  const shortId = convId.slice(0, 8) || 'chat';
-  return {
-    id: `window:assistant:event-viewer:${convId}`,
-    title: `Event Viewer (${shortId})`,
-    icon: '🧭',
-    bounds: { x: 220, y: 90, w: 720, h: 520 },
-    content: {
-      kind: 'app',
-      appKey: formatAppKey(APP_ID, `${EVENT_VIEW_INSTANCE_PREFIX}${convId}`),
-    },
-  };
-}
+type DebugWindowKind = 'event-viewer' | 'timeline-debug';
 
-function buildTimelineDebugWindowPayload(convId: string): OpenWindowPayload {
-  const shortId = convId.slice(0, 8) || 'chat';
+// buildDebugWindowPayload opens a detached debug window as another assistant
+// app instance (`event-viewer~<convId>` / `timeline-debug~<convId>`), matching
+// the pre-migration assistant's routing so debug windows survive reloads.
+export function buildDebugWindowPayload(kind: DebugWindowKind, convId: string): OpenWindowPayload {
+  const label = kind === 'event-viewer' ? 'Event Viewer' : 'Timeline Debug';
+  const icon = kind === 'event-viewer' ? '🧭' : '🧱';
+  const instanceId = `${kind}~${convId}`;
   return {
-    id: `window:assistant:timeline-debug:${convId}`,
-    title: `Timeline Debug (${shortId})`,
-    icon: '🧱',
-    bounds: { x: 260, y: 110, w: 760, h: 560 },
+    id: `window:assistant:${instanceId}`,
+    title: `${label} (${convId})`,
+    icon,
+    bounds: { x: kind === 'event-viewer' ? 240 : 300, y: 120, w: 680, h: 480 },
     content: {
       kind: 'app',
-      appKey: formatAppKey(APP_ID, `${TIMELINE_DEBUG_INSTANCE_PREFIX}${convId}`),
+      appKey: formatAppKey(APP_ID, instanceId),
     },
+    dedupeKey: `assistant:${instanceId}`,
   };
 }
 
@@ -150,49 +146,73 @@ function createAssistantCommandHandler(hostContext: LauncherHostContext): Deskto
   };
 }
 
+function assistantSuggestions(state: AssistantWindowState): string[] {
+  if (state.mode === 'app-chat' && state.subjectAppName) {
+    return [
+      `What does ${state.subjectAppName} do?`,
+      `How do I get started with ${state.subjectAppName}?`,
+      `Show me an example workflow in ${state.subjectAppName}`,
+    ];
+  }
+  return [
+    'What can you help me with?',
+    'List the apps on this desktop',
+    'Help me plan my day',
+  ];
+}
+
+// AssistantChatWindow wires ChatProvider + the shared chrome: the profile is
+// bound at session creation (createSessionBody reads the latest selection via
+// a ref), and every debug event lands in chatDebugStore for the detached
+// Event Viewer / Timeline Debug windows.
 function AssistantChatWindow({
-  convId,
-  title,
-  placeholder,
-  windowId,
+  state,
+  dispatch,
 }: {
-  convId: string;
-  title: string;
-  placeholder: string;
-  windowId: string;
+  state: AssistantWindowState;
+  dispatch: (action: unknown) => unknown;
 }) {
-  const dispatch = useDispatch();
+  const { convId } = state;
+  const [profile, setProfile] = useState<string | null>(null);
+  const profileRef = useRef<string | null>(profile);
+  profileRef.current = profile;
+
+  const config = useMemo<ChatProviderConfig>(
+    () => ({
+      basePrefix: API_BASE_PREFIX,
+      sessionStorageKey: `assistant.chat.session.${convId}`,
+      createSessionBody: () => ({
+        sessionId: convId,
+        profile: profileRef.current ?? undefined,
+      }),
+      onDebugEvent: (event) => {
+        chatDebugStore.push(convId, event);
+      },
+    }),
+    [convId],
+  );
+
+  const title = state.mode === 'app-chat' && state.subjectAppName
+    ? `💬 Chat with ${state.subjectAppName}`
+    : '🤖 Assistant';
+  const emptySubtitle = state.mode === 'app-chat' && state.subjectAppName
+    ? `Ask about ${state.subjectAppName} — or try one of the suggestions below.`
+    : 'Ask a question, request data, or try one of the suggestions below.';
 
   return (
-    <ChatConversationWindow
-      convId={convId}
-      basePrefix="/api/apps/assistant"
-      title={title}
-      placeholder={placeholder}
-      windowId={windowId}
-      profilePolicy={{ kind: 'none' }}
-      starterSuggestions={[]}
-      headerActions={
-        <>
-          <button
-            type="button"
-            data-part="btn"
-            onClick={() => dispatch(openWindow(buildEventViewerWindowPayload(convId)))}
-            style={{ fontSize: 10, padding: '1px 6px' }}
-          >
-            🧭 Events
-          </button>
-          <button
-            type="button"
-            data-part="btn"
-            onClick={() => dispatch(openWindow(buildTimelineDebugWindowPayload(convId)))}
-            style={{ fontSize: 10, padding: '1px 6px' }}
-          >
-            🧱 Timeline
-          </button>
-        </>
-      }
-    />
+    <ChatProvider config={config}>
+      <ChatWindowChrome
+        convId={convId}
+        apiBasePrefix={API_BASE_PREFIX}
+        title={title}
+        emptySubtitle={emptySubtitle}
+        starterSuggestions={assistantSuggestions(state)}
+        profile={profile}
+        onProfileChange={setProfile}
+        onOpenEventViewer={(id) => dispatch(openWindow(buildDebugWindowPayload('event-viewer', id)))}
+        onOpenTimelineDebug={(id) => dispatch(openWindow(buildDebugWindowPayload('timeline-debug', id)))}
+      />
+    </ChatProvider>
   );
 }
 
@@ -211,35 +231,24 @@ export const assistantLauncherModule: LaunchableAppModule = {
       commands: [createAssistantCommandHandler(hostContext)],
     },
   ],
-  renderWindow: ({ appKey, instanceId, windowId }) => {
+  renderWindow: ({ appKey, instanceId, ctx }) => {
     const parsed = parseAppKey(appKey);
-    const decoded = decodeInstance(parsed.instanceId || instanceId);
-    const fallbackInstanceId = parsed.instanceId || instanceId;
-    if (fallbackInstanceId.startsWith(EVENT_VIEW_INSTANCE_PREFIX)) {
-      const convId = fallbackInstanceId.slice(EVENT_VIEW_INSTANCE_PREFIX.length);
-      return <EventViewerWindow conversationId={convId} />;
+    const resolvedInstanceId = parsed.instanceId || instanceId;
+
+    if (resolvedInstanceId.startsWith('event-viewer~')) {
+      const convId = decodeURIComponent(resolvedInstanceId.slice('event-viewer~'.length));
+      return <ChatEventViewerWindow convId={convId} />;
     }
-    if (fallbackInstanceId.startsWith(TIMELINE_DEBUG_INSTANCE_PREFIX)) {
-      const convId = fallbackInstanceId.slice(TIMELINE_DEBUG_INSTANCE_PREFIX.length);
-      return <TimelineDebugWindow conversationId={convId} />;
+    if (resolvedInstanceId.startsWith('timeline-debug~')) {
+      const convId = decodeURIComponent(resolvedInstanceId.slice('timeline-debug~'.length));
+      return <ChatTimelineDebugWindow convId={convId} apiBasePrefix={API_BASE_PREFIX} />;
     }
+
+    const decoded = decodeInstance(resolvedInstanceId);
     if (!decoded) {
       return <div style={{ padding: 12, fontFamily: 'monospace' }}>Invalid assistant window instance.</div>;
     }
-    const title = decoded.mode === 'app-chat' && decoded.subjectAppName
-      ? `Chat with ${decoded.subjectAppName}`
-      : 'Assistant';
-    const placeholder = decoded.mode === 'app-chat' && decoded.subjectAppName
-      ? `Ask about ${decoded.subjectAppName}...`
-      : 'Ask the assistant...';
 
-    return (
-      <AssistantChatWindow
-        convId={decoded.convId}
-        title={title}
-        placeholder={placeholder}
-        windowId={windowId}
-      />
-    );
+    return <AssistantChatWindow state={decoded} dispatch={ctx.dispatch} />;
   },
 };

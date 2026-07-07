@@ -1,3 +1,5 @@
+//go:build legacy_webchat
+
 package main
 
 import (

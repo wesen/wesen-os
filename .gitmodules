@@ -6,10 +6,6 @@
 	path = workspace-links/go-go-app-inventory
 	url = git@github.com:go-go-golems/go-go-app-inventory.git
 	branch = main
-[submodule "workspace-links/go-go-os-backend"]
-	path = workspace-links/go-go-os-backend
-	url = git@github.com:go-go-golems/go-go-os-backend.git
-	branch = main
 [submodule "workspace-links/go-go-app-sqlite"]
 	path = workspace-links/go-go-app-sqlite
 	url = git@github.com:go-go-golems/go-go-app-sqlite.git
@@ -21,16 +17,4 @@
 [submodule "workspace-links/go-go-gepa"]
 	path = workspace-links/go-go-gepa
 	url = git@github.com:go-go-golems/go-go-gepa.git
-	branch = main
-[submodule "workspace-links/go-go-os-chat"]
-	path = workspace-links/go-go-os-chat
-	url = git@github.com:go-go-golems/go-go-os-chat.git
-	branch = main
-[submodule "workspace-links/pinocchio"]
-	path = workspace-links/pinocchio
-	url = git@github.com:go-go-golems/pinocchio.git
-	branch = main
-[submodule "workspace-links/geppetto"]
-	path = workspace-links/geppetto
-	url = git@github.com:go-go-golems/geppetto.git
 	branch = main
