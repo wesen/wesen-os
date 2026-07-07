@@ -44,43 +44,43 @@ type Command struct {
 }
 
 type serverSettings struct {
-	Addr                 string `glazed:"addr"`
-	Root                 string `glazed:"root"`
-	TimelineDSN          string `glazed:"timeline-dsn"`
-	TimelineDB           string `glazed:"timeline-db"`
-	TurnsDSN             string `glazed:"turns-dsn"`
-	TurnsDB              string `glazed:"turns-db"`
-	RequiredApps         string `glazed:"required-apps"`
-	LegacyAliases        string `glazed:"legacy-aliases"`
-	GEPAScriptsRoot      string `glazed:"gepa-scripts-root"`
-	GEPARunTimeout       int    `glazed:"gepa-run-timeout-seconds"`
-	GEPAMaxConcurrent    int    `glazed:"gepa-max-concurrent-runs"`
-	InventoryDB          string `glazed:"inventory-db"`
-	InventorySeedOnStart bool   `glazed:"inventory-seed-on-start"`
-	InventoryResetOnBoot bool   `glazed:"inventory-reset-on-start"`
-	SQLiteDB             string `glazed:"sqlite-db"`
-	SQLiteReadOnly       bool   `glazed:"sqlite-db-read-only"`
-	SQLiteAutoCreate     bool   `glazed:"sqlite-db-auto-create"`
-	SQLiteRowLimit       int    `glazed:"sqlite-default-row-limit"`
-	SQLiteTimeoutSeconds int    `glazed:"sqlite-statement-timeout-seconds"`
-	SQLiteBusyTimeoutMS  int    `glazed:"sqlite-busy-timeout-ms"`
-	SQLiteMultiStatement bool   `glazed:"sqlite-enable-multi-statement"`
-	SQLiteAllowlist      string `glazed:"sqlite-statement-allowlist"`
-	SQLiteDenylist       string `glazed:"sqlite-statement-denylist"`
-	SQLiteRedactColumns  string `glazed:"sqlite-redact-columns"`
-	SQLiteRateLimit      int    `glazed:"sqlite-rate-limit-requests"`
-	SQLiteRateWindowSec  int    `glazed:"sqlite-rate-limit-window-seconds"`
-	SQLiteMaxPayload     int    `glazed:"sqlite-max-payload-bytes"`
-	SQLiteAuditEvents    bool   `glazed:"sqlite-audit-log-events"`
-	ARCEnabled           bool   `glazed:"arc-enabled"`
-	ARCDriver            string `glazed:"arc-driver"`
-	ARCRuntimeMode       string `glazed:"arc-runtime-mode"`
-	ARCRepoRoot          string `glazed:"arc-repo-root"`
-	ARCStartupTimeout    int    `glazed:"arc-startup-timeout-seconds"`
-	ARCRequestTimeout    int    `glazed:"arc-request-timeout-seconds"`
-	ARCRawListenAddr     string `glazed:"arc-raw-listen-addr"`
-	ARCAPIKey            string `glazed:"arc-api-key"`
-	ARCMaxSessionEvents  int    `glazed:"arc-max-session-events"`
+	Addr                   string `glazed:"addr"`
+	Root                   string `glazed:"root"`
+	TimelineDSN            string `glazed:"timeline-dsn"`
+	TimelineDB             string `glazed:"timeline-db"`
+	TurnsDSN               string `glazed:"turns-dsn"`
+	TurnsDB                string `glazed:"turns-db"`
+	RequiredApps           string `glazed:"required-apps"`
+	LegacyAliases          string `glazed:"legacy-aliases"`
+	GEPAScriptsRoot        string `glazed:"gepa-scripts-root"`
+	GEPARunTimeout         int    `glazed:"gepa-run-timeout-seconds"`
+	GEPAMaxConcurrent      int    `glazed:"gepa-max-concurrent-runs"`
+	InventoryDB            string `glazed:"inventory-db"`
+	InventorySeedOnStart   bool   `glazed:"inventory-seed-on-start"`
+	InventoryResetOnBoot   bool   `glazed:"inventory-reset-on-start"`
+	SQLiteDB               string `glazed:"sqlite-db"`
+	SQLiteReadOnly         bool   `glazed:"sqlite-db-read-only"`
+	SQLiteAutoCreate       bool   `glazed:"sqlite-db-auto-create"`
+	SQLiteRowLimit         int    `glazed:"sqlite-default-row-limit"`
+	SQLiteTimeoutSeconds   int    `glazed:"sqlite-statement-timeout-seconds"`
+	SQLiteBusyTimeoutMS    int    `glazed:"sqlite-busy-timeout-ms"`
+	SQLiteMultiStatement   bool   `glazed:"sqlite-enable-multi-statement"`
+	SQLiteAllowlist        string `glazed:"sqlite-statement-allowlist"`
+	SQLiteDenylist         string `glazed:"sqlite-statement-denylist"`
+	SQLiteRedactColumns    string `glazed:"sqlite-redact-columns"`
+	SQLiteRateLimit        int    `glazed:"sqlite-rate-limit-requests"`
+	SQLiteRateWindowSec    int    `glazed:"sqlite-rate-limit-window-seconds"`
+	SQLiteMaxPayload       int    `glazed:"sqlite-max-payload-bytes"`
+	SQLiteAuditEvents      bool   `glazed:"sqlite-audit-log-events"`
+	ARCEnabled             bool   `glazed:"arc-enabled"`
+	ARCDriver              string `glazed:"arc-driver"`
+	ARCRuntimeMode         string `glazed:"arc-runtime-mode"`
+	ARCRepoRoot            string `glazed:"arc-repo-root"`
+	ARCStartupTimeout      int    `glazed:"arc-startup-timeout-seconds"`
+	ARCRequestTimeout      int    `glazed:"arc-request-timeout-seconds"`
+	ARCRawListenAddr       string `glazed:"arc-raw-listen-addr"`
+	ARCAPIKey              string `glazed:"arc-api-key"`
+	ARCMaxSessionEvents    int    `glazed:"arc-max-session-events"`
 	FederationRegistry     string `glazed:"federation-registry"`
 	PrintInferenceSettings bool   `glazed:"print-inference-settings"`
 }
@@ -245,9 +245,10 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 			return nil
 		},
 		ArtifactExtractor: extractInventoryArtifacts,
-		TimelineDB: perAppStorePath(cfg.TimelineDB, inventorybackendmodule.AppID),
-		TurnsDSN:   cfg.TurnsDSN,
-		TurnsDB:    perAppStorePath(cfg.TurnsDB, inventorybackendmodule.AppID),
+		TimelineDSN:       cfg.TimelineDSN,
+		TimelineDB:        perAppStorePath(cfg.TimelineDB, inventorybackendmodule.AppID),
+		TurnsDSN:          cfg.TurnsDSN,
+		TurnsDB:           perAppStorePath(cfg.TurnsDB, inventorybackendmodule.AppID),
 	})
 	if err != nil {
 		return errors.Wrap(err, "new inventory chat host")
@@ -272,9 +273,10 @@ func (c *Command) RunIntoWriter(ctx context.Context, parsed *values.Values, _ io
 			DefaultProfileSlug: assistantbackendmodule.DefaultProfileSlug(),
 			BaseSettings:       launcherBootstrap.ResolvedBaseSettings,
 		},
-		TimelineDB: perAppStorePath(cfg.TimelineDB, assistantbackendmodule.AppID),
-		TurnsDSN:   cfg.TurnsDSN,
-		TurnsDB:    perAppStorePath(cfg.TurnsDB, assistantbackendmodule.AppID),
+		TimelineDSN: cfg.TimelineDSN,
+		TimelineDB:  perAppStorePath(cfg.TimelineDB, assistantbackendmodule.AppID),
+		TurnsDSN:    cfg.TurnsDSN,
+		TurnsDB:     perAppStorePath(cfg.TurnsDB, assistantbackendmodule.AppID),
 	})
 	if err != nil {
 		_ = inventoryHost.Close()

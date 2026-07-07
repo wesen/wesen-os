@@ -97,8 +97,10 @@ type Options struct {
 	// (generated-card path). See design-doc/06 §8.
 	ArtifactExtractor ArtifactExtractor
 	ChunkDelay        time.Duration
-	// TimelineDB is an optional sqlite path for durable timeline hydration.
-	TimelineDB string
+	// TimelineDSN/TimelineDB configure durable timeline hydration. TimelineDSN
+	// takes precedence; TimelineDB is converted to a SQLite file DSN.
+	TimelineDSN string
+	TimelineDB  string
 	// TurnsDSN/TurnsDB configure the durable conversation accumulator store.
 	TurnsDSN string
 	TurnsDB  string
@@ -137,7 +139,7 @@ func New(opts Options) (*Host, error) {
 		return nil, errors.Wrap(err, "register chat schemas")
 	}
 
-	store, closeHydrationStore, err := serverkit.OpenHydrationStore("", opts.TimelineDB, reg)
+	store, closeHydrationStore, err := serverkit.OpenHydrationStore(opts.TimelineDSN, opts.TimelineDB, reg)
 	if err != nil {
 		return nil, errors.Wrap(err, "open timeline hydration store")
 	}

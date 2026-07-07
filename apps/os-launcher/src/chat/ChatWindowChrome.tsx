@@ -117,11 +117,12 @@ export function ChatWindowChrome({
   const entities = useChatSelector(selectTimelineEntities);
   const [debugOpen, setDebugOpen] = useState(false);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
-  const { profiles, defaultSlug, loading: profilesLoading } = useChatProfiles(apiBasePrefix);
+  const { profiles, defaultSlug, loading: profilesLoading, error: profilesError } = useChatProfiles(apiBasePrefix);
 
   const isStreaming = overlay.runStatus === 'streaming';
   const connected = overlay.wsStatus === 'connected';
   const isEmpty = entities.length === 0;
+  const profileReady = profile !== null || (!profilesLoading && (!defaultSlug || Boolean(profilesError)));
 
   const scroll = useStickyScrollFollow({
     enabled: true,
@@ -129,11 +130,10 @@ export function ChatWindowChrome({
     resetKey: overlay.sessionId,
   });
 
-  useEffect(() => {
-    client.connect().catch(() => {
-      // surfaced via overlay.wsStatus / overlay.error
-    });
-  }, [client]);
+  // Do not connect on mount: ChatProvider creates the backend session during
+  // connect(), and createSessionBody binds the selected profile at that moment.
+  // client.send() connects lazily, which lets the user pick a non-default
+  // profile before the first prompt instead of silently using the default.
 
   // Once the profile list arrives, adopt the default selection if the user has
   // not chosen one yet. Profile is bound at session creation.
@@ -152,14 +152,17 @@ export function ChatWindowChrome({
 
   const sendSuggestion = useCallback(
     (text: string) => {
+      if (!profileReady) {
+        return;
+      }
       client.send(text).catch(() => {
         // surfaced via overlay.error
       });
     },
-    [client],
+    [client, profileReady],
   );
 
-  const profileLocked = entities.length > 0; // changing profile after first message needs a new session
+  const profileLocked = Boolean(overlay.sessionId) || entities.length > 0; // changing profile needs a new session
   const selectedProfileLabel = profiles.find((p) => p.slug === profile)?.displayName ?? profile;
 
   return (
@@ -167,7 +170,7 @@ export function ChatWindowChrome({
       <div className="oschat-header" data-part="header">
         <span className="oschat-title">{title}</span>
         <span className="oschat-conn" data-connected={connected}>
-          {connected ? 'connected' : overlay.wsStatus || 'connecting'}
+          {connected ? 'connected' : overlay.wsStatus || (profileReady ? 'ready' : 'loading profiles')}
         </span>
         <label className="oschat-profile">
           Profile
@@ -239,7 +242,7 @@ export function ChatWindowChrome({
               key={s}
               type="button"
               className="oschat-suggestion"
-              disabled={isStreaming}
+              disabled={isStreaming || !profileReady}
               onClick={() => sendSuggestion(s)}
             >
               {s}
@@ -250,7 +253,7 @@ export function ChatWindowChrome({
 
       {debugOpen ? <ChatDebugPanel convId={convId} /> : null}
 
-      <ChatComposer disabled={isStreaming} />
+      <ChatComposer disabled={isStreaming || !profileReady} />
       <div className="oschat-footer" data-part="footer">
         {footer ?? <StatsFooter convId={convId} label={selectedProfileLabel} />}
       </div>
